@@ -61,7 +61,20 @@ export function PlayerPage() {
   }, [session?.is_active, navigate]);
 
   useEffect(() => {
-    if (!playlistId) return;
+    // Playlist tự tạo (custom_playlist) → danh sách "video tiếp theo" đọc thẳng từ
+    // source.items đã lưu sẵn, không cần gọi API YouTube.
+    if (source?.type === 'custom_playlist') {
+      setNextVideos(
+        source.items
+          .filter((it) => it.videoId !== ytVideoId)
+          .map((it) => ({ videoId: it.videoId, title: it.title, thumbnail: it.thumbnail, sourceType: 'custom_playlist' as const }))
+      );
+      return;
+    }
+    if (!playlistId) {
+      setNextVideos([]);
+      return;
+    }
     fetchPlaylistItems(playlistId).then((items) =>
       setNextVideos(
         items
@@ -69,7 +82,7 @@ export function PlayerPage() {
           .map((it) => ({ videoId: it.videoId, title: it.title, thumbnail: it.thumbnail, sourceType: 'youtube_playlist' as const }))
       )
     );
-  }, [playlistId, ytVideoId]);
+  }, [playlistId, ytVideoId, source?.type, source?.items]);
 
   const handleProgress = (percent: number) => {
     heartbeat(Math.round(percent * 6)); // ước lượng thô — xem README mục "Giới hạn đã biết"
@@ -80,11 +93,12 @@ export function PlayerPage() {
     if (session?.end_after_current) navigate('/');
   };
 
-  // Đang mở video từ trong 1 playlist (có playlistId) → tự phát + tự toàn màn hình ngay.
-  const autoFullscreen = Boolean(playlistId);
+  // Đang mở video từ trong 1 playlist (thật hoặc tự tạo) → tự phát + tự toàn màn hình ngay.
+  const autoFullscreen = Boolean(playlistId) || source?.type === 'custom_playlist';
 
   const goToVideo = (v: ResolvedVideo) => {
-    const p = new URLSearchParams({ videoId: v.videoId, title: v.title, playlistId: playlistId ?? '' });
+    const p = new URLSearchParams({ videoId: v.videoId, title: v.title });
+    if (playlistId) p.set('playlistId', playlistId);
     if (sourceId) p.set('sourceId', sourceId);
     navigate(`/player?${p.toString()}`);
   };
@@ -115,13 +129,8 @@ export function PlayerPage() {
       )}
       {!kind && <p style={{ opacity: 0.6 }}>Đang tải video...</p>}
 
-      <div className="section-title" style={{ marginBottom: 6 }}>
+      <div className="section-title" style={{ marginBottom: 26 }}>
         ▶ {title}
-      </div>
-      <div className="player-note" style={{ marginBottom: 26 }}>
-        <span className="ok">✓ rel=0</span>
-        <span className="ok">✓ modestbranding=1</span>
-        <span className="no">✕ Không gợi ý video ngoài whitelist</span>
       </div>
 
       {nextVideos.length > 0 && (

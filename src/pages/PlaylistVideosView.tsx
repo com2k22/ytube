@@ -1,41 +1,28 @@
 import { useNavigate } from 'react-router-dom';
 import { useProfileContext } from '@/context/ProfileContext';
-import { fetchPlaylistItems } from '@/lib/youtube';
 import { useWatchProgress } from '@/hooks/useWatchProgress';
 import { VideoCard } from '@/components/common/VideoCard';
-import { useEffect, useState } from 'react';
 import type { ResolvedVideo } from '@/types';
 
 interface Props {
-  playlistId: string;
   title: string;
+  videos: ResolvedVideo[];
+  loading?: boolean;
+  error?: string | null;
+  /** id playlist THẬT trên YouTube — null cho playlist tự tạo (custom_playlist) hoặc khi
+   * không áp dụng; dùng để trang phát video tải tiếp "video tiếp theo" qua API YouTube. */
+  playlistId?: string | null;
   /** id trong bảng allowed_sources — null nếu playlist này chỉ "mượn" từ 1 kênh whitelist,
    * trường hợp đó bỏ qua theo dõi tiến độ (continue-watching) cho đơn giản. */
   progressSourceId: string | null;
   onBack: () => void;
 }
 
-/** Danh sách video của 1 playlist — dùng chung cho trang Playlist và trang Kênh. */
-export function PlaylistVideosView({ playlistId, title, progressSourceId, onBack }: Props) {
+/** Danh sách video của 1 playlist — dùng chung cho playlist YouTube, playlist tự tạo, và trang Kênh. */
+export function PlaylistVideosView({ title, videos, loading, error, playlistId, progressSourceId, onBack }: Props) {
   const { activeProfile } = useProfileContext();
-  const [videos, setVideos] = useState<ResolvedVideo[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const { progressFor } = useWatchProgress(activeProfile?.id ?? null);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    setLoading(true);
-    setError(null);
-    fetchPlaylistItems(playlistId)
-      .then((items) => {
-        if (items.length === 0) {
-          setError('Không tải được video thật (thiếu VITE_YOUTUBE_API_KEY trong .env, hoặc playlist riêng tư).');
-        }
-        setVideos(items.map((it) => ({ videoId: it.videoId, title: it.title, thumbnail: it.thumbnail, sourceType: 'youtube_playlist' as const })));
-      })
-      .finally(() => setLoading(false));
-  }, [playlistId]);
 
   const sorted = progressSourceId
     ? [...videos].sort((a, b) => {
@@ -61,7 +48,8 @@ export function PlaylistVideosView({ playlistId, title, progressSourceId, onBack
         {sorted.map((v) => {
           const percent = progressSourceId ? progressFor(progressSourceId, v.videoId) : 0;
           const watching = percent > 0 && percent < 100;
-          const params = new URLSearchParams({ videoId: v.videoId, title: v.title, playlistId });
+          const params = new URLSearchParams({ videoId: v.videoId, title: v.title });
+          if (playlistId) params.set('playlistId', playlistId);
           if (progressSourceId) params.set('sourceId', progressSourceId);
           return (
             <VideoCard

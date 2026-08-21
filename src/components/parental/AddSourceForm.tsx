@@ -5,13 +5,14 @@ import { isSafeHttpsUrl, sanitizeTitle } from '@/utils/urlValidator';
 import { extractPlaylistId, extractVideoId, extractChannelRef } from '@/utils/youtubeParser';
 import { fetchPlaylistInfo, fetchVideoInfo, fetchChannelInfo, resolveChannelHandle } from '@/lib/youtube';
 import { PROFILE_IDS, PROFILE_EMOJI, SOURCE_TYPE_ICON } from '@/constants';
-import type { AllowedSource, SourceType } from '@/types';
+import type { AllowedSource, CustomPlaylistItem, SourceType } from '@/types';
 
 const TYPE_OPTIONS: { value: SourceType; label: string }[] = [
   { value: 'youtube_playlist', label: 'Playlist YouTube' },
   { value: 'youtube_video', label: 'Link YouTube (video đơn lẻ)' },
   { value: 'youtube_channel', label: 'Kênh YouTube' },
   { value: 'direct_url', label: 'Link trực tiếp (mp4/m3u8)' },
+  { value: 'custom_playlist', label: '🧩 Playlist tự tạo (ghép từ video đơn lẻ)' },
 ];
 
 const TYPE_LABEL: Record<SourceType, string> = {
@@ -19,12 +20,16 @@ const TYPE_LABEL: Record<SourceType, string> = {
   youtube_video: 'Video YouTube',
   youtube_channel: 'Kênh',
   direct_url: 'Link trực tiếp',
+  custom_playlist: 'Playlist tự tạo',
 };
 
 const KIDS: { id: string; name: string }[] = [
   { id: PROFILE_IDS.MINA, name: 'Mina' },
   { id: PROFILE_IDS.COM, name: 'Cốm' },
 ];
+
+/** URL giả dùng làm chỗ trống cho playlist tự tạo — loại này không có 1 link duy nhất, ghép từ nhiều video. */
+const CUSTOM_PLAYLIST_URL = 'internal://custom-playlist';
 
 const emptyForm = { type: 'youtube_playlist' as SourceType, title: '', url: '', thumbnail: null as string | null };
 
@@ -48,6 +53,11 @@ export function AddSourceForm() {
   const [selectedKids, setSelectedKids] = useState<string[]>([PROFILE_IDS.MINA]);
   const [urlHint, setUrlHint] = useState<{ text: string; ok: boolean } | null>(null);
   const [resolving, setResolving] = useState(false);
+
+  // Riêng cho loại "Playlist tự tạo": ghép nhiều video đơn lẻ lại thành 1 danh sách.
+  const [draftItems, setDraftItems] = useState<CustomPlaylistItem[]>([]);
+  const [draftVideoUrl, setDraftVideoUrl] = useState('');
+  const [addingVideo, setAddingVideo] = useState(false);
 
   const isEditing = editingId !== null;
 
@@ -111,11 +121,40 @@ export function AddSourceForm() {
     }
   };
 
+  /** Thêm 1 video (dán link YouTube) vào danh sách nháp của playlist tự tạo. */
+  const addDraftVideo = async () => {
+    const id = extractVideoId(draftVideoUrl);
+    if (!draftVideoUrl.trim() || !id) {
+      showToast('Dán 1 link video YouTube hợp lệ (VD: https://youtu.be/...) rồi thêm nhé.');
+      return;
+    }
+    if (draftItems.some((it) => it.videoId === id)) {
+      showToast('Video này đã có trong playlist rồi.');
+      setDraftVideoUrl('');
+      return;
+    }
+    setAddingVideo(true);
+    try {
+      const info = await fetchVideoInfo(id);
+      setDraftItems((prev) => [...prev, { videoId: id, title: info?.title ?? `Video ${prev.length + 1}`, thumbnail: info?.thumbnail ?? null }]);
+      setDraftVideoUrl('');
+      if (!info) showToast('Đã thêm video (chưa dò được tiêu đề thật — kiểm tra API key YouTube nếu cần).');
+    } finally {
+      setAddingVideo(false);
+    }
+  };
+
+  const removeDraftVideo = (videoId: string) => {
+    setDraftItems((prev) => prev.filter((it) => it.videoId !== videoId));
+  };
+
   const resetForm = () => {
     setEditingId(null);
     setForm(emptyForm);
     setSelectedKids([PROFILE_IDS.MINA]);
     setUrlHint(null);
+    setDraftItems([]);
+    setDraftVideoUrl('');
   };
 
   const startEdit = (s: AllowedSource) => {
@@ -123,6 +162,8 @@ export function AddSourceForm() {
     setForm({ type: s.type, title: s.title, url: s.url, thumbnail: s.thumbnail });
     setSelectedKids(s.profile_id ? [s.profile_id] : [PROFILE_IDS.MINA, PROFILE_IDS.COM]);
     setUrlHint(null);
+    setDraftItems(s.type === 'custom_playlist' ? s.items : []);
+    setDraftVideoUrl('');
   };
 
   const onDelete = async (s: AllowedSource) => {
@@ -136,8 +177,14 @@ export function AddSourceForm() {
 
   const submit = async () => {
     const cleanTitle = sanitizeTitle(form.title);
-    if (!cleanTitle || !isSafeHttpsUrl(form.url)) {
+    const isCustom = form.type === 'custom_playlist';
+
+    if (!cleanTitle || (!isCustom && !isSafeHttpsUrl(form.url))) {
       setUrlHint({ text: '✕ Vui lòng nhập tiêu đề và link https hợp lệ', ok: false });
+      return;
+    }
+    if (isCustom && draftItems.length === 0) {
+      showToast('Ghép ít nhất 1 video vào playlist trước khi lưu nhé.');
       return;
     }
     if (selectedKids.length === 0) {
@@ -146,7 +193,14 @@ export function AddSourceForm() {
     }
     // Chọn cả 2 bé → lưu profile_id = null (dùng chung); chỉ chọn 1 bé → lưu id bé đó.
     const profileId = selectedKids.length === KIDS.length ? null : selectedKids[0];
-    const payload = { profileId, type: form.type, title: cleanTitle, url: form.url, thumbnail: form.thumbnail };
+    const payload = {
+      profileId,
+      type: form.type,
+      title: cleanTitle,
+      url: isCustom ? CUSTOM_PLAYLIST_URL : form.url,
+      thumbnail: isCustom ? form.thumbnail ?? draftItems[0]?.thumbnail ?? null : form.thumbnail,
+      items: isCustom ? draftItems : [],
+    };
 
     const ok = isEditing ? await updateSource(editingId as string, payload) : await addSource(payload);
     if (ok) {
@@ -176,31 +230,85 @@ export function AddSourceForm() {
           </select>
         </div>
 
-        <div className="form-row">
-          <label>Đường link</label>
-          <input value={form.url} onChange={(e) => onUrlChange(e.target.value)} placeholder="https://..." />
-          {urlHint && <div className={`hint ${urlHint.ok ? 'ok-text' : 'bad-text'}`}>{urlHint.text}</div>}
-          {(form.type === 'youtube_playlist' || form.type === 'youtube_video' || form.type === 'youtube_channel') && (
-            <button
-              type="button"
-              className="add-window-btn"
-              style={{ marginTop: 8 }}
-              disabled={resolving || !isSafeHttpsUrl(form.url)}
-              onClick={autoFill}
-            >
-              {resolving ? 'Đang dò...' : '🔎 Dò tiêu đề từ YouTube'}
-            </button>
-          )}
-        </div>
+        {form.type !== 'custom_playlist' && (
+          <div className="form-row">
+            <label>Đường link</label>
+            <input value={form.url} onChange={(e) => onUrlChange(e.target.value)} placeholder="https://..." />
+            {urlHint && <div className={`hint ${urlHint.ok ? 'ok-text' : 'bad-text'}`}>{urlHint.text}</div>}
+            {(form.type === 'youtube_playlist' || form.type === 'youtube_video' || form.type === 'youtube_channel') && (
+              <button
+                type="button"
+                className="add-window-btn"
+                style={{ marginTop: 8 }}
+                disabled={resolving || !isSafeHttpsUrl(form.url)}
+                onClick={autoFill}
+              >
+                {resolving ? 'Đang dò...' : '🔎 Dò tiêu đề từ YouTube'}
+              </button>
+            )}
+          </div>
+        )}
 
         <div className="form-row">
-          <label>Tiêu đề hiển thị</label>
+          <label>{form.type === 'custom_playlist' ? 'Tên playlist' : 'Tiêu đề hiển thị'}</label>
           <input
             value={form.title}
             onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-            placeholder="VD: Nhạc thiếu nhi vui nhộn"
+            placeholder={form.type === 'custom_playlist' ? 'VD: Playlist yêu thích của Cốm' : 'VD: Nhạc thiếu nhi vui nhộn'}
           />
         </div>
+
+        {form.type === 'custom_playlist' && (
+          <div className="form-row">
+            <label>Ghép video vào playlist</label>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input
+                value={draftVideoUrl}
+                onChange={(e) => setDraftVideoUrl(e.target.value)}
+                placeholder="Dán link YouTube video đơn lẻ..."
+                style={{ flex: 1 }}
+              />
+              <button
+                type="button"
+                className="add-window-btn"
+                style={{ flexShrink: 0 }}
+                disabled={addingVideo || !draftVideoUrl.trim()}
+                onClick={addDraftVideo}
+              >
+                {addingVideo ? 'Đang thêm...' : '➕ Thêm'}
+              </button>
+            </div>
+            <div className="hint" style={{ opacity: 0.6, height: 'auto', margin: '6px 0 10px' }}>
+              Thêm từng video 1 — playlist sẽ phát theo đúng thứ tự đã ghép.
+            </div>
+            {draftItems.length === 0 && (
+              <p style={{ fontSize: 12.5, opacity: 0.55 }}>Chưa ghép video nào.</p>
+            )}
+            <div className="added-list">
+              {draftItems.map((it, i) => (
+                <div className="added-item" key={it.videoId} style={{ justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', minWidth: 0 }}>
+                    <span style={{ opacity: 0.6, fontSize: 12 }}>{i + 1}.</span>
+                    <span
+                      style={{
+                        fontWeight: 700,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        maxWidth: 300,
+                      }}
+                    >
+                      {it.title}
+                    </span>
+                  </div>
+                  <button className="icon-btn" title="Bỏ video này" onClick={() => removeDraftVideo(it.videoId)}>
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="form-row">
           <label>Dành cho bé</label>
@@ -244,7 +352,8 @@ export function AddSourceForm() {
                     {s.title}
                   </div>
                   <div style={{ fontSize: 11, opacity: 0.6 }}>
-                    {TYPE_LABEL[s.type]} · {profileBadge(s.profile_id)}
+                    {TYPE_LABEL[s.type]}
+                    {s.type === 'custom_playlist' ? ` (${s.items.length} video)` : ''} · {profileBadge(s.profile_id)}
                   </div>
                 </div>
               </div>

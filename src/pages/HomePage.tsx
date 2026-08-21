@@ -13,7 +13,9 @@ export function HomePage() {
 
   if (!activeProfile) return null;
 
-  const playable = sources.filter((s) => s.type === 'youtube_playlist' || s.type === 'youtube_video' || s.type === 'direct_url');
+  const playable = sources.filter(
+    (s) => s.type === 'youtube_playlist' || s.type === 'youtube_video' || s.type === 'direct_url' || s.type === 'custom_playlist'
+  );
   const channels = sources.filter((s) => s.type === 'youtube_channel');
 
   const withProgress = playable.map((s) => ({ source: s, progress: summarizeSource(s.id) }));
@@ -21,7 +23,7 @@ export function HomePage() {
   const others = withProgress.filter((x) => !x.progress.inProgress);
 
   const openSource = (sourceId: string, type: string) => {
-    if (type === 'youtube_playlist') navigate(`/playlist/${sourceId}`);
+    if (type === 'youtube_playlist' || type === 'custom_playlist') navigate(`/playlist/${sourceId}`);
     else navigate(`/player?sourceId=${sourceId}`);
   };
 

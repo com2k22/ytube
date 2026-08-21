@@ -1,31 +1,32 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { useSourceById } from '@/hooks/useSourceById';
+import { usePlaylistVideos } from '@/hooks/usePlaylistVideos';
 import { extractPlaylistId } from '@/utils/youtubeParser';
 import { PlaylistVideosView } from './PlaylistVideosView';
 
-/** Trang danh sách video trong 1 playlist đã whitelist — video đang xem dở lên đầu. */
+/**
+ * Trang danh sách video trong 1 playlist đã whitelist — video đang xem dở lên đầu.
+ * Dùng chung cho cả playlist thật lấy từ YouTube VÀ playlist tự tạo (custom_playlist).
+ */
 export function PlaylistDetailPage() {
   const { sourceId } = useParams<{ sourceId: string }>();
   const { source, loading } = useSourceById(sourceId ?? null);
+  const { videos, loading: loadingVideos, error } = usePlaylistVideos(source);
   const navigate = useNavigate();
 
   if (loading || !source) return null;
 
-  const playlistId = extractPlaylistId(source.url);
-  if (!playlistId) {
-    return (
-      <main className="main">
-        <button className="back-btn" data-region="detailback" tabIndex={0} onClick={() => navigate(-1)}>
-          ← Quay lại
-        </button>
-        <p style={{ marginTop: 20, opacity: 0.7 }}>
-          Không đọc được ID playlist từ link đã lưu ("{source.url}"). Vào 🔒 Bố mẹ để kiểm tra lại link nhé.
-        </p>
-      </main>
-    );
-  }
+  const playlistId = source.type === 'youtube_playlist' ? extractPlaylistId(source.url) : null;
 
   return (
-    <PlaylistVideosView playlistId={playlistId} title={source.title} progressSourceId={source.id} onBack={() => navigate(-1)} />
+    <PlaylistVideosView
+      title={source.title}
+      videos={videos}
+      loading={loadingVideos}
+      error={error}
+      playlistId={playlistId}
+      progressSourceId={source.id}
+      onBack={() => navigate(-1)}
+    />
   );
 }

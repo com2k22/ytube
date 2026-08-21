@@ -45,5 +45,7 @@ function sourceTypeLabel(type: SourceType) {
       return 'Kênh';
     case 'direct_url':
       return 'Link trực tiếp';
+    case 'custom_playlist':
+      return 'Playlist tự tạo';
   }
 }

@@ -3,17 +3,41 @@ import { fetchPlaylistItems } from '@/lib/youtube';
 import { extractPlaylistId } from '@/utils/youtubeParser';
 import type { AllowedSource, ResolvedVideo } from '@/types';
 
-/** Giải mã 1 nguồn "youtube_playlist" thành danh sách video thật để hiển thị. */
+/**
+ * Giải mã 1 nguồn dạng "playlist" thành danh sách video thật để hiển thị:
+ * - 'youtube_playlist' → gọi YouTube Data API để lấy danh sách video thật.
+ * - 'custom_playlist' → đọc thẳng từ cột items (không cần gọi API, phụ huynh tự ghép).
+ */
 export function usePlaylistVideos(source: AllowedSource | null) {
   const [videos, setVideos] = useState<ResolvedVideo[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!source || source.type !== 'youtube_playlist') {
+    if (!source) {
       setVideos([]);
       return;
     }
+
+    if (source.type === 'custom_playlist') {
+      setError(source.items.length === 0 ? 'Playlist này chưa có video nào — vào 🔒 Bố mẹ để thêm video.' : null);
+      setVideos(
+        source.items.map((it) => ({
+          videoId: it.videoId,
+          title: it.title,
+          thumbnail: it.thumbnail,
+          sourceType: 'custom_playlist' as const,
+        }))
+      );
+      setLoading(false);
+      return;
+    }
+
+    if (source.type !== 'youtube_playlist') {
+      setVideos([]);
+      return;
+    }
+
     const playlistId = extractPlaylistId(source.url);
     if (!playlistId) {
       setError('Không đọc được ID playlist từ link đã lưu.');
@@ -38,7 +62,8 @@ export function usePlaylistVideos(source: AllowedSource | null) {
         );
       })
       .finally(() => setLoading(false));
-  }, [source?.id, source?.url]); // eslint-disable-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [source?.id, source?.url, source?.type, source?.items]);
 
   return { videos, loading, error };
 }

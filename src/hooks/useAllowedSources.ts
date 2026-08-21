@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import type { AllowedSource, SourceType } from '@/types';
+import type { AllowedSource, CustomPlaylistItem, SourceType } from '@/types';
 
 /**
  * Đọc & thêm nguồn nội dung (playlist / kênh / video lẻ / link trực tiếp).
@@ -48,6 +48,8 @@ export function useAllowedSources(scope: string | 'all' | null) {
     title: string;
     url: string;
     thumbnail?: string | null;
+    /** Chỉ cần khi type = 'custom_playlist'. */
+    items?: CustomPlaylistItem[];
   }) => {
     const { error } = await supabase.from('allowed_sources').insert({
       profile_id: input.profileId,
@@ -55,6 +57,7 @@ export function useAllowedSources(scope: string | 'all' | null) {
       title: input.title,
       url: input.url,
       thumbnail: input.thumbnail ?? null,
+      items: input.items ?? [],
     });
     if (error) {
       console.error('[Ytube] Không thêm được nguồn:', error.message);
@@ -76,7 +79,15 @@ export function useAllowedSources(scope: string | 'all' | null) {
 
   const updateSource = async (
     id: string,
-    input: { profileId: string | null; type: SourceType; title: string; url: string; thumbnail?: string | null }
+    input: {
+      profileId: string | null;
+      type: SourceType;
+      title: string;
+      url: string;
+      thumbnail?: string | null;
+      /** Chỉ cần khi type = 'custom_playlist'. */
+      items?: CustomPlaylistItem[];
+    }
   ) => {
     const { error } = await supabase
       .from('allowed_sources')
@@ -86,6 +97,7 @@ export function useAllowedSources(scope: string | 'all' | null) {
         title: input.title,
         url: input.url,
         thumbnail: input.thumbnail ?? null,
+        items: input.items ?? [],
       })
       .eq('id', id);
     if (error) {
