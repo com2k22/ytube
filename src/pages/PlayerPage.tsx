@@ -93,8 +93,9 @@ export function PlayerPage() {
     if (session?.end_after_current) navigate('/');
   };
 
-  // Đang mở video từ trong 1 playlist (thật hoặc tự tạo) → tự phát + tự toàn màn hình ngay.
-  const autoFullscreen = Boolean(playlistId) || source?.type === 'custom_playlist';
+  // Mở bất kỳ video nào — dù từ trong playlist, hay bấm trực tiếp 1 video đơn lẻ ở trang
+  // chủ/kênh — đều tự phát + tự vào toàn màn hình ngay, không cần bấm thêm lần nào nữa.
+  const autoFullscreen = true;
 
   const goToVideo = (v: ResolvedVideo) => {
     const p = new URLSearchParams({ videoId: v.videoId, title: v.title });

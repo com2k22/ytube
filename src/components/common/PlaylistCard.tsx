@@ -5,16 +5,18 @@ interface Props {
   title: string;
   thumbnail?: string | null;
   type: SourceType;
-  region: 'continue' | 'playlist';
+  region: 'continue' | 'playlist' | 'videorec';
   inProgress?: boolean;
   progressPercent?: number;
+  /** Số cột của vùng điều hướng D-pad chứa thẻ này (dùng cho lưới nhiều hàng, cột tính động — xem useTvNavigation). */
+  cols?: number;
   onClick: () => void;
 }
 
 /** Thẻ playlist/video-lẻ/link-trực-tiếp hiển thị ở Trang chủ hoặc trang Kênh. */
-export function PlaylistCard({ title, thumbnail, type, region, inProgress, progressPercent = 0, onClick }: Props) {
+export function PlaylistCard({ title, thumbnail, type, region, inProgress, progressPercent = 0, cols, onClick }: Props) {
   return (
-    <div className="card" data-region={region} tabIndex={0} onClick={onClick}>
+    <div className="card" data-region={region} data-cols={cols} tabIndex={0} onClick={onClick}>
       <div
         className="card-thumb"
         style={thumbnail ? { backgroundImage: `url(${thumbnail})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}

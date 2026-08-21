@@ -3,8 +3,9 @@ import { useProfileContext } from '@/context/ProfileContext';
 import { useAllowedSources } from '@/hooks/useAllowedSources';
 import { useWatchProgress } from '@/hooks/useWatchProgress';
 import { PlaylistCard } from '@/components/common/PlaylistCard';
+import { extractVideoId } from '@/utils/youtubeParser';
 
-/** Trang chủ — 3 khu: Tiếp tục xem / Playlist đề xuất / Kênh yêu thích. */
+/** Trang chủ — 4 khu: Tiếp tục xem / Playlist đề xuất / Video đề xuất / Kênh yêu thích. */
 export function HomePage() {
   const { activeProfile } = useProfileContext();
   const { sources, loading } = useAllowedSources(activeProfile?.id ?? null);
@@ -20,7 +21,27 @@ export function HomePage() {
 
   const withProgress = playable.map((s) => ({ source: s, progress: summarizeSource(s.id) }));
   const continuing = withProgress.filter((x) => x.progress.inProgress);
-  const others = withProgress.filter((x) => !x.progress.inProgress);
+  const remaining = withProgress.filter((x) => !x.progress.inProgress).map((x) => x.source);
+
+  // Video YouTube đơn lẻ đã được ghép vào 1 playlist tự tạo nào đó (trong app) thì không
+  // hiện riêng ở khối "Video đề xuất" nữa — đã xem được thông qua playlist đó rồi.
+  const videoIdsInCustomPlaylists = new Set(
+    sources.filter((s) => s.type === 'custom_playlist').flatMap((s) => s.items.map((it) => it.videoId))
+  );
+
+  const recommendedPlaylists = remaining.filter((s) => s.type === 'youtube_playlist' || s.type === 'custom_playlist');
+  const recommendedVideos = remaining.filter((s) => {
+    if (s.type === 'direct_url') return true;
+    if (s.type === 'youtube_video') {
+      const vid = extractVideoId(s.url);
+      return !vid || !videoIdsInCustomPlaylists.has(vid);
+    }
+    return false;
+  });
+
+  // "Playlist đề xuất" hiện tối đa 2 hàng — số cột tính động theo số lượng để vừa đúng
+  // 2 hàng, xem thêm bằng phím mũi tên (cuộn ngang). Xem thêm ở useTvNavigation (data-cols).
+  const playlistCols = Math.max(1, Math.ceil(recommendedPlaylists.length / 2));
 
   const openSource = (sourceId: string, type: string) => {
     if (type === 'youtube_playlist' || type === 'custom_playlist') navigate(`/playlist/${sourceId}`);
@@ -45,7 +66,7 @@ export function HomePage() {
       {continuing.length > 0 && (
         <>
           <div className="section-title">▶️ Tiếp tục xem</div>
-          <div className="grid3" style={{ marginBottom: 32 }}>
+          <div className="shelf" style={{ marginBottom: 32 }}>
             {continuing.map(({ source, progress }) => (
               <PlaylistCard
                 key={source.id}
@@ -62,17 +83,39 @@ export function HomePage() {
         </>
       )}
 
-      {others.length > 0 && (
+      {recommendedPlaylists.length > 0 && (
         <>
           <div className="section-title">📂 Playlist đề xuất</div>
-          <div className="grid3" style={{ marginBottom: 32 }}>
-            {others.map(({ source }) => (
+          <div
+            className="playlist-shelf2"
+            style={{ marginBottom: 32, gridTemplateColumns: `repeat(${playlistCols}, 340px)` }}
+          >
+            {recommendedPlaylists.map((source) => (
               <PlaylistCard
                 key={source.id}
                 title={source.title}
                 thumbnail={source.thumbnail}
                 type={source.type}
                 region="playlist"
+                cols={playlistCols}
+                onClick={() => openSource(source.id, source.type)}
+              />
+            ))}
+          </div>
+        </>
+      )}
+
+      {recommendedVideos.length > 0 && (
+        <>
+          <div className="section-title">🎬 Video đề xuất</div>
+          <div className="shelf" style={{ marginBottom: 32 }}>
+            {recommendedVideos.map((source) => (
+              <PlaylistCard
+                key={source.id}
+                title={source.title}
+                thumbnail={source.thumbnail}
+                type={source.type}
+                region="videorec"
                 onClick={() => openSource(source.id, source.type)}
               />
             ))}

@@ -87,7 +87,9 @@ export function ParentDashboardPage() {
 
       {tab === 'pin' && <ChangePinCard />}
 
-      {previewBlock && <BlockScreen nextWindowStart={firstWindowStart} onAcknowledge={() => setPreviewBlock(false)} />}
+      {previewBlock && (
+        <BlockScreen nextWindowStart={firstWindowStart} onOpenParentGate={() => setPreviewBlock(false)} isPreview />
+      )}
     </main>
   );
 }

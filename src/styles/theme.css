@@ -185,6 +185,21 @@ body {
 
 .shelf { display: flex; gap: 22px; overflow-x: auto; padding-bottom: 10px; scroll-behavior: smooth; scrollbar-width: none; }
 .shelf::-webkit-scrollbar { display: none; }
+.shelf .card { flex: 0 0 340px; }
+
+/* Khối "Playlist đề xuất" ở Trang chủ — lưới 2 hàng cố định, cuộn ngang khi nhiều hơn.
+   Số cột (gridTemplateColumns) được tính động theo số lượng playlist, xem HomePage.tsx. */
+.playlist-shelf2 {
+  display: grid;
+  grid-auto-flow: row;
+  gap: 28px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+}
+.playlist-shelf2::-webkit-scrollbar { display: none; }
+.playlist-shelf2 .card { width: 340px; }
 
 .card { border-radius: var(--radius); overflow: hidden; cursor: pointer; border: 2px solid transparent; }
 .card-thumb { aspect-ratio: 16 / 9; display: flex; align-items: center; justify-content: center; font-size: 46px; position: relative; }

@@ -44,7 +44,13 @@ export function useTvNavigation(
         let j = i;
         while (j < focusables.length && focusables[j].getAttribute('data-region') === region) j++;
         const count = j - i;
-        sections.push({ region, start: i, count, cols: sectionCols[region] || count });
+        // Cho phép từng vùng tự khai báo số cột riêng qua thuộc tính `data-cols` trên phần
+        // tử đầu tiên (dùng cho lưới nhiều hàng có số cột tính động, ví dụ shelf 2 hàng ở
+        // Trang chủ) — nếu không có thì dùng cấu hình tĩnh `sectionCols`, cuối cùng mặc định
+        // cả vùng nằm trên 1 hàng ngang (cols = count).
+        const dataCols = Number(focusables[i].dataset.cols);
+        const cols = dataCols > 0 ? dataCols : sectionCols[region] || count;
+        sections.push({ region, start: i, count, cols });
         i = j;
       }
       return sections;
