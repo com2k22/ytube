@@ -185,7 +185,24 @@ body {
   font-weight: 700; font-size: 14.5px; display: flex; align-items: center; gap: 7px;
 }
 
-.sidebar { width: 248px; flex-shrink: 0; padding: 12px 14px 18px; display: flex; flex-direction: column; }
+/* position: sticky + height 100vh — menu trái luôn dính trên màn hình khi cuộn nội dung.
+   Cần thiết vì 2 nút chức năng (Giao diện / Bố mẹ) nằm ở ĐÁY menu: không có dòng này,
+   trang càng dài thì 2 nút đó càng bị đẩy xuống tít dưới, cuộn mãi mới thấy. */
+.sidebar {
+  width: 248px;
+  flex-shrink: 0;
+  padding: 12px 14px 18px;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  height: 100vh;
+  box-sizing: border-box;
+}
+/* 2 nút chức năng ở đáy menu (Giao diện / Bố mẹ) — nhạt hơn chút để nhóm menu chính
+   ở trên vẫn là phần nổi bật nhất. */
+.side-action { opacity: 0.88; }
 .side-item {
   display: flex; align-items: center; gap: 12px;
   padding: 16px 18px; margin-bottom: 8px; border-radius: 14px;
@@ -357,11 +374,17 @@ body {
 /* Ô trống giữ đúng chỗ cho dải icon. Nhờ nó mà sidebar bên dưới có thể "bay" lên trên
    (position: absolute) để bung rộng mà không xô lệch phần nội dung bên phải. */
 [data-tv] .layout::before { content: ''; flex: 0 0 var(--rail-w); }
+/* position: fixed (thay vì sticky như bản web) — dải icon bám cứng theo màn hình TV,
+   luôn thấy được kể cả khi cuộn nội dung xuống rất sâu, và khi bung rộng thì ĐÈ LÊN nội
+   dung chứ không đẩy nội dung sang ngang. Ô trống ::before ở trên đã giữ sẵn chỗ 132px
+   nên phần nội dung bên phải vẫn nằm đúng vị trí. */
 [data-tv] .sidebar {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   bottom: 0;
+  height: auto;
+  align-self: auto;
   width: var(--rail-w);
   z-index: 40;
   padding: 26px 12px;
@@ -405,6 +428,11 @@ body {
 }
 [data-tv] .sidebar:focus-within .side-text { display: inline; font-size: 26px; }
 [data-tv] .deco { font-size: 30px; }
+/* Khi dải menu đang thu gọn, giấu mấy hình trang trí đi cho dải icon sạch sẽ giống app
+   TV chuẩn (dùng visibility chứ không phải display: none, để khối này vẫn giữ nguyên vai
+   trò "lò xo" đẩy 2 nút Giao diện / Bố mẹ xuống sát đáy). Bung menu ra thì hiện lại. */
+[data-tv] .sidebar-deco { visibility: hidden; }
+[data-tv] .sidebar:focus-within .sidebar-deco { visibility: visible; }
 
 /* --- Cột nội dung bên phải ---
    min-width: 0 là bắt buộc: thiếu nó thì hàng thẻ dài sẽ ĐẨY PHÌNH cả trang ra ngang

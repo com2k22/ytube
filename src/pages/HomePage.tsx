@@ -78,8 +78,8 @@ export function HomePage() {
 
       {!loading && sources.length === 0 && (
         <p style={{ opacity: 0.7, maxWidth: 480 }}>
-          Chưa có nội dung nào trong whitelist của {activeProfile.name}. Bấm 🔒 Bố mẹ ở góc trên để thêm playlist,
-          video hoặc kênh đầu tiên nhé.
+          Chưa có nội dung nào trong whitelist của {activeProfile.name}. Bấm 🔒 Bố mẹ ở cuối menu bên trái để thêm
+          playlist, video hoặc kênh đầu tiên nhé.
         </p>
       )}
 

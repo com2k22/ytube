@@ -3,7 +3,7 @@ https://ytube-umber.vercel.app/
 # ↑ DÒNG ĐẦU TIÊN Ở TRÊN là link Vercel thật của app — sửa đúng 1 dòng đó thôi.
 #
 # Cách lấy link: vào https://vercel.com > mở project Ytube của bạn > copy link dạng
-# "https://ten-app.vercel.app" ở đầu trang (link mà bạn vẫn mở trên điện thoại để xem app).
+# "https://ytube-umber.vercel.app/" ở đầu trang (link mà bạn vẫn mở trên điện thoại để xem app).
 #
 # Lưu ý:
 # - Phải bắt đầu bằng https:// (không phải http://).

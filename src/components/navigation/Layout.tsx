@@ -19,7 +19,7 @@ const SECTION_COLS = { side: 1, playlist: 3, video: 3, detailback: 1 };
 /**
  * Layout — khung sườn cố định (Sidebar + TopBar) bao quanh mọi trang, xử lý:
  * - Điều hướng D-pad toàn cục (useTvNavigation) trên cả sidebar lẫn nội dung trang.
- * - Cổng PIN phụ huynh (bấm 🔒 Bố mẹ ở TopBar).
+ * - Cổng PIN phụ huynh (bấm 🔒 Bố mẹ ở cuối menu bên trái — xem Sidebar).
  * - Màn hình chặn ngoài giờ xem (BlockScreen), chỉ áp dụng cho các trang xem của bé,
  *   KHÔNG áp dụng khi đang ở trang /parent để phụ huynh luôn vào được.
  *   Màn hình chặn LUÔN hiển thị suốt thời gian ngoài khung giờ được phép — bấm "VÂNG"
@@ -69,12 +69,12 @@ export function Layout() {
           Vercel &gt; Settings &gt; Environment Variables rồi deploy lại (xem README, Bước D).
         </div>
       )}
-      <Sidebar />
+      <Sidebar onOpenParentGate={() => setPinOpen(true)} />
       {/* class "content-col" để CSS chế độ TV chỉnh được cột nội dung này (cần khai báo
           min-width: 0 thì các hàng thẻ mới cuộn ngang được bên trong, thay vì đẩy phình
           cả trang ra ngang) */}
       <div className="content-col" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <TopBar onOpenParentGate={() => setPinOpen(true)} />
+        <TopBar />
         <Outlet />
       </div>
 
