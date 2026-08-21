@@ -102,6 +102,10 @@ npm install -g @webos-tools/cli
    `VITE_YOUTUBE_API_KEY`) — vì Vite "nướng" các key này ngay lúc build, không đọc
    được lúc app đang chạy. Mở file `.env` bằng Notepad, kiểm tra đã điền giá trị thật
    (giống Bước A, B) chưa — để trống thì app trên TV sẽ hiện banner đỏ báo lỗi.
+   ⚠️ Nếu đây là lần đầu build lại sau khi nhận code mới (hoặc trước đó từng thấy lỗi
+   "màn hình trắng" trên TV) — **bắt buộc chạy lại `npm install` trước** (gõ lệnh
+   `npm install`, đợi xong) vì có thêm 1 công cụ mới cần cài. Bỏ qua bước này thì lệnh
+   build ở dưới sẽ báo lỗi.
 4. Gõ lệnh build, bấm Enter, đợi khoảng 10–30 giây:
    ```
    npm run build:webos
@@ -114,10 +118,13 @@ npm install -g @webos-tools/cli
    đừng làm tiếp bước 5.
 5. Gõ lệnh đóng gói, bấm Enter:
    ```
-   ares-package ./dist
+   ares-package -n ./dist
    ```
    (Cần đã làm xong **E.1** trước đó — nếu báo `'ares-package' is not recognized`,
-   nghĩa là E.1 chưa cài xong, hoặc cần đóng cửa sổ Command Prompt cũ, mở cửa sổ mới.)
+   nghĩa là E.1 chưa cài xong, hoặc cần đóng cửa sổ Command Prompt cũ, mở cửa sổ mới.
+   Cờ `-n` = bỏ qua bước tự minify code của `ares-package` — **bắt buộc phải có**,
+   vì code trong `dist/` đã được build tool nén sẵn, để `ares-package` nén lại lần
+   nữa hay báo lỗi `Failed to minify code` dù code không hề sai.)
 6. Chạy xong sẽ có 1 file mới nằm ngay trong thư mục `YTclone` (cùng cấp với
    `package.json`), tên dạng `com.ytube.minacom_1.0.0_all.ipk` — đây là file sẽ cài
    lên TV ở Bước E.5.
@@ -156,23 +163,55 @@ hỏi để hoàn tất kết nối. (Mã chỉ có hiệu lực khoảng 1-2 ph
 **E.5 — Cài & mở app trên TV**
 
 ```
-ares-install --device <tên-TV-đã-đặt-ở-E.4> com.ytube.minacom_1.0.0_all.ipk
+ares-install --device <tên-TV-đã-đặt-ở-E.4> com.ytube.minacom_1.0.1_all.ipk
 ares-launch --device <tên-TV-đã-đặt-ở-E.4> com.ytube.minacom
 ```
 
 App Ytube mở ngay trên TV, và cũng xuất hiện sẵn trong menu Launcher của TV như 1 app
 bình thường — lần sau bé bấm vào icon là mở, không cần máy tính nữa.
 
-**Cập nhật app sau này**: lặp lại E.2 rồi E.5 (`ares-install` sẽ tự đè lên bản cũ) —
-không cần làm lại E.3/E.4 trừ khi Developer Mode đã hết hạn 50 tiếng.
+**Cập nhật app sau này — QUAN TRỌNG, phải làm đúng thứ tự để tránh TV chạy nhầm bản
+cũ đã cache**:
+1. Mở `webos-meta/appinfo.json`, tăng số ở dòng `"version"` lên 1 nấc (vd `1.0.1` →
+   `1.0.2`) — **bắt buộc mỗi lần cập nhật**, kể cả khi chỉ sửa vài dòng nhỏ. TV LG webOS
+   có cơ chế cache nội bộ theo app id + version; nếu version không đổi, có trường hợp
+   TV vẫn hiển thị bản CŨ dù đã `ares-install` đè file mới lên đĩa — nhìn bên ngoài y
+   hệt lỗi cũ dù code đã sửa xong, rất dễ gây nhầm tưởng "sửa không có tác dụng".
+2. Gỡ bản cũ trên TV trước khi cài bản mới, để chắc chắn không còn cache:
+   ```
+   ares-install --device <tên-TV> -r com.ytube.minacom
+   ```
+3. Lặp lại E.2 (build) rồi E.5 (cài + mở) với file `.ipk` có số version mới.
+4. Nếu vẫn nghi ngờ TV đang chạy bản cũ: tắt hẳn TV (rút điện hoặc giữ nút nguồn) rồi
+   bật lại, để xoá luôn cache đang chạy trong bộ nhớ của WebAppManager trên TV.
 
 **Vài lỗi hay gặp:**
+- `ares-package ERR! [Tips]: Failed to minify code...`: quên cờ `-n` — chạy lại đúng
+  `ares-package -n ./dist` (xem bước E.2.5).
 - `ares-setup-device` hoặc `ares-install` bị treo/timeout: kiểm tra TV và máy tính có
   đang chung 1 Wi-Fi không; thử tắt tạm Windows Firewall nếu vẫn không được.
 - `ares-package` báo lỗi icon: kiểm tra `icon.png` đúng 80×80px, `largeIcon.png` đúng
   130×130px, cả 2 đều định dạng PNG.
 - IP của TV tự đổi (Wi-Fi cấp IP động): chạy lại `ares-setup-device` để cập nhật IP
   mới, hoặc vào router đặt IP tĩnh (DHCP reservation) cho TV.
+- **Cài xong, bấm vào icon app thì hiện màn hình trắng trơn (không lỗi gì)**: có 2
+  nguyên nhân đã gặp, kiểm tra theo đúng thứ tự sau:
+  1. **App trên TV đang chạy bản CŨ do cache, không phải bản vừa cài** (nguyên nhân
+     hay gặp nhất nếu đã làm đúng bước build). Luôn tăng `"version"` trong
+     `webos-meta/appinfo.json` mỗi lần cập nhật, gỡ app cũ bằng
+     `ares-install --device <tên-TV> -r com.ytube.minacom` trước khi cài bản mới, và
+     nếu vẫn nghi ngờ thì tắt/bật lại TV hẳn 1 lần — xem chi tiết ở mục "Cập nhật app
+     sau này" phía trên.
+  2. **Lỗi tải module qua `file://`**: khi mở app trực tiếp từ ổ đĩa qua đường dẫn
+     `file://...`, trình duyệt luôn CHẶN việc tải các file JS khai báo kiểu "module"
+     (`<script type="module" src="...">`) — chặn ngay ở tầng trình duyệt, không phải
+     lỗi code, và thường không hiện gì trong Console. Code trong thư mục này đã xử lý
+     dứt điểm bằng `scripts/prepare-webos.js`: build xong, script này tự đọc file
+     JS/CSS thật từ `dist/assets/` rồi ghép thẳng vào 1 khung HTML viết tay
+     (`webos-meta/index.template.html`), ghi đè `dist/index.html` — không còn file
+     JS/CSS rời, không còn phụ thuộc hành vi ẩn của Vite/plugin nào. Chỉ cần
+     `npm run build:webos` (không cần `npm install` gì thêm nếu chỉ lấy code từ đây,
+     trừ lần đầu setup máy mới).
 
 ### Bước F — Cài lên iPad/iPhone/Android như 1 app (PWA)
 
