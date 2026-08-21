@@ -78,11 +78,14 @@ create policy "sources_delete" on allowed_sources for delete using (true);
 -- Không tạo policy nào cho parent_settings => mặc định chặn hết (kể cả SELECT) với anon key.
 -- Chỉ 2 hàm bên dưới được phép chạm vào bảng này.
 
+-- Lưu ý: trên Supabase, extension pgcrypto cài hàm crypt()/gen_salt() vào schema
+-- "extensions" chứ không phải "public" — nên search_path phải có cả 2 schema này,
+-- nếu không sẽ gặp lỗi "function crypt(text, text) does not exist".
 create or replace function verify_parent_pin(input_pin text)
 returns boolean
 language sql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
   select exists (
     select 1 from parent_settings
@@ -94,7 +97,7 @@ create or replace function set_parent_pin(old_pin text, new_pin text)
 returns boolean
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 begin
   if not verify_parent_pin(old_pin) then
