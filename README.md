@@ -77,20 +77,14 @@ Mở trình duyệt vào địa chỉ hiện ra (thường là `http://localhost
 
 ## 4. Giới hạn hiện tại (được chọn có chủ đích để giữ mọi thứ đơn giản, miễn phí)
 
-- **Link kênh dạng `@tenkenh`**: YouTube Data API cần đổi `@handle` sang `channelId`
-  (dạng `UC...`) mới tra được danh sách playlist. Nếu link bạn dán là dạng `@handle`,
-  app sẽ báo cần đổi thủ công — cách nhanh nhất là dán link kênh vào
-  https://commentpicker.com/youtube-channel-id.php để lấy `channelId`, rồi đổi link
-  đã lưu trong whitelist sang dạng `https://www.youtube.com/channel/UC...`.
+- **PIN mặc định**: `1234` — vào tab "🔑 Đổi PIN" trong khu Bố mẹ để đổi ngay sau khi
+  triển khai thật.
 - **% đã xem của video YouTube**: được tính qua YouTube IFrame Player API (chính thức,
   chính xác theo thời gian thực đang phát), lưu định kỳ mỗi ~5 giây — đủ tốt cho tính
   năng "Tiếp tục xem", không phải để chấm điểm học tập chính xác tuyệt đối.
 - **Playlist "mượn" từ 1 kênh đã whitelist**: không có "Tiếp tục xem" riêng (vì không
   nằm trong whitelist chính thức) — muốn có Tiếp tục xem, thêm hẳn playlist đó vào
   whitelist qua tab "Thêm nội dung".
-- **PIN mặc định**: `1234` — đổi ngay sau khi triển khai thật bằng cách gọi hàm
-  `set_parent_pin` (có thể làm qua SQL Editor tạm thời, hoặc nhờ bổ sung màn hình đổi
-  PIN trong app nếu bạn cần — hiện chưa có UI đổi PIN, chỉ có backend sẵn sàng).
 
 ## 5. Cấu trúc thư mục
 

@@ -70,6 +70,50 @@ export async function fetchPlaylistInfo(playlistId: string): Promise<YtPlaylistI
   };
 }
 
+/** Lấy tên + ảnh đại diện của 1 kênh YouTube từ channelId thật (UC...). */
+export async function fetchChannelInfo(
+  channelId: string
+): Promise<{ title: string; thumbnail: string | null } | null> {
+  const key = getApiKey();
+  if (!key) return null;
+  const url = `${API_BASE}/channels?part=snippet&id=${encodeURIComponent(channelId)}&key=${key}`;
+  const res = await fetch(url);
+  if (!res.ok) return null;
+  const data = await res.json();
+  const item = data.items?.[0];
+  if (!item) return null;
+  return {
+    title: item.snippet?.title ?? 'Kênh YouTube',
+    thumbnail: item.snippet?.thumbnails?.medium?.url ?? item.snippet?.thumbnails?.default?.url ?? null,
+  };
+}
+
+/**
+ * Đổi @handle của 1 kênh (VD: @tenkenh) sang channelId thật (UC...), dùng tham số
+ * "forHandle" của YouTube Data API v3 — không cần đổi thủ công qua trang ngoài nữa.
+ */
+export async function resolveChannelHandle(
+  handle: string
+): Promise<{ channelId: string; title: string; thumbnail: string | null } | null> {
+  const key = getApiKey();
+  if (!key) return null;
+  const cleanHandle = handle.startsWith('@') ? handle : `@${handle}`;
+  const url = `${API_BASE}/channels?part=snippet&forHandle=${encodeURIComponent(cleanHandle)}&key=${key}`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    console.error('[Ytube] Lỗi gọi YouTube API (forHandle):', await res.text());
+    return null;
+  }
+  const data = await res.json();
+  const item = data.items?.[0];
+  if (!item) return null;
+  return {
+    channelId: item.id,
+    title: item.snippet?.title ?? 'Kênh YouTube',
+    thumbnail: item.snippet?.thumbnails?.medium?.url ?? item.snippet?.thumbnails?.default?.url ?? null,
+  };
+}
+
 /** Từ 1 kênh YouTube, lấy danh sách các playlist công khai của kênh đó. */
 export async function fetchChannelPlaylists(channelId: string): Promise<YtPlaylistInfo[]> {
   const key = getApiKey();

@@ -3,7 +3,7 @@ import { useAllowedSources } from '@/hooks/useAllowedSources';
 import { useToast } from '@/components/common/Toast';
 import { isSafeHttpsUrl, sanitizeTitle } from '@/utils/urlValidator';
 import { extractPlaylistId, extractVideoId, extractChannelRef } from '@/utils/youtubeParser';
-import { fetchPlaylistInfo, fetchVideoInfo } from '@/lib/youtube';
+import { fetchPlaylistInfo, fetchVideoInfo, fetchChannelInfo, resolveChannelHandle } from '@/lib/youtube';
 import { PROFILE_IDS, PROFILE_EMOJI, SOURCE_TYPE_ICON } from '@/constants';
 import type { AllowedSource, SourceType } from '@/types';
 
@@ -83,9 +83,26 @@ export function AddSourceForm() {
         else showToast('Không dò được playlist — kiểm tra lại link hoặc API key YouTube trong .env');
       } else if (form.type === 'youtube_channel') {
         const { channelId, handle } = extractChannelRef(form.url);
-        if (!channelId && handle) {
-          showToast('Link dạng @handle cần đổi sang channelId thật thủ công (xem README) trước khi dò tự động.');
-        } else if (!channelId) {
+        if (handle) {
+          // Link dạng @tenkenh — tự đổi sang channelId thật (UC...) qua YouTube API,
+          // rồi lưu lại đường link đã đổi để lần sau không cần dò lại nữa.
+          const resolved = await resolveChannelHandle(handle);
+          if (resolved) {
+            setForm((f) => ({
+              ...f,
+              title: resolved.title,
+              thumbnail: resolved.thumbnail,
+              url: `https://www.youtube.com/channel/${resolved.channelId}`,
+            }));
+            showToast('✓ Đã đổi @handle sang channelId thật, tự lưu link mới.');
+          } else {
+            showToast('Không đổi được @handle này — kiểm tra lại link hoặc API key YouTube trong .env.');
+          }
+        } else if (channelId) {
+          const info = await fetchChannelInfo(channelId);
+          if (info) setForm((f) => ({ ...f, title: info.title, thumbnail: info.thumbnail }));
+          else showToast('Không dò được thông tin kênh — kiểm tra lại link hoặc API key YouTube.');
+        } else {
           showToast('Không nhận diện được link kênh.');
         }
       }
