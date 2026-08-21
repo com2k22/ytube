@@ -1,0 +1,74 @@
+// Các kiểu dữ liệu dùng chung trong toàn app — khớp với các bảng trong Supabase.
+// Xem file supabase/001_schema.sql và supabase/002_time_management.sql để đối chiếu.
+
+export type ProfileId = 'mina' | 'com' | string;
+
+export type ThemeName = 'dark_tv' | 'chibi_cute';
+
+export interface Profile {
+  id: string;
+  name: string;
+  avatar: string | null;
+  theme_preference: ThemeName;
+  created_at: string;
+}
+
+export type SourceType = 'youtube_playlist' | 'youtube_video' | 'youtube_channel' | 'direct_url';
+
+export interface AllowedSource {
+  id: string;
+  profile_id: string;
+  type: SourceType;
+  title: string;
+  url: string;
+  thumbnail: string | null;
+  created_at: string;
+}
+
+/** Một video đã được "giải mã" ra từ nguồn whitelist (YouTube hoặc link trực tiếp) để hiển thị. */
+export interface ResolvedVideo {
+  videoId: string; // với YouTube: chính là videoId; với direct_url: chính url
+  title: string;
+  thumbnail: string | null;
+  durationLabel?: string;
+  sourceType: SourceType;
+}
+
+export interface TimeRuleGroup {
+  id: string;
+  profile_id: string;
+  days: DayCode[];
+  daily_minutes: number;
+  session_minutes: number;
+  windows: TimeWindow[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type DayCode = 'T2' | 'T3' | 'T4' | 'T5' | 'T6' | 'T7' | 'CN';
+
+export interface TimeWindow {
+  start: string; // "HH:mm"
+  end: string; // "HH:mm"
+}
+
+export interface WatchSession {
+  id: string;
+  profile_id: string;
+  video_title: string | null;
+  source_id: string | null;
+  is_active: boolean;
+  end_after_current: boolean;
+  elapsed_seconds: number;
+  started_at: string;
+  updated_at: string;
+}
+
+export interface WatchProgress {
+  id: string;
+  profile_id: string;
+  source_id: string;
+  video_ref: string;
+  progress_percent: number;
+  updated_at: string;
+}
