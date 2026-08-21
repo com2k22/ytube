@@ -148,6 +148,19 @@ export function AddSourceForm() {
     setDraftItems((prev) => prev.filter((it) => it.videoId !== videoId));
   };
 
+  /** Video đơn lẻ đã có sẵn trong whitelist — cho phép chọn nhanh vào playlist tự tạo, khỏi dán lại link. */
+  const existingVideos = sources.filter((s) => s.type === 'youtube_video' && extractVideoId(s.url));
+
+  const addExistingVideo = (s: AllowedSource) => {
+    const id = extractVideoId(s.url);
+    if (!id) return;
+    if (draftItems.some((it) => it.videoId === id)) {
+      showToast('Video này đã có trong playlist rồi.');
+      return;
+    }
+    setDraftItems((prev) => [...prev, { videoId: id, title: s.title, thumbnail: s.thumbnail }]);
+  };
+
   const resetForm = () => {
     setEditingId(null);
     setForm(emptyForm);
@@ -261,6 +274,49 @@ export function AddSourceForm() {
         {form.type === 'custom_playlist' && (
           <div className="form-row">
             <label>Ghép video vào playlist</label>
+
+            {existingVideos.length > 0 && (
+              <>
+                <div className="hint" style={{ opacity: 0.6, height: 'auto', margin: '0 0 6px' }}>
+                  Chọn nhanh từ video đơn lẻ đã có sẵn trong danh sách:
+                </div>
+                <div className="added-list" style={{ marginBottom: 14 }}>
+                  {existingVideos.map((v) => {
+                    const id = extractVideoId(v.url);
+                    const already = draftItems.some((it) => it.videoId === id);
+                    return (
+                      <div className="added-item" key={v.id} style={{ justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center', minWidth: 0 }}>
+                          <span>🎬</span>
+                          <span
+                            style={{
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              maxWidth: 260,
+                            }}
+                          >
+                            {v.title}
+                          </span>
+                        </div>
+                        <button
+                          className="icon-btn"
+                          title={already ? 'Đã có trong playlist' : 'Thêm vào playlist'}
+                          disabled={already}
+                          onClick={() => addExistingVideo(v)}
+                        >
+                          {already ? '✓' : '➕'}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="hint" style={{ opacity: 0.6, height: 'auto', margin: '0 0 6px' }}>
+                  Hoặc dán link video YouTube mới:
+                </div>
+              </>
+            )}
+
             <div style={{ display: 'flex', gap: 8 }}>
               <input
                 value={draftVideoUrl}
