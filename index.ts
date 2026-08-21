@@ -13,15 +13,25 @@ export interface Profile {
   created_at: string;
 }
 
-export type SourceType = 'youtube_playlist' | 'youtube_video' | 'youtube_channel' | 'direct_url';
+export type SourceType = 'youtube_playlist' | 'youtube_video' | 'youtube_channel' | 'direct_url' | 'custom_playlist';
+
+/** 1 video trong playlist tự tạo (custom_playlist) — lưu trực tiếp trong cột items, không gọi API. */
+export interface CustomPlaylistItem {
+  videoId: string;
+  title: string;
+  thumbnail: string | null;
+}
 
 export interface AllowedSource {
   id: string;
-  profile_id: string;
+  /** null = nội dung dùng chung cho cả Mina & Cốm (không giới hạn riêng 1 bé). */
+  profile_id: string | null;
   type: SourceType;
   title: string;
   url: string;
   thumbnail: string | null;
+  /** Chỉ dùng khi type = 'custom_playlist' — danh sách video do phụ huynh tự ghép. */
+  items: CustomPlaylistItem[];
   created_at: string;
 }
 

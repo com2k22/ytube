@@ -5,9 +5,10 @@ import { useTimeRules } from '@/hooks/useTimeRules';
 import { SessionLiveCard } from '@/components/parent-dashboard/SessionLiveCard';
 import { TimeRuleGroupEditor } from '@/components/parent-dashboard/TimeRuleGroupEditor';
 import { BlockScreen } from '@/components/parent-dashboard/BlockScreen';
+import { ChangePinCard } from '@/components/parent-dashboard/ChangePinCard';
 import { AddSourceForm } from '@/components/parental/AddSourceForm';
 
-type Tab = 'time' | 'content';
+type Tab = 'time' | 'content' | 'pin';
 
 /** Trang "Bố mẹ" — quản lý thời gian xem từ xa + thêm nội dung whitelist. Yêu cầu PIN (xem PinModal). */
 export function ParentDashboardPage() {
@@ -49,6 +50,14 @@ export function ParentDashboardPage() {
         >
           ➕ Thêm nội dung
         </button>
+        <button
+          className={`tab-btn ${tab === 'pin' ? 'active' : ''}`}
+          data-region="ptabs"
+          tabIndex={0}
+          onClick={() => setTab('pin')}
+        >
+          🔑 Đổi PIN
+        </button>
       </div>
 
       {tab === 'time' && (
@@ -74,9 +83,13 @@ export function ParentDashboardPage() {
         </div>
       )}
 
-      {tab === 'content' && <AddSourceForm defaultProfileId={configProfile.id} />}
+      {tab === 'content' && <AddSourceForm />}
 
-      {previewBlock && <BlockScreen nextWindowStart={firstWindowStart} onAcknowledge={() => setPreviewBlock(false)} />}
+      {tab === 'pin' && <ChangePinCard />}
+
+      {previewBlock && (
+        <BlockScreen nextWindowStart={firstWindowStart} onOpenParentGate={() => setPreviewBlock(false)} isPreview />
+      )}
     </main>
   );
 }

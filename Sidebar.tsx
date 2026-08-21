@@ -3,11 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { useProfileContext } from '@/context/ProfileContext';
 import { PROFILE_IDS } from '@/constants';
 
-const NAV_ITEMS: { label: string; profileId?: string }[] = [
-  { label: '🏠 Trang chủ' },
-  { label: '🧒 Cho Mina', profileId: PROFILE_IDS.MINA },
-  { label: '🎒 Cho Cốm', profileId: PROFILE_IDS.COM },
-  { label: '🕘 Mới thêm gần đây' },
+// Tách riêng icon và chữ (thay vì gộp chung 1 chuỗi như trước) để chế độ TV giấu được
+// phần chữ đi, chỉ chừa dải icon gọn bên trái giống app YouTube trên TV — bấm sang menu
+// thì dải đó tự bung ra hiện lại chữ. Bản web/điện thoại vẫn hiện đủ icon + chữ như cũ.
+const NAV_ITEMS: { icon: string; text: string; profileId?: string }[] = [
+  { icon: '🏠', text: 'Trang chủ' },
+  { icon: '🧒', text: 'Cho Mina', profileId: PROFILE_IDS.MINA },
+  { icon: '🎒', text: 'Cho Cốm', profileId: PROFILE_IDS.COM },
+  { icon: '🕘', text: 'Video mới' },
 ];
 
 /** Sidebar cố định bên trái — logo, menu điều hướng, và trái tim/hoa trang trí. */
@@ -26,19 +29,20 @@ export function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="brand">
-        <span className="logo-badge">▶</span> Ytube
+        <span className="logo-badge">▶</span> <span className="brand-text">Ytube</span>
       </div>
 
       {NAV_ITEMS.map((item, i) => (
         <div
-          key={item.label}
+          key={item.text}
           data-region="side"
           tabIndex={0}
           className={`side-item ${activeIndex === i ? 'active' : ''}`}
           style={i === 0 ? { marginTop: 14 } : undefined}
           onClick={() => onSelect(i)}
         >
-          {item.label}
+          <span className="side-icon">{item.icon}</span>
+          <span className="side-text">{item.text}</span>
         </div>
       ))}
 

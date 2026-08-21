@@ -16,4 +16,5 @@ export const SOURCE_TYPE_ICON: Record<string, string> = {
   youtube_video: '🎬',
   youtube_channel: '📺',
   direct_url: '🔗',
+  custom_playlist: '🧩',
 };

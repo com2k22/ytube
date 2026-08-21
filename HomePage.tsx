@@ -3,8 +3,10 @@ import { useProfileContext } from '@/context/ProfileContext';
 import { useAllowedSources } from '@/hooks/useAllowedSources';
 import { useWatchProgress } from '@/hooks/useWatchProgress';
 import { PlaylistCard } from '@/components/common/PlaylistCard';
+import { extractVideoId } from '@/utils/youtubeParser';
+import type { AllowedSource } from '@/types';
 
-/** Trang chủ — 3 khu: Tiếp tục xem / Playlist đề xuất / Kênh yêu thích. */
+/** Trang chủ — 4 khu: Tiếp tục xem / Playlist đề xuất / Video đề xuất / Kênh yêu thích. */
 export function HomePage() {
   const { activeProfile } = useProfileContext();
   const { sources, loading } = useAllowedSources(activeProfile?.id ?? null);
@@ -13,16 +15,57 @@ export function HomePage() {
 
   if (!activeProfile) return null;
 
-  const playable = sources.filter((s) => s.type === 'youtube_playlist' || s.type === 'youtube_video' || s.type === 'direct_url');
+  const playable = sources.filter(
+    (s) => s.type === 'youtube_playlist' || s.type === 'youtube_video' || s.type === 'direct_url' || s.type === 'custom_playlist'
+  );
   const channels = sources.filter((s) => s.type === 'youtube_channel');
 
   const withProgress = playable.map((s) => ({ source: s, progress: summarizeSource(s.id) }));
   const continuing = withProgress.filter((x) => x.progress.inProgress);
-  const others = withProgress.filter((x) => !x.progress.inProgress);
 
-  const openSource = (sourceId: string, type: string) => {
-    if (type === 'youtube_playlist') navigate(`/playlist/${sourceId}`);
-    else navigate(`/player?sourceId=${sourceId}`);
+  // Nội dung đang "xem dở" ở khối Tiếp tục xem VẪN hiện tiếp ở khối Playlist/Video đề xuất
+  // bên dưới (không loại trừ) — để bé dễ tìm lại kể cả khi đã cuộn qua khối đầu.
+
+  // Video YouTube đơn lẻ đã được ghép vào 1 playlist tự tạo nào đó (trong app) thì không
+  // hiện riêng ở khối "Video đề xuất" nữa — đã xem được thông qua playlist đó rồi.
+  const videoIdsInCustomPlaylists = new Set(
+    sources.filter((s) => s.type === 'custom_playlist').flatMap((s) => s.items.map((it) => it.videoId))
+  );
+
+  const recommendedPlaylists = playable.filter((s) => s.type === 'youtube_playlist' || s.type === 'custom_playlist');
+  const recommendedVideos = playable.filter((s) => {
+    if (s.type === 'direct_url') return true;
+    if (s.type === 'youtube_video') {
+      const vid = extractVideoId(s.url);
+      return !vid || !videoIdsInCustomPlaylists.has(vid);
+    }
+    return false;
+  });
+
+  // "Playlist đề xuất" là lưới nhiều hàng, ưu tiên lấp đầy hàng 1 trước khi xuống hàng 2.
+  // Số cột cố định (KHÔNG tính động theo số lượng, tránh trường hợp ít playlist lại bị dồn
+  // thành 1 cột đứng dọc): 2 cột trên TV vì thẻ trên TV rất to (700px, giống YouTube TV),
+  // 3 cột trên web/điện thoại. Xem thêm ở useTvNavigation (data-cols).
+  const playlistCols = document.documentElement.hasAttribute('data-tv') ? 2 : 3;
+
+  const openSource = (source: AllowedSource) => {
+    if (source.type === 'youtube_playlist' || source.type === 'custom_playlist') {
+      navigate(`/playlist/${source.id}`);
+      return;
+    }
+    // Truyền sẵn videoId/directUrl (đã có trong bộ nhớ, khỏi cần đợi PlayerPage tải lại
+    // nguồn từ Supabase) để trang phát video render được NGAY trong lượt render đầu tiên —
+    // nhờ đó lệnh tự vào toàn màn hình + tự phát vẫn còn nằm trong "cử chỉ bấm" của bé,
+    // tránh bị trình duyệt chặn tự phát (trước đây phải đợi tải xong mới phát nên hay bị
+    // chặn, ra màn hình đen).
+    const params = new URLSearchParams({ sourceId: source.id, title: source.title });
+    if (source.type === 'youtube_video') {
+      const vid = extractVideoId(source.url);
+      if (vid) params.set('videoId', vid);
+    } else if (source.type === 'direct_url') {
+      params.set('directUrl', source.url);
+    }
+    navigate(`/player?${params.toString()}`);
   };
 
   return (
@@ -43,7 +86,7 @@ export function HomePage() {
       {continuing.length > 0 && (
         <>
           <div className="section-title">▶️ Tiếp tục xem</div>
-          <div className="grid3" style={{ marginBottom: 32 }}>
+          <div className="shelf shelf-cap3" style={{ marginBottom: 32 }}>
             {continuing.map(({ source, progress }) => (
               <PlaylistCard
                 key={source.id}
@@ -53,25 +96,47 @@ export function HomePage() {
                 region="continue"
                 inProgress
                 progressPercent={progress.percent}
-                onClick={() => openSource(source.id, source.type)}
+                onClick={() => openSource(source)}
               />
             ))}
           </div>
         </>
       )}
 
-      {others.length > 0 && (
+      {recommendedPlaylists.length > 0 && (
         <>
           <div className="section-title">📂 Playlist đề xuất</div>
-          <div className="grid3" style={{ marginBottom: 32 }}>
-            {others.map(({ source }) => (
+          <div
+            className="playlist-shelf2"
+            style={{ marginBottom: 32, gridTemplateColumns: `repeat(${playlistCols}, var(--card-w))` }}
+          >
+            {recommendedPlaylists.map((source) => (
               <PlaylistCard
                 key={source.id}
                 title={source.title}
                 thumbnail={source.thumbnail}
                 type={source.type}
                 region="playlist"
-                onClick={() => openSource(source.id, source.type)}
+                cols={playlistCols}
+                onClick={() => openSource(source)}
+              />
+            ))}
+          </div>
+        </>
+      )}
+
+      {recommendedVideos.length > 0 && (
+        <>
+          <div className="section-title">🎬 Video đề xuất</div>
+          <div className="shelf shelf-cap3" style={{ marginBottom: 32 }}>
+            {recommendedVideos.map((source) => (
+              <PlaylistCard
+                key={source.id}
+                title={source.title}
+                thumbnail={source.thumbnail}
+                type={source.type}
+                region="videorec"
+                onClick={() => openSource(source)}
               />
             ))}
           </div>
@@ -102,13 +167,6 @@ export function HomePage() {
           </div>
         </>
       )}
-
-      <div className="section-title">🎬 Trình phát video an toàn</div>
-      <div className="player-note">
-        <span className="ok">✓ rel=0</span>
-        <span className="ok">✓ modestbranding=1</span>
-        <span className="no">✕ Không gợi ý video ngoài whitelist</span>
-      </div>
     </main>
   );
 }
