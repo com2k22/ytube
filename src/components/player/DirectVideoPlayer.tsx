@@ -41,6 +41,19 @@ export function DirectVideoPlayer({ url, title, onProgress, onEnded, autoFullscr
       video.src = url;
     }
 
+    // Trình duyệt luôn cho phép tự phát nếu video đang TẮT TIẾNG — nên chủ động tắt tiếng
+    // rồi tự gọi play() (đáng tin cậy hơn nhiều so với chỉ dựa vào thuộc tính autoPlay, vốn
+    // hay bị chặn khi phát có tiếng). Tự bật lại tiếng ngay khi video thật sự bắt đầu chạy.
+    if (autoFullscreen) {
+      video.muted = true;
+      video.play().catch(() => {
+        /* vẫn có thể bị chặn trên 1 số trình duyệt/TV — bé bấm nút play trên player là được */
+      });
+    }
+    const onPlaying = () => {
+      if (autoFullscreen) video.muted = false;
+    };
+
     const onTimeUpdate = () => {
       if (video.duration > 0) onProgress?.((video.currentTime / video.duration) * 100);
     };
@@ -48,10 +61,12 @@ export function DirectVideoPlayer({ url, title, onProgress, onEnded, autoFullscr
       onProgress?.(100);
       onEnded?.();
     };
+    video.addEventListener('playing', onPlaying);
     video.addEventListener('timeupdate', onTimeUpdate);
     video.addEventListener('ended', onEndedHandler);
 
     return () => {
+      video.removeEventListener('playing', onPlaying);
       video.removeEventListener('timeupdate', onTimeUpdate);
       video.removeEventListener('ended', onEndedHandler);
       hlsRef.current?.destroy();
@@ -62,7 +77,7 @@ export function DirectVideoPlayer({ url, title, onProgress, onEnded, autoFullscr
 
   return (
     <div className="player-wrap" ref={wrapRef}>
-      <video ref={videoRef} title={title} controls playsInline autoPlay={autoFullscreen} />
+      <video ref={videoRef} title={title} controls playsInline />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { useAllowedSources } from '@/hooks/useAllowedSources';
 import { useWatchProgress } from '@/hooks/useWatchProgress';
 import { PlaylistCard } from '@/components/common/PlaylistCard';
 import { extractVideoId } from '@/utils/youtubeParser';
+import type { AllowedSource } from '@/types';
 
 /** Trang chủ — 4 khu: Tiếp tục xem / Playlist đề xuất / Video đề xuất / Kênh yêu thích. */
 export function HomePage() {
@@ -21,7 +22,9 @@ export function HomePage() {
 
   const withProgress = playable.map((s) => ({ source: s, progress: summarizeSource(s.id) }));
   const continuing = withProgress.filter((x) => x.progress.inProgress);
-  const remaining = withProgress.filter((x) => !x.progress.inProgress).map((x) => x.source);
+
+  // Nội dung đang "xem dở" ở khối Tiếp tục xem VẪN hiện tiếp ở khối Playlist/Video đề xuất
+  // bên dưới (không loại trừ) — để bé dễ tìm lại kể cả khi đã cuộn qua khối đầu.
 
   // Video YouTube đơn lẻ đã được ghép vào 1 playlist tự tạo nào đó (trong app) thì không
   // hiện riêng ở khối "Video đề xuất" nữa — đã xem được thông qua playlist đó rồi.
@@ -29,8 +32,8 @@ export function HomePage() {
     sources.filter((s) => s.type === 'custom_playlist').flatMap((s) => s.items.map((it) => it.videoId))
   );
 
-  const recommendedPlaylists = remaining.filter((s) => s.type === 'youtube_playlist' || s.type === 'custom_playlist');
-  const recommendedVideos = remaining.filter((s) => {
+  const recommendedPlaylists = playable.filter((s) => s.type === 'youtube_playlist' || s.type === 'custom_playlist');
+  const recommendedVideos = playable.filter((s) => {
     if (s.type === 'direct_url') return true;
     if (s.type === 'youtube_video') {
       const vid = extractVideoId(s.url);
@@ -43,9 +46,24 @@ export function HomePage() {
   // 2 hàng, xem thêm bằng phím mũi tên (cuộn ngang). Xem thêm ở useTvNavigation (data-cols).
   const playlistCols = Math.max(1, Math.ceil(recommendedPlaylists.length / 2));
 
-  const openSource = (sourceId: string, type: string) => {
-    if (type === 'youtube_playlist' || type === 'custom_playlist') navigate(`/playlist/${sourceId}`);
-    else navigate(`/player?sourceId=${sourceId}`);
+  const openSource = (source: AllowedSource) => {
+    if (source.type === 'youtube_playlist' || source.type === 'custom_playlist') {
+      navigate(`/playlist/${source.id}`);
+      return;
+    }
+    // Truyền sẵn videoId/directUrl (đã có trong bộ nhớ, khỏi cần đợi PlayerPage tải lại
+    // nguồn từ Supabase) để trang phát video render được NGAY trong lượt render đầu tiên —
+    // nhờ đó lệnh tự vào toàn màn hình + tự phát vẫn còn nằm trong "cử chỉ bấm" của bé,
+    // tránh bị trình duyệt chặn tự phát (trước đây phải đợi tải xong mới phát nên hay bị
+    // chặn, ra màn hình đen).
+    const params = new URLSearchParams({ sourceId: source.id, title: source.title });
+    if (source.type === 'youtube_video') {
+      const vid = extractVideoId(source.url);
+      if (vid) params.set('videoId', vid);
+    } else if (source.type === 'direct_url') {
+      params.set('directUrl', source.url);
+    }
+    navigate(`/player?${params.toString()}`);
   };
 
   return (
@@ -76,7 +94,7 @@ export function HomePage() {
                 region="continue"
                 inProgress
                 progressPercent={progress.percent}
-                onClick={() => openSource(source.id, source.type)}
+                onClick={() => openSource(source)}
               />
             ))}
           </div>
@@ -98,7 +116,7 @@ export function HomePage() {
                 type={source.type}
                 region="playlist"
                 cols={playlistCols}
-                onClick={() => openSource(source.id, source.type)}
+                onClick={() => openSource(source)}
               />
             ))}
           </div>
@@ -116,7 +134,7 @@ export function HomePage() {
                 thumbnail={source.thumbnail}
                 type={source.type}
                 region="videorec"
-                onClick={() => openSource(source.id, source.type)}
+                onClick={() => openSource(source)}
               />
             ))}
           </div>

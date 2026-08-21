@@ -14,12 +14,18 @@ import type { ResolvedVideo } from '@/types';
 /**
  * PlayerPage — trang phát 1 video, dùng chung cho: video trong playlist đã whitelist,
  * playlist "mượn" từ kênh, hoặc video/link trực tiếp đã whitelist riêng lẻ.
- * Nhận dữ liệu qua query string: ?sourceId=&videoId=&title=&playlistId=
+ * Nhận dữ liệu qua query string: ?sourceId=&videoId=&directUrl=&title=&playlistId=
+ *
+ * Cố tình ưu tiên đọc videoId/directUrl thẳng từ query string (nếu nơi điều hướng đã biết
+ * sẵn — xem HomePage.tsx) thay vì luôn chờ useSourceById tải lại từ Supabase: nhờ vậy video
+ * render được NGAY ở lượt render đầu tiên, giữ được "cử chỉ bấm" của bé để trình duyệt cho
+ * phép tự toàn màn hình + tự phát — chờ tải xong mới phát dễ bị chặn tự phát (màn hình đen).
  */
 export function PlayerPage() {
   const [params] = useSearchParams();
   const sourceId = params.get('sourceId');
   const videoIdParam = params.get('videoId');
+  const directUrlParam = params.get('directUrl');
   const titleParam = params.get('title');
   const playlistId = params.get('playlistId');
 
@@ -40,6 +46,9 @@ export function PlayerPage() {
   if (videoIdParam) {
     kind = 'youtube';
     ytVideoId = videoIdParam;
+  } else if (directUrlParam) {
+    kind = 'direct';
+    directUrl = directUrlParam;
   } else if (source?.type === 'youtube_video') {
     kind = 'youtube';
     ytVideoId = extractVideoId(source.url);

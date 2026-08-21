@@ -7,7 +7,7 @@ const NAV_ITEMS: { label: string; profileId?: string }[] = [
   { label: '🏠 Trang chủ' },
   { label: '🧒 Cho Mina', profileId: PROFILE_IDS.MINA },
   { label: '🎒 Cho Cốm', profileId: PROFILE_IDS.COM },
-  { label: '🕘 Mới thêm gần đây' },
+  { label: '🕘 Video mới' },
 ];
 
 /** Sidebar cố định bên trái — logo, menu điều hướng, và trái tim/hoa trang trí. */

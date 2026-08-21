@@ -49,6 +49,7 @@ export function SafeYouTubePlayer({ videoId, title, onProgress, onEnded, autoFul
   const intervalRef = useRef<ReturnType<typeof setInterval>>();
   const onProgressRef = useRef(onProgress);
   const onEndedRef = useRef(onEnded);
+  const unmutedRef = useRef(false);
   onProgressRef.current = onProgress;
   onEndedRef.current = onEnded;
 
@@ -81,6 +82,14 @@ export function SafeYouTubePlayer({ videoId, title, onProgress, onEnded, autoFul
         },
         events: {
           onReady: () => {
+            if (autoFullscreen) {
+              // Trình duyệt luôn cho phép tự phát nếu video đang TẮT TIẾNG — nên chủ động
+              // tắt tiếng rồi tự bấm play qua API (đáng tin cậy hơn nhiều so với chỉ dựa
+              // vào tham số autoplay=1 trên URL, vốn hay bị chặn). Video sẽ tự bật lại
+              // tiếng ngay khi bắt đầu phát thật sự — xem onStateChange bên dưới.
+              playerRef.current?.mute?.();
+              playerRef.current?.playVideo?.();
+            }
             intervalRef.current = setInterval(() => {
               const p = playerRef.current;
               if (!p?.getDuration) return;
@@ -90,6 +99,10 @@ export function SafeYouTubePlayer({ videoId, title, onProgress, onEnded, autoFul
             }, 5000);
           },
           onStateChange: (e: any) => {
+            if (autoFullscreen && !unmutedRef.current && e.data === window.YT.PlayerState.PLAYING) {
+              unmutedRef.current = true;
+              playerRef.current?.unMute?.();
+            }
             if (e.data === window.YT.PlayerState.ENDED) {
               onProgressRef.current?.(100);
               onEndedRef.current?.();
