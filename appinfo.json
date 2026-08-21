@@ -1,0 +1,16 @@
+{
+  "id": "com.ytube.minacom",
+  "version": "1.0.0",
+  "vendor": "Gia đình",
+  "type": "web",
+  "main": "index.html",
+  "title": "Ytube",
+  "icon": "icon.png",
+  "largeIcon": "largeIcon.png",
+  "bgImage": "",
+  "bgColor": "#0e0f13",
+  "resolution": "1920x1080",
+  "iconColor": "#0e0f13",
+  "splashBackground": "splash.png",
+  "disableBackHistoryAPI": false
+}

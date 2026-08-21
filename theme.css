@@ -1,0 +1,290 @@
+/*
+  Toàn bộ style theo theme của app được gom ở đây, dùng thuộc tính data-theme trên thẻ
+  <html> (do ThemeContext set) để chuyển đổi giữa 2 theme: "dark" (Dark TV) và "chibi"
+  (Chibi Cute). Đây là bản chuyển thể trực tiếp từ file demo đã được bạn duyệt, giữ
+  nguyên toàn bộ tên class để dễ đối chiếu.
+*/
+
+:root {
+  --radius: 20px;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  font-family: ui-rounded, 'Segoe UI', Roboto, system-ui, sans-serif;
+  transition: background 0.35s ease, color 0.35s ease;
+  min-height: 100vh;
+  overflow-x: hidden;
+  margin: 0;
+}
+
+/* ============ THEME 1: DARK TV ============ */
+[data-theme='dark'] body,
+body {
+  background: #0e0f13;
+  color: #f2f3f5;
+}
+[data-theme='dark'] .sidebar { background: #16171d; border-right: 1px solid #23242c; }
+[data-theme='dark'] .topbar { background: #16171d; border-bottom: 1px solid #23242c; }
+[data-theme='dark'] .card { background: #1b1c22; border: 1px solid #262731; }
+[data-theme='dark'] .card-thumb { background: linear-gradient(135deg, #3a3f8f, #8f3a6a); }
+[data-theme='dark'] .side-item { color: #c7c9d1; }
+[data-theme='dark'] .side-item.active { background: #2a2c38; color: #fff; }
+[data-theme='dark'] .accent { color: #7c9cff; }
+[data-theme='dark'] .brand { color: #fff; }
+[data-theme='dark'] .tv-focused {
+  outline: 4px solid #7c9cff;
+  box-shadow: 0 0 0 7px rgba(124, 156, 255, 0.25), 0 12px 28px rgba(0, 0, 0, 0.5);
+}
+[data-theme='dark'] .progress-fill { background: #7c9cff; }
+[data-theme='dark'] .watching-badge { background: #7c9cff; color: #0e0f13; }
+[data-theme='dark'] .channel-avatar { background: #23242c; border: 2px solid #2a2c38; }
+[data-theme='dark'] .back-btn { background: #23242c; color: #f2f3f5; }
+[data-theme='dark'] .tab-btn { background: #1b1c22; color: #c7c9d1; }
+[data-theme='dark'] .tab-btn.active { background: #7c9cff; color: #0e0f13; }
+[data-theme='dark'] .mini-profile-btn { background: #1b1c22; color: #c7c9d1; }
+[data-theme='dark'] .mini-profile-btn.active { border-color: #7c9cff; color: #fff; }
+[data-theme='dark'] .settings-card { background: #1b1c22; border: 1px solid #262731; }
+[data-theme='dark'] .settings-row input,
+[data-theme='dark'] .form-row select,
+[data-theme='dark'] .form-row input,
+[data-theme='dark'] .window-row input[type='time'] {
+  background: #0e0f13; color: #f2f3f5; border-color: #2a2c38;
+}
+[data-theme='dark'] .day-pill { background: #23242c; color: #c7c9d1; }
+[data-theme='dark'] .day-pill.on { background: #7c9cff; color: #0e0f13; }
+[data-theme='dark'] .add-window-btn { background: #23242c; color: #f2f3f5; }
+[data-theme='dark'] .block-card { background: #1b1c22; border: 2px solid #2a2c38; }
+[data-theme='dark'] .theme-toggle,
+[data-theme='dark'] .lock-btn { background: #23242c; color: #f2f3f5; }
+[data-theme='dark'] .profile-btn.active { border-color: #7c9cff; background: #1e2030; }
+[data-theme='dark'] .avatar { background: #2a2c38; }
+[data-theme='dark'] .toast { background: #7c9cff; color: #0e0f13; }
+[data-theme='dark'] .key { background: #23242c; color: #f2f3f5; }
+[data-theme='dark'] .modal { background: #1b1c22; border: 1px solid #2a2c38; }
+[data-theme='dark'] .added-item { background: #0e0f13; }
+[data-theme='dark'] .ok { background: #1e3a2a; color: #7cffa0; }
+[data-theme='dark'] .no { background: #3a1e22; color: #ff8f9c; }
+[data-theme='dark'] .submit-btn { background: #7c9cff; color: #0e0f13; }
+
+/* ============ THEME 2: CHIBI CUTE (hồng, đáng yêu, nền dịu mắt) ============ */
+[data-theme='chibi'] body,
+[data-theme='chibi'] {
+  background: linear-gradient(180deg, #fff8fb 0%, #ffeef5 100%);
+  color: #7a4a63;
+}
+[data-theme='chibi'] .sidebar { background: #ffffffcc; border-right: 3px dashed #ffb6d5; }
+[data-theme='chibi'] .topbar { background: #ffffffcc; border-bottom: 3px dashed #ffb6d5; }
+[data-theme='chibi'] .card { background: #fffbfd; border: 3px solid #ffd6ea; border-radius: 26px; }
+[data-theme='chibi'] .card-thumb {
+  background: linear-gradient(135deg, #ffd6ea, #e8d6ff);
+  border-radius: 23px 23px 0 0;
+}
+[data-theme='chibi'] .card .card-thumb::after {
+  content: '🎀'; position: absolute; top: 6px; right: 8px; font-size: 18px;
+}
+[data-theme='chibi'] .side-item { color: #9a6b85; border-radius: 16px; font-weight: 700; }
+[data-theme='chibi'] .side-item.active { background: #ffe0ee; color: #ff5c9e; }
+[data-theme='chibi'] .accent { color: #ff5c9e; }
+[data-theme='chibi'] .brand { color: #ff5c9e; }
+[data-theme='chibi'] .tv-focused {
+  outline: 4px solid #ff9fc4;
+  box-shadow: 0 0 0 8px rgba(255, 159, 196, 0.35), 0 14px 26px rgba(255, 150, 190, 0.35);
+  transform: translateY(-2px) scale(1.03);
+}
+[data-theme='chibi'] .progress-fill { background: #ff5c9e; }
+[data-theme='chibi'] .watching-badge { background: #ff5c9e; color: #fff; }
+[data-theme='chibi'] .channel-avatar { background: #ffe0ee; border: 3px solid #ffb6d5; }
+[data-theme='chibi'] .back-btn { background: #fff0f6; color: #ff5c9e; font-weight: 800; }
+[data-theme='chibi'] .section-title { font-weight: 900; }
+[data-theme='chibi'] .tab-btn { background: #fff0f6; color: #c2447a; }
+[data-theme='chibi'] .tab-btn.active { background: #ff5c9e; color: #fff; }
+[data-theme='chibi'] .mini-profile-btn { background: #fff0f6; color: #c2447a; }
+[data-theme='chibi'] .mini-profile-btn.active { border-color: #ff5c9e; color: #ff5c9e; }
+[data-theme='chibi'] .settings-card { background: #fffbfd; border: 3px solid #ffd6ea; }
+[data-theme='chibi'] .settings-row input,
+[data-theme='chibi'] .form-row select,
+[data-theme='chibi'] .form-row input,
+[data-theme='chibi'] .window-row input[type='time'] {
+  background: #fffaf9; color: #5b4636; border-color: #ffd1e6;
+}
+[data-theme='chibi'] .day-pill { background: #fff0f6; color: #c2447a; }
+[data-theme='chibi'] .day-pill.on { background: #ff5c9e; color: #fff; }
+[data-theme='chibi'] .add-window-btn { background: #fff0f6; color: #ff5c9e; }
+[data-theme='chibi'] .block-card { background: #fff; border: 4px solid #ffd1e6; }
+[data-theme='chibi'] .theme-toggle,
+[data-theme='chibi'] .lock-btn { background: #fff0f6; color: #ff5c9e; }
+[data-theme='chibi'] .profile-btn.active { border-color: #ff9fc4; background: #fff0f6; }
+[data-theme='chibi'] .avatar { background: #ffe0ee; }
+[data-theme='chibi'] .toast { background: #ff9fc4; color: #fff; }
+[data-theme='chibi'] .key { background: #fff0f6; color: #ff5c9e; }
+[data-theme='chibi'] .modal { background: #fff; border: 3px solid #ffd1e6; }
+[data-theme='chibi'] .added-item { background: #fff0f6; }
+[data-theme='chibi'] .ok { background: #e3ffe9; color: #2a9a4a; }
+[data-theme='chibi'] .no { background: #ffe3e6; color: #c24444; }
+[data-theme='chibi'] .submit-btn { background: #ff5c9e; color: #fff; }
+
+/* Trái tim / bông hoa bay lơ lửng ở vùng trống bên dưới sidebar (cả 2 theme) */
+.sidebar-deco { position: relative; flex: 1; margin-top: 14px; overflow: hidden; pointer-events: none; }
+.deco { position: absolute; font-size: 22px; opacity: 0.28; animation: floatDeco 5s ease-in-out infinite; }
+[data-theme='chibi'] .deco { opacity: 0.55; }
+.deco.d1 { top: 6%; left: 22%; font-size: 26px; animation-delay: 0s; }
+.deco.d2 { top: 28%; left: 58%; font-size: 18px; animation-delay: 1.3s; }
+.deco.d3 { top: 52%; left: 14%; font-size: 22px; animation-delay: 0.6s; }
+.deco.d4 { top: 72%; left: 48%; font-size: 24px; animation-delay: 2s; }
+.deco.d5 { top: 88%; left: 24%; font-size: 16px; animation-delay: 1.8s; }
+@keyframes floatDeco {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-14px) rotate(8deg); }
+}
+
+.layout { display: flex; min-height: 100vh; }
+
+.brand { font-size: 23px; font-weight: 900; padding: 16px 16px 0; display: flex; align-items: center; gap: 8px; }
+.logo-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 38px; height: 27px; background: #ff0000; color: #fff; border-radius: 9px;
+  font-size: 13px; padding-left: 3px; flex-shrink: 0;
+}
+
+.topbar {
+  position: sticky; top: 0; z-index: 20;
+  height: 86px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px;
+}
+.profiles { display: flex; gap: 12px; align-items: center; }
+.profile-btn {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 20px 8px 8px; border-radius: 999px; border: 3px solid transparent;
+  cursor: pointer; font-weight: 700; font-size: 17px; background: transparent; color: inherit;
+}
+.avatar { width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+
+.top-actions { display: flex; gap: 12px; align-items: center; }
+.theme-toggle, .lock-btn {
+  border: none; cursor: pointer; padding: 12px 18px; border-radius: 14px;
+  font-weight: 700; font-size: 14.5px; display: flex; align-items: center; gap: 7px;
+}
+
+.sidebar { width: 248px; flex-shrink: 0; padding: 12px 14px 18px; display: flex; flex-direction: column; }
+.side-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px 18px; margin-bottom: 8px; border-radius: 14px;
+  cursor: pointer; font-size: 17.5px; font-weight: 700; border: 3px solid transparent;
+}
+
+.main { flex: 1; padding: 24px 30px 60px; }
+.greet { font-size: 22px; font-weight: 800; margin: 4px 0 22px; }
+.section-title { font-size: 20px; font-weight: 800; margin: 0 0 16px; }
+
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
+
+.shelf { display: flex; gap: 22px; overflow-x: auto; padding-bottom: 10px; scroll-behavior: smooth; scrollbar-width: none; }
+.shelf::-webkit-scrollbar { display: none; }
+
+.card { border-radius: var(--radius); overflow: hidden; cursor: pointer; border: 2px solid transparent; }
+.card-thumb { aspect-ratio: 16 / 9; display: flex; align-items: center; justify-content: center; font-size: 46px; position: relative; }
+.duration { position: absolute; top: 8px; right: 8px; background: rgba(0, 0, 0, 0.65); color: #fff; font-size: 12.5px; padding: 3px 8px; border-radius: 7px; font-weight: 700; }
+.watching-badge { position: absolute; top: 8px; left: 8px; font-size: 11.5px; font-weight: 800; padding: 3px 9px; border-radius: 999px; }
+.progress-wrap { position: absolute; left: 8px; right: 8px; bottom: 8px; height: 7px; background: rgba(255, 255, 255, 0.4); border-radius: 999px; overflow: hidden; }
+.progress-fill { height: 100%; }
+.card-body { padding: 14px 16px 18px; }
+.card-title { font-size: 17px; font-weight: 800; line-height: 1.3; }
+.card-sub { font-size: 13.5px; opacity: 0.65; margin-top: 5px; }
+
+.channel-shelf .channel-item {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  width: 128px; flex: 0 0 auto; cursor: pointer; border-radius: 20px; padding: 10px 6px; border: 3px solid transparent;
+}
+.channel-avatar { width: 96px; height: 96px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 40px; }
+.channel-name { font-size: 14.5px; font-weight: 800; text-align: center; line-height: 1.25; }
+
+.back-btn { border: none; cursor: pointer; padding: 12px 20px; border-radius: 14px; font-weight: 700; font-size: 15px; }
+
+.player-wrap { position: relative; width: 100%; max-width: 920px; border-radius: 22px; overflow: hidden; aspect-ratio: 16 / 9; background: #000; margin: 18px 0 16px; }
+.player-wrap iframe { width: 100%; height: 100%; border: 0; display: block; }
+.player-note-text { font-size: 12.5px; opacity: 0.6; margin: 0 0 14px; max-width: 640px; }
+
+.toast {
+  position: fixed; left: 50%; top: 24px; transform: translateX(-50%) translateY(-20px);
+  padding: 12px 20px; border-radius: 12px; font-weight: 700; font-size: 14px;
+  opacity: 0; pointer-events: none; transition: all 0.25s ease; z-index: 50;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.player-note { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; font-size: 11.5px; }
+.player-note span { padding: 3px 9px; border-radius: 999px; font-weight: 700; }
+
+.overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.55); display: none; align-items: center; justify-content: center; z-index: 100; }
+.overlay.show { display: flex; }
+.modal { width: 340px; border-radius: 22px; padding: 26px; text-align: center; position: relative; }
+.modal h3 { margin: 0 0 6px; font-size: 17px; }
+.modal p.sub { font-size: 12.5px; opacity: 0.65; margin: 0 0 18px; }
+.pin-dots { display: flex; gap: 12px; justify-content: center; margin-bottom: 18px; }
+.pin-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid currentColor; }
+.pin-dot.filled { background: currentColor; }
+.keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 6px; }
+.key { padding: 14px 0; border-radius: 12px; border: none; font-size: 16px; font-weight: 700; cursor: pointer; }
+.key.wide { font-size: 12px; }
+.err { color: #ff8f9c; font-size: 12.5px; font-weight: 700; height: 16px; margin-top: 8px; }
+.shake { animation: shake 0.35s; }
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-8px); }
+  75% { transform: translateX(8px); }
+}
+.close-x { position: absolute; top: 14px; right: 16px; border: none; background: transparent; font-size: 18px; cursor: pointer; color: inherit; opacity: 0.6; }
+
+.form-row { text-align: left; margin-bottom: 12px; }
+.form-row label { font-size: 12px; font-weight: 700; display: block; margin-bottom: 5px; opacity: 0.75; }
+.form-row select, .form-row input { width: 100%; padding: 10px 12px; border-radius: 10px; font-size: 13.5px; border: 2px solid transparent; outline: none; }
+.hint { font-size: 11px; margin-top: 4px; height: 14px; }
+.hint.ok-text { color: #3aa35c; }
+.hint.bad-text { color: #e05a5a; }
+.submit-btn { width: 100%; padding: 12px; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; font-size: 14px; margin-top: 4px; }
+
+.added-list { text-align: left; margin-top: 14px; font-size: 12.5px; }
+.added-item { padding: 8px 10px; border-radius: 10px; margin-bottom: 6px; display: flex; gap: 8px; align-items: center; }
+
+/* ============ PARENT DASHBOARD (quản lý thời gian) ============ */
+.parent-tabs { display: flex; gap: 10px; margin: 20px 0 26px; }
+.tab-btn { border: none; cursor: pointer; padding: 12px 20px; border-radius: 14px; font-weight: 800; font-size: 15px; }
+
+.mini-profiles { display: flex; gap: 10px; margin-bottom: 22px; }
+.mini-profile-btn { padding: 9px 18px; border-radius: 999px; font-weight: 700; font-size: 14px; cursor: pointer; border: 2px solid transparent; }
+
+.settings-card { border-radius: 20px; padding: 20px 22px; margin-bottom: 20px; max-width: 640px; }
+.settings-card h4 { margin: 0 0 14px; font-size: 16px; font-weight: 800; }
+.settings-row { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+.settings-row label { font-size: 13.5px; font-weight: 700; opacity: 0.8; min-width: 170px; }
+.settings-row span { font-size: 13px; opacity: 0.65; }
+.settings-row input[type='number'] { padding: 9px 12px; border-radius: 10px; font-size: 14px; border: 2px solid transparent; width: 100px; }
+
+.day-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+.day-pill { padding: 9px 14px; border-radius: 999px; font-weight: 800; font-size: 13px; cursor: pointer; border: 2px solid transparent; opacity: 0.4; }
+.day-pill.on { opacity: 1; }
+
+.window-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.window-row input[type='time'] { padding: 8px 10px; border-radius: 10px; font-size: 13.5px; border: 2px solid transparent; }
+.arrow-sep { opacity: 0.5; font-weight: 700; }
+.icon-btn { border: none; background: transparent; cursor: pointer; font-size: 16px; opacity: 0.6; }
+.add-window-btn { border: none; cursor: pointer; padding: 9px 16px; border-radius: 12px; font-weight: 700; font-size: 13px; margin-top: 4px; }
+
+.session-live { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-size: 14px; }
+.live-dot { width: 10px; height: 10px; border-radius: 50%; background: #ff4d4d; animation: pulseDot 1.4s ease-in-out infinite; flex-shrink: 0; }
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.stop-btn { border: none; cursor: pointer; padding: 11px 18px; border-radius: 12px; font-weight: 800; font-size: 13.5px; background: #e05a5a; color: #fff; }
+
+.block-card { width: 560px; max-width: 94vw; border-radius: 32px; padding: 48px 40px; text-align: center; position: relative; }
+.block-emoji { font-size: 104px; margin-bottom: 16px; }
+.block-card h2 { font-size: 30px; margin: 0 0 16px; }
+.block-card p { font-size: 19px; line-height: 1.7; opacity: 0.88; margin: 0 0 20px; }
+.block-sound-note { font-size: 15px; opacity: 0.6; margin-bottom: 22px; }
+.block-card .submit-btn { font-size: 18px; padding: 16px; }
