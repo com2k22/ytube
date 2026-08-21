@@ -42,9 +42,10 @@ export function HomePage() {
     return false;
   });
 
-  // "Playlist đề xuất" hiện tối đa 2 hàng — số cột tính động theo số lượng để vừa đúng
-  // 2 hàng, xem thêm bằng phím mũi tên (cuộn ngang). Xem thêm ở useTvNavigation (data-cols).
-  const playlistCols = Math.max(1, Math.ceil(recommendedPlaylists.length / 2));
+  // "Playlist đề xuất" mỗi hàng tối đa 3 playlist (ưu tiên lấp đầy hàng 1 trước khi
+  // xuống hàng 2) — cố định 3 cột, KHÔNG tính động theo số lượng (tránh trường hợp ít
+  // playlist lại bị dồn thành 1 cột đứng dọc). Xem thêm ở useTvNavigation (data-cols).
+  const playlistCols = 3;
 
   const openSource = (source: AllowedSource) => {
     if (source.type === 'youtube_playlist' || source.type === 'custom_playlist') {
@@ -126,7 +127,7 @@ export function HomePage() {
       {recommendedVideos.length > 0 && (
         <>
           <div className="section-title">🎬 Video đề xuất</div>
-          <div className="shelf" style={{ marginBottom: 32 }}>
+          <div className="shelf shelf-cap3" style={{ marginBottom: 32 }}>
             {recommendedVideos.map((source) => (
               <PlaylistCard
                 key={source.id}

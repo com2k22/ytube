@@ -187,8 +187,12 @@ body {
 .shelf::-webkit-scrollbar { display: none; }
 .shelf .card { flex: 0 0 340px; }
 
-/* Khối "Playlist đề xuất" ở Trang chủ — lưới 2 hàng cố định, cuộn ngang khi nhiều hơn.
-   Số cột (gridTemplateColumns) được tính động theo số lượng playlist, xem HomePage.tsx. */
+/* Chỉ hiện tối đa 3 thẻ/hàng trước khi phải cuộn ngang (dùng cho "Video đề xuất") —
+   giới hạn độ rộng đúng bằng 3 card + 2 khoảng cách giữa chúng. */
+.shelf-cap3 { max-width: calc(3 * 340px + 2 * 22px); }
+
+/* Khối "Playlist đề xuất" ở Trang chủ — lưới nhiều hàng, cố định 3 cột/hàng, ưu tiên lấp
+   đầy hàng 1 trước khi xuống hàng 2 (xem HomePage.tsx). */
 .playlist-shelf2 {
   display: grid;
   grid-auto-flow: row;
