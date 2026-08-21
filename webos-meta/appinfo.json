@@ -5,12 +5,11 @@
   "type": "web",
   "main": "index.html",
   "title": "Ytube",
-  "icon": "icon.png",
-  "largeIcon": "largeIcon.png",
-  "bgImage": "",
+  "icon": "webos/icon.png",
+  "largeIcon": "webos/largeIcon.png",
   "bgColor": "#0e0f13",
   "resolution": "1920x1080",
   "iconColor": "#0e0f13",
-  "splashBackground": "splash.png",
+  "splashBackground": "webos/splash.png",
   "disableBackHistoryAPI": false
 }

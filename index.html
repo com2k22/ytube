@@ -3,8 +3,21 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/webos/icon.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Ytube — cho Mina & Cốm</title>
+
+    <!-- PWA: cho phép "Thêm vào Màn hình chính" trên iPad/iPhone/Android, mở full màn
+         hình như app thật (không thanh địa chỉ Safari/Chrome). Chỉ thêm manifest + icon
+         + vài thẻ meta — KHÔNG có service worker nên không ảnh hưởng gì đến tốc độ tải
+         hay dung lượng app (những file này chỉ vài chục KB, trình duyệt chỉ đọc 1 lần
+         lúc "Thêm vào Màn hình chính", không tải lại mỗi lần mở app). -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="theme-color" content="#0e0f13" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Ytube" />
+    <meta name="mobile-web-app-capable" content="yes" />
   </head>
   <body>
     <div id="root"></div>
