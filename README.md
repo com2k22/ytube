@@ -92,49 +92,62 @@ hình luôn, không cần mở trình duyệt hay gõ địa chỉ web mỗi l�
 npm install -g @webos-tools/cli
 ```
 
-**E.2 — Build & đóng gói app thành file `.ipk`**
+**E.2 — Tạo file `.ipk` để cài lên TV**
 
-1. Mở File Explorer, vào đúng thư mục chứa code (`C:\Users\PHONG\OneDrive\Viber coding\YTclone`).
-2. Click vào thanh địa chỉ trên cùng cửa sổ File Explorer, xoá hết chữ, gõ `cmd` rồi
-   bấm Enter — 1 cửa sổ đen (Command Prompt) mở ra, đã tự đứng đúng tại thư mục này.
-3. **Kiểm tra file `.env` đã điền key thật chưa** (quan trọng!): app đóng gói lên TV
-   cũng cần đúng 3 key giống bên Vercel (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`,
-   `VITE_YOUTUBE_API_KEY`) — vì Vite "nướng" các key này ngay lúc build, không đọc
-   được lúc app đang chạy. Mở file `.env` bằng Notepad, kiểm tra đã điền giá trị thật
-   (giống Bước A, B) chưa — để trống thì app trên TV sẽ hiện banner đỏ báo lỗi.
-   ⚠️ Nếu đây là lần đầu build lại sau khi nhận code mới (hoặc trước đó từng thấy lỗi
-   "màn hình trắng" trên TV) — **bắt buộc chạy lại `npm install` trước** (gõ lệnh
-   `npm install`, đợi xong) vì có thêm 1 công cụ mới cần cài. Bỏ qua bước này thì lệnh
-   build ở dưới sẽ báo lỗi.
-4. Gõ lệnh build, bấm Enter, đợi khoảng 10–30 giây:
+> **App trên TV hoạt động thế nào** (đọc 1 lần cho dễ hình dung): file `.ipk` cài lên TV
+> KHÔNG chứa code app. Nó chỉ là 1 trang mỏng, nhiệm vụ duy nhất là mở link Vercel của
+> bạn. Nghĩa là TV và điện thoại đều xem chung đúng 1 bản app trên Vercel.
+>
+> Cách này (LG gọi là "Hosted Web App") giải quyết dứt điểm 2 việc:
+> - **Phát được video YouTube.** Từ cuối 2025, YouTube bắt buộc trang nhúng video phải
+>   gửi kèm thông tin "trang này là ai" mới cho phát. Trình duyệt KHÔNG BAO GIỜ gửi thông
+>   tin đó khi app được mở trực tiếp từ ổ đĩa TV — nên bản đóng gói kiểu cũ luôn báo
+>   "Lỗi 153: Lỗi cấu hình trình phát video", không có cách nào sửa bằng code.
+> - **Cập nhật cực nhanh về sau.** Sửa code xong chỉ cần deploy lại Vercel là TV tự có
+>   bản mới — KHÔNG phải build, đóng gói, cài lại `.ipk` nữa. Chỉ phải làm lại Bước E này
+>   khi đổi link Vercel hoặc đổi icon app.
+>
+> Đổi lại: TV phải có mạng Internet mới mở được app (vốn app này luôn cần mạng để xem
+> YouTube và tải danh sách từ Supabase, nên thực tế không mất gì).
+
+1. **Đảm bảo bản Vercel đang chạy và đã là bản mới nhất** (Bước D). Thử mở link Vercel
+   trên điện thoại xem app hiện đúng chưa — TV sẽ mở đúng cái đó.
+2. **Điền link Vercel vào file `webos-meta/tv-app-url.txt`** (chỉ làm 1 lần, trừ khi đổi
+   link). Mở file đó bằng Notepad, thay **dòng đầu tiên** bằng link thật của bạn:
+   ```
+   https://ten-app-cua-ban.vercel.app
+   ```
+   (bắt đầu bằng `https://`, không có dấu `/` ở cuối; các dòng bắt đầu bằng `#` chỉ là
+   ghi chú, cứ để nguyên).
+3. **Tăng số phiên bản** trong file `webos-meta/appinfo.json` — tìm dòng `"version"`,
+   tăng lên 1 nấc (ví dụ `1.0.3` → `1.0.4`). **Bắt buộc mỗi lần tạo lại `.ipk`**: TV có
+   cơ chế nhớ bản cũ theo số phiên bản, không đổi số thì TV rất dễ chạy lại bản cũ dù đã
+   cài đè bản mới.
+4. Mở File Explorer, vào đúng thư mục chứa code (`C:\Users\PHONG\OneDrive\Viber coding\YTclone`).
+   Click vào thanh địa chỉ trên cùng cửa sổ, xoá hết chữ, gõ `cmd` rồi bấm Enter — 1 cửa
+   sổ đen (Command Prompt) mở ra, đã tự đứng đúng tại thư mục này.
+5. Gõ lệnh sau, bấm Enter (chạy trong 1–2 giây):
    ```
    npm run build:webos
    ```
-   Sẽ thấy chữ chạy dọc màn hình, kết thúc bằng dòng:
+   Kết thúc phải thấy dòng báo `[webos] Đã tạo xong thư mục dist-webos/ ...` kèm đúng
+   link Vercel của bạn. Nếu thấy chữ đỏ báo lỗi — đọc dòng chữ đó, thường là chưa điền
+   link ở bước 2; sửa xong chạy lại.
+6. Gõ lệnh đóng gói, bấm Enter:
    ```
-   [webos] Đã copy appinfo.json vào dist/ — giờ chạy: ares-package ./dist
+   ares-package -n ./dist-webos
    ```
-   Nếu KHÔNG thấy dòng này mà thấy chữ đỏ "error" — dừng lại, chụp màn hình gửi lại,
-   đừng làm tiếp bước 5.
-5. Gõ lệnh đóng gói, bấm Enter:
-   ```
-   ares-package -n ./dist
-   ```
-   (Cần đã làm xong **E.1** trước đó — nếu báo `'ares-package' is not recognized`,
-   nghĩa là E.1 chưa cài xong, hoặc cần đóng cửa sổ Command Prompt cũ, mở cửa sổ mới.
-   Cờ `-n` = bỏ qua bước tự minify code của `ares-package` — **bắt buộc phải có**,
-   vì code trong `dist/` đã được build tool nén sẵn, để `ares-package` nén lại lần
-   nữa hay báo lỗi `Failed to minify code` dù code không hề sai.)
-6. Chạy xong sẽ có 1 file mới nằm ngay trong thư mục `YTclone` (cùng cấp với
-   `package.json`), tên dạng `com.ytube.minacom_1.0.0_all.ipk` — đây là file sẽ cài
-   lên TV ở Bước E.5.
+   (Cần đã làm xong **E.1** trước đó — nếu báo `'ares-package' is not recognized`, nghĩa
+   là E.1 chưa cài xong, hoặc cần đóng cửa sổ Command Prompt cũ và mở cửa sổ mới.)
+7. Xong sẽ có 1 file mới nằm ngay trong thư mục `YTclone` (cùng cấp với `package.json`),
+   tên dạng `com.ytube.minacom_1.0.3_all.ipk` — đây là file sẽ cài lên TV ở Bước E.5.
 
-Muốn build lại sau này (khi sửa code): lặp lại đúng bước 4 và 5 ở trên — file `.ipk`
-cũ sẽ bị ghi đè bằng bản mới.
+Lưu ý: file `.env` **không còn liên quan** tới bước đóng gói TV nữa (các key chỉ cần khai
+báo bên Vercel, xem Bước D) — vì code app giờ chạy hoàn toàn từ Vercel.
 
 (3 file icon đã có sẵn ở `public/webos/icon.png` / `largeIcon.png` / `splash.png`,
 dùng logo Ytube mặc định. Muốn đổi logo riêng: thay 3 file này — đúng kích thước
-80×80px / 130×130px / 1920×1080px, định dạng PNG — rồi build lại.)
+80×80px / 130×130px / 1920×1080px, định dạng PNG — rồi làm lại bước 3–7.)
 
 **E.3 — Bật Developer Mode trên TV**
 
@@ -163,55 +176,54 @@ hỏi để hoàn tất kết nối. (Mã chỉ có hiệu lực khoảng 1-2 ph
 **E.5 — Cài & mở app trên TV**
 
 ```
-ares-install --device <tên-TV-đã-đặt-ở-E.4> com.ytube.minacom_1.0.1_all.ipk
+ares-install --device <tên-TV-đã-đặt-ở-E.4> -r com.ytube.minacom
+ares-install --device <tên-TV-đã-đặt-ở-E.4> com.ytube.minacom_1.0.3_all.ipk
 ares-launch --device <tên-TV-đã-đặt-ở-E.4> com.ytube.minacom
 ```
+
+(Dòng đầu có `-r` = gỡ sạch bản cũ trước khi cài bản mới — làm vậy cho chắc, tránh TV
+chạy lại bản cũ còn nhớ trong máy. Lần cài đầu tiên chưa có gì để gỡ thì dòng này sẽ báo
+lỗi nhẹ, cứ bỏ qua và chạy tiếp 2 dòng sau.)
 
 App Ytube mở ngay trên TV, và cũng xuất hiện sẵn trong menu Launcher của TV như 1 app
 bình thường — lần sau bé bấm vào icon là mở, không cần máy tính nữa.
 
-**Cập nhật app sau này — QUAN TRỌNG, phải làm đúng thứ tự để tránh TV chạy nhầm bản
-cũ đã cache**:
-1. Mở `webos-meta/appinfo.json`, tăng số ở dòng `"version"` lên 1 nấc (vd `1.0.1` →
-   `1.0.2`) — **bắt buộc mỗi lần cập nhật**, kể cả khi chỉ sửa vài dòng nhỏ. TV LG webOS
-   có cơ chế cache nội bộ theo app id + version; nếu version không đổi, có trường hợp
-   TV vẫn hiển thị bản CŨ dù đã `ares-install` đè file mới lên đĩa — nhìn bên ngoài y
-   hệt lỗi cũ dù code đã sửa xong, rất dễ gây nhầm tưởng "sửa không có tác dụng".
-2. Gỡ bản cũ trên TV trước khi cài bản mới, để chắc chắn không còn cache:
-   ```
-   ares-install --device <tên-TV> -r com.ytube.minacom
-   ```
-3. Lặp lại E.2 (build) rồi E.5 (cài + mở) với file `.ipk` có số version mới.
-4. Nếu vẫn nghi ngờ TV đang chạy bản cũ: tắt hẳn TV (rút điện hoặc giữ nút nguồn) rồi
-   bật lại, để xoá luôn cache đang chạy trong bộ nhớ của WebAppManager trên TV.
+**Cập nhật app sau này — việc nhẹ hẳn:**
+
+- **Sửa code app (99% các lần)**: chỉ cần đẩy code lên GitHub và để Vercel deploy lại
+  (Bước D). TV tự có bản mới ở lần mở app kế tiếp. **KHÔNG cần build, đóng gói hay cài
+  lại `.ipk`.** Nếu TV vẫn hiện bản cũ: thoát hẳn app rồi mở lại; cùng lắm tắt/bật lại TV.
+- **Chỉ khi đổi link Vercel, đổi icon, hoặc đổi tên app**: mới phải làm lại Bước E.2 và
+  E.5. Nhớ tăng số `"version"` trong `webos-meta/appinfo.json` trước khi tạo `.ipk` mới —
+  TV nhớ bản cũ theo số phiên bản, không đổi số thì rất dễ chạy lại bản cũ.
 
 **Vài lỗi hay gặp:**
+- **Video không phát, báo "Lỗi 153 — Lỗi cấu hình trình phát video"**: app đang chạy kiểu
+  đóng gói cũ (mở trực tiếp từ ổ đĩa TV) chứ không phải kiểu hosted. Kiểm tra
+  `webos-meta/tv-app-url.txt` đã điền đúng link Vercel chưa, rồi làm lại E.2 + E.5.
 - `ares-package ERR! [Tips]: Failed to minify code...`: quên cờ `-n` — chạy lại đúng
-  `ares-package -n ./dist` (xem bước E.2.5).
+  `ares-package -n ./dist-webos` (xem bước E.2.6).
 - `ares-setup-device` hoặc `ares-install` bị treo/timeout: kiểm tra TV và máy tính có
   đang chung 1 Wi-Fi không; thử tắt tạm Windows Firewall nếu vẫn không được.
 - `ares-package` báo lỗi icon: kiểm tra `icon.png` đúng 80×80px, `largeIcon.png` đúng
   130×130px, cả 2 đều định dạng PNG.
 - IP của TV tự đổi (Wi-Fi cấp IP động): chạy lại `ares-setup-device` để cập nhật IP
   mới, hoặc vào router đặt IP tĩnh (DHCP reservation) cho TV.
-- **Cài xong, bấm vào icon app thì hiện màn hình trắng trơn (không lỗi gì)**: có 2
-  nguyên nhân đã gặp, kiểm tra theo đúng thứ tự sau:
-  1. **App trên TV đang chạy bản CŨ do cache, không phải bản vừa cài** (nguyên nhân
-     hay gặp nhất nếu đã làm đúng bước build). Luôn tăng `"version"` trong
-     `webos-meta/appinfo.json` mỗi lần cập nhật, gỡ app cũ bằng
-     `ares-install --device <tên-TV> -r com.ytube.minacom` trước khi cài bản mới, và
-     nếu vẫn nghi ngờ thì tắt/bật lại TV hẳn 1 lần — xem chi tiết ở mục "Cập nhật app
-     sau này" phía trên.
-  2. **Lỗi tải module qua `file://`**: khi mở app trực tiếp từ ổ đĩa qua đường dẫn
-     `file://...`, trình duyệt luôn CHẶN việc tải các file JS khai báo kiểu "module"
-     (`<script type="module" src="...">`) — chặn ngay ở tầng trình duyệt, không phải
-     lỗi code, và thường không hiện gì trong Console. Code trong thư mục này đã xử lý
-     dứt điểm bằng `scripts/prepare-webos.js`: build xong, script này tự đọc file
-     JS/CSS thật từ `dist/assets/` rồi ghép thẳng vào 1 khung HTML viết tay
-     (`webos-meta/index.template.html`), ghi đè `dist/index.html` — không còn file
-     JS/CSS rời, không còn phụ thuộc hành vi ẩn của Vite/plugin nào. Chỉ cần
-     `npm run build:webos` (không cần `npm install` gì thêm nếu chỉ lấy code từ đây,
-     trừ lần đầu setup máy mới).
+- **App kẹt ở màn hình "Đang mở Ytube" hoặc báo "Không kết nối được mạng"**: TV đang
+  không vào được Internet, hoặc link trong `webos-meta/tv-app-url.txt` sai. Thử mở link
+  đó trên điện thoại xem có ra app không.
+- **Bấm icon app thì hiện màn hình trắng trơn**: gần như chắc chắn TV đang chạy bản `.ipk`
+  CŨ (kiểu đóng gói cũ, mở từ ổ đĩa) chứ không phải bản hosted. Gỡ hẳn app
+  (`ares-install --device <tên-TV> -r com.ytube.minacom`), tăng `"version"` trong
+  `webos-meta/appinfo.json`, làm lại E.2 + E.5, rồi tắt/bật lại TV 1 lần.
+
+> 📌 **Ghi chú kỹ thuật (không cần đọc nếu app đang chạy tốt)** — vì sao bỏ kiểu đóng gói
+> cũ: khi mở app trực tiếp từ ổ đĩa qua `file://`, có 2 rào cản của chính trình duyệt,
+> không sửa được bằng code — (1) trình duyệt chặn tải file JS khai báo kiểu "module", âm
+> thầm không báo lỗi; (2) trình duyệt không gửi thông tin nhận diện trang cho YouTube nên
+> YouTube từ chối phát, báo lỗi 153. Chuyển sang kiểu hosted (app chạy qua `https://` thật)
+> làm cả 2 rào cản này biến mất cùng lúc. File `webos-meta/index.template.html` là tàn dư
+> của cách làm cũ, hiện không còn được dùng — cứ để đó cũng không sao.
 
 ### Bước F — Cài lên iPad/iPhone/Android như 1 app (PWA)
 

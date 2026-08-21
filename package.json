@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "build:webos": "npm run build && node scripts/prepare-webos.js",
+    "build:webos": "node scripts/prepare-webos.js",
     "preview": "vite preview",
     "lint": "eslint ."
   },
@@ -32,7 +32,6 @@
     "postcss": "^8.4.45",
     "tailwindcss": "^3.4.10",
     "typescript": "^5.5.4",
-    "vite": "^5.4.21",
-    "vite-plugin-singlefile": "^2.3.3"
+    "vite": "^5.4.21"
   }
 }

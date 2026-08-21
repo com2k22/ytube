@@ -85,7 +85,7 @@ export function HomePage() {
       {continuing.length > 0 && (
         <>
           <div className="section-title">▶️ Tiếp tục xem</div>
-          <div className="shelf" style={{ marginBottom: 32 }}>
+          <div className="shelf shelf-cap3" style={{ marginBottom: 32 }}>
             {continuing.map(({ source, progress }) => (
               <PlaylistCard
                 key={source.id}
@@ -107,7 +107,7 @@ export function HomePage() {
           <div className="section-title">📂 Playlist đề xuất</div>
           <div
             className="playlist-shelf2"
-            style={{ marginBottom: 32, gridTemplateColumns: `repeat(${playlistCols}, 340px)` }}
+            style={{ marginBottom: 32, gridTemplateColumns: `repeat(${playlistCols}, var(--card-w))` }}
           >
             {recommendedPlaylists.map((source) => (
               <PlaylistCard

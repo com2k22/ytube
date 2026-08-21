@@ -7,6 +7,11 @@
 
 :root {
   --radius: 20px;
+  /* Độ rộng 1 thẻ video/playlist và khoảng cách giữa các thẻ — khai báo 1 chỗ ở đây để
+     chế độ TV (cuối file) chỉ cần đổi 2 biến này là mọi khối thẻ tự to lên đồng loạt,
+     kể cả lưới "Playlist đề xuất" ở Trang chủ (xem HomePage.tsx). */
+  --card-w: 340px;
+  --shelf-gap: 22px;
 }
 
 html,
@@ -183,13 +188,13 @@ body {
 
 .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
 
-.shelf { display: flex; gap: 22px; overflow-x: auto; padding-bottom: 10px; scroll-behavior: smooth; scrollbar-width: none; }
+.shelf { display: flex; gap: var(--shelf-gap); overflow-x: auto; padding-bottom: 10px; scroll-behavior: smooth; scrollbar-width: none; }
 .shelf::-webkit-scrollbar { display: none; }
-.shelf .card { flex: 0 0 340px; }
+.shelf .card { flex: 0 0 var(--card-w); }
 
-/* Chỉ hiện tối đa 3 thẻ/hàng trước khi phải cuộn ngang (dùng cho "Video đề xuất") —
-   giới hạn độ rộng đúng bằng 3 card + 2 khoảng cách giữa chúng. */
-.shelf-cap3 { max-width: calc(3 * 340px + 2 * 22px); }
+/* Chỉ hiện tối đa 3 thẻ/hàng trước khi phải cuộn ngang (dùng cho "Tiếp tục xem" và
+   "Video đề xuất") — giới hạn độ rộng đúng bằng 3 thẻ + 2 khoảng cách giữa chúng. */
+.shelf-cap3 { max-width: calc(3 * var(--card-w) + 2 * var(--shelf-gap)); }
 
 /* Khối "Playlist đề xuất" ở Trang chủ — lưới nhiều hàng, cố định 3 cột/hàng, ưu tiên lấp
    đầy hàng 1 trước khi xuống hàng 2 (xem HomePage.tsx). */
@@ -203,9 +208,12 @@ body {
   scrollbar-width: none;
 }
 .playlist-shelf2::-webkit-scrollbar { display: none; }
-.playlist-shelf2 .card { width: 340px; }
+.playlist-shelf2 .card { width: var(--card-w); }
 
-.card { border-radius: var(--radius); overflow: hidden; cursor: pointer; border: 2px solid transparent; }
+/* box-sizing: border-box — tính viền vào trong bề rộng đã khai báo. Thiếu dòng này thì
+   viền của thẻ (2px, riêng theme Chibi là 3px) bị CỘNG THÊM ra ngoài, làm mỗi hàng rộng
+   hơn dự tính vài pixel và thẻ thứ 3 bị cắt cụt mép phải. */
+.card { box-sizing: border-box; border-radius: var(--radius); overflow: hidden; cursor: pointer; border: 2px solid transparent; }
 .card-thumb { aspect-ratio: 16 / 9; display: flex; align-items: center; justify-content: center; font-size: 46px; position: relative; }
 .duration { position: absolute; top: 8px; right: 8px; background: rgba(0, 0, 0, 0.65); color: #fff; font-size: 12.5px; padding: 3px 8px; border-radius: 7px; font-weight: 700; }
 .watching-badge { position: absolute; top: 8px; left: 8px; font-size: 11.5px; font-weight: 800; padding: 3px 9px; border-radius: 999px; }
@@ -216,6 +224,7 @@ body {
 .card-sub { font-size: 13.5px; opacity: 0.65; margin-top: 5px; }
 
 .channel-shelf .channel-item {
+  box-sizing: border-box;
   display: flex; flex-direction: column; align-items: center; gap: 8px;
   width: 128px; flex: 0 0 auto; cursor: pointer; border-radius: 20px; padding: 10px 6px; border: 3px solid transparent;
 }
@@ -307,3 +316,119 @@ body {
 .block-card p { font-size: 19px; line-height: 1.7; opacity: 0.88; margin: 0 0 20px; }
 .block-sound-note { font-size: 15px; opacity: 0.6; margin-bottom: 22px; }
 .block-card .submit-btn { font-size: 18px; padding: 16px; }
+
+/* ====================================================================================
+   CHẾ ĐỘ TV — phóng to toàn bộ giao diện để ngồi xem từ 3-4m vẫn đọc rõ
+   ------------------------------------------------------------------------------------
+   Chỉ có hiệu lực khi thẻ <html> có thuộc tính data-tv (do src/main.tsx tự gắn khi phát
+   hiện đang chạy trên TV — xem hàm isTvScreen ở đó). Bản mở trên điện thoại/máy tính
+   KHÔNG bị ảnh hưởng gì, giữ nguyên giao diện cũ.
+
+   Nguyên tắc chọn số: màn TV 1920px ngồi xa 3-4m thì chữ nội dung nên từ ~24px trở lên
+   (chữ 14-17px như bản web là quá bé). Ở đây phóng khoảng 1.4-1.5 lần cho toàn bộ.
+
+   Riêng --card-w 460px được tính để mỗi hàng vừa đúng 3 thẻ và KHÔNG bao giờ lọt được
+   thẻ thứ 4: chỗ trống cho nội dung = 1920 - 330 (menu trái) - 96 (lề) = 1494px;
+   3 thẻ = 460*3 + 30*2 = 1440px (vừa), 4 thẻ = 1960px (không thể lọt).
+   ==================================================================================== */
+[data-tv] {
+  --radius: 26px;
+  --card-w: 460px;
+  --shelf-gap: 30px;
+}
+
+/* --- Menu bên trái --- */
+[data-tv] .sidebar { width: 330px; padding: 18px 20px 26px; }
+[data-tv] .brand { font-size: 34px; padding: 22px 18px 0; gap: 12px; }
+[data-tv] .logo-badge { width: 54px; height: 38px; font-size: 19px; border-radius: 13px; padding-left: 4px; }
+[data-tv] .side-item { font-size: 26px; padding: 22px 26px; margin-bottom: 12px; border-radius: 20px; gap: 16px; }
+[data-tv] .deco { font-size: 30px; }
+
+/* --- Thanh trên cùng --- */
+[data-tv] .topbar { height: 118px; padding: 0 32px; }
+[data-tv] .profiles { gap: 18px; }
+[data-tv] .profile-btn { font-size: 26px; padding: 12px 30px 12px 12px; border-width: 4px; }
+[data-tv] .avatar { width: 64px; height: 64px; font-size: 34px; }
+[data-tv] .top-actions { gap: 18px; }
+[data-tv] .theme-toggle,
+[data-tv] .lock-btn { font-size: 22px; padding: 18px 28px; border-radius: 20px; gap: 10px; }
+
+/* --- Khung nội dung chính --- */
+[data-tv] .main { padding: 34px 48px 90px; }
+[data-tv] .greet { font-size: 34px; margin: 6px 0 32px; }
+[data-tv] .section-title { font-size: 30px; margin: 0 0 22px; }
+[data-tv] .back-btn { font-size: 23px; padding: 18px 30px; border-radius: 20px; }
+
+/* --- Thẻ video / playlist --- */
+[data-tv] .card-thumb { font-size: 64px; }
+[data-tv] .card-body { padding: 18px 22px 24px; }
+[data-tv] .card-title { font-size: 25px; }
+[data-tv] .card-sub { font-size: 19px; margin-top: 8px; }
+[data-tv] .duration { font-size: 17px; padding: 5px 12px; border-radius: 10px; top: 12px; right: 12px; }
+[data-tv] .watching-badge { font-size: 16px; padding: 5px 13px; top: 12px; left: 12px; }
+[data-tv] .progress-wrap { height: 10px; left: 12px; right: 12px; bottom: 12px; }
+
+/* --- Hàng kênh yêu thích --- */
+[data-tv] .channel-shelf .channel-item { width: 176px; padding: 14px 8px; border-radius: 26px; }
+[data-tv] .channel-avatar { width: 132px; height: 132px; font-size: 56px; }
+[data-tv] .channel-name { font-size: 21px; }
+
+/* --- Viền sáng đánh dấu ô đang chọn bằng điều khiển: dày hơn cho dễ thấy từ xa --- */
+[data-tv] .tv-focused { outline-width: 6px; }
+
+/* --- Trang phát video --- */
+[data-tv] .player-wrap { max-width: 1400px; border-radius: 28px; }
+[data-tv] .player-note-text { font-size: 19px; max-width: 1000px; }
+[data-tv] .player-note { font-size: 18px; gap: 12px; }
+[data-tv] .player-note span { padding: 5px 14px; }
+
+/* --- Thông báo nổi (toast) --- */
+[data-tv] .toast { font-size: 21px; padding: 18px 30px; border-radius: 18px; top: 34px; }
+
+/* --- Bảng nhập mã PIN --- */
+[data-tv] .modal { width: 470px; padding: 36px; border-radius: 30px; }
+[data-tv] .modal h3 { font-size: 26px; margin: 0 0 10px; }
+[data-tv] .modal p.sub { font-size: 19px; margin: 0 0 24px; }
+[data-tv] .pin-dot { width: 20px; height: 20px; }
+[data-tv] .keypad { gap: 14px; }
+[data-tv] .key { font-size: 25px; padding: 20px 0; border-radius: 16px; }
+[data-tv] .key.wide { font-size: 18px; }
+[data-tv] .err { font-size: 19px; height: 24px; }
+[data-tv] .close-x { font-size: 26px; top: 18px; right: 20px; }
+
+/* --- Khu vực Bố mẹ --- */
+[data-tv] .parent-tabs { gap: 16px; margin: 28px 0 36px; }
+[data-tv] .tab-btn { font-size: 23px; padding: 18px 30px; border-radius: 20px; }
+[data-tv] .mini-profiles { gap: 16px; margin-bottom: 30px; }
+[data-tv] .mini-profile-btn { font-size: 21px; padding: 14px 26px; }
+[data-tv] .settings-card { max-width: 900px; padding: 28px 32px; border-radius: 26px; margin-bottom: 26px; }
+[data-tv] .settings-card h4 { font-size: 24px; margin: 0 0 20px; }
+[data-tv] .settings-row { gap: 16px; margin-bottom: 18px; }
+[data-tv] .settings-row label { font-size: 20px; min-width: 240px; }
+[data-tv] .settings-row span { font-size: 19px; }
+[data-tv] .settings-row input[type='number'] { font-size: 21px; padding: 14px 18px; width: 140px; }
+[data-tv] .day-pills { gap: 12px; }
+[data-tv] .day-pill { font-size: 19px; padding: 13px 20px; }
+[data-tv] .window-row { gap: 14px; margin-bottom: 14px; }
+[data-tv] .window-row input[type='time'] { font-size: 20px; padding: 13px 16px; }
+[data-tv] .icon-btn { font-size: 24px; }
+[data-tv] .add-window-btn { font-size: 19px; padding: 14px 24px; border-radius: 16px; }
+[data-tv] .session-live { font-size: 21px; gap: 18px; }
+[data-tv] .live-dot { width: 14px; height: 14px; }
+[data-tv] .stop-btn { font-size: 20px; padding: 16px 26px; border-radius: 16px; }
+[data-tv] .form-row { margin-bottom: 18px; }
+[data-tv] .form-row label { font-size: 18px; margin-bottom: 8px; }
+[data-tv] .form-row select,
+[data-tv] .form-row input { font-size: 20px; padding: 15px 18px; border-radius: 14px; }
+[data-tv] .hint { font-size: 17px; height: 22px; }
+[data-tv] .submit-btn { font-size: 21px; padding: 18px; border-radius: 16px; }
+[data-tv] .added-list { font-size: 19px; margin-top: 20px; }
+[data-tv] .added-item { padding: 12px 16px; border-radius: 14px; margin-bottom: 9px; }
+
+/* --- Màn hình chặn ngoài giờ xem (bé nhìn từ xa, cần to rõ nhất) --- */
+[data-tv] .block-card { width: 820px; padding: 64px 56px; border-radius: 40px; }
+[data-tv] .block-emoji { font-size: 140px; }
+[data-tv] .block-card h2 { font-size: 44px; margin: 0 0 22px; }
+[data-tv] .block-card p { font-size: 27px; margin: 0 0 28px; }
+[data-tv] .block-sound-note { font-size: 21px; margin-bottom: 30px; }
+[data-tv] .block-card .submit-btn { font-size: 26px; padding: 22px; }

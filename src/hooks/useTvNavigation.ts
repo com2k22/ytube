@@ -93,14 +93,18 @@ export function useTvNavigation(
       const secIdx = sections.indexOf(sec);
 
       switch (e.key) {
+        // Với vùng chỉ có 1 cột (danh sách DỌC, ví dụ menu bên trái), bấm trái/phải phải
+        // nhảy hẳn sang vùng khác chứ không chạy dọc trong danh sách — vì chạy dọc đã là
+        // việc của mũi tên lên/xuống rồi. Không xử lý riêng thì bấm phải ở menu bên trái
+        // sẽ nhảy lung tung trong chính menu đó, không ra được nội dung bên phải.
         case 'ArrowRight':
           e.preventDefault();
-          if (local + 1 < sec.count) setFocus(idx + 1, focusables);
+          if (sec.cols > 1 && local + 1 < sec.count) setFocus(idx + 1, focusables);
           else if (sections[secIdx + 1]) setFocus(sections[secIdx + 1].start, focusables);
           break;
         case 'ArrowLeft':
           e.preventDefault();
-          if (local > 0) setFocus(idx - 1, focusables);
+          if (sec.cols > 1 && local > 0) setFocus(idx - 1, focusables);
           else if (sections[secIdx - 1]) {
             const prev = sections[secIdx - 1];
             setFocus(prev.start + prev.count - 1, focusables);

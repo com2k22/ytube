@@ -1,102 +1,124 @@
-// prepare-webos.js — chạy SAU khi "vite build" đã tạo xong thư mục dist/.
+// prepare-webos.js — tạo thư mục dist-webos/ để đóng gói app cho TV LG webOS.
 //
-// === Vì sao file này được viết lại hoàn toàn (không còn dùng vite-plugin-singlefile
-// hay "vá" file HTML do Vite tự sinh ra nữa) ===
-// TV LG webOS mở app trực tiếp từ ổ đĩa qua đường dẫn "file://...", KHÔNG qua máy chủ
-// web. Với giao thức này, trình duyệt luôn từ chối tải file JS khai báo kiểu "module"
-// (<script type="module" src="...">) — hoàn toàn im lặng, không báo lỗi gì. Các lần
-// sửa trước đây cố "vá" lại file dist/index.html do Vite tự sinh ra (qua các plugin
-// Vite chạy ở nhiều thời điểm khác nhau: transformIndexHtml, writeBundle...) liên tục
-// gặp vấn đề vì rất khó biết CHÍNH XÁC lúc nào 1 plugin thực sự chạy so với các plugin
-// khác (đặc biệt là vite-plugin-singlefile, vốn tự gộp file JS/CSS vào HTML theo cách
-// riêng, không rõ ràng).
+// === App TV chạy theo kiểu "hosted" (mở thẳng link Vercel) — vì sao ===
+// Trước đây file .ipk chứa toàn bộ code app, TV mở trực tiếp từ ổ đĩa qua "file://...".
+// Cách đó gặp 1 rào cản KHÔNG THỂ vá được từ phía app: từ cuối 2025, YouTube bắt buộc
+// trang nhúng video phải gửi kèm thông tin "trang này là ai" (HTTP Referer) thì mới cho
+// phát. Trình duyệt KHÔNG BAO GIỜ gửi thông tin đó khi trang được mở qua file:// (quy
+// định bảo mật của chính trình duyệt) — nên YouTube luôn từ chối, báo "Lỗi 153: Lỗi cấu
+// hình trình phát video". Không có cách sửa nào bằng code khi còn chạy qua file://.
 //
-// Cách làm ĐÚNG và CHẮC CHẮN: không đụng vào file dist/index.html do Vite sinh ra nữa.
-// Thay vào đó, file này (chạy SAU KHI Vite build xong hoàn toàn, code JS/CSS đã có sẵn
-// thành file thật trên đĩa):
-//   1. Đọc thẳng nội dung file JS và CSS thật (đã build xong) từ dist/assets/.
-//   2. Đọc khung HTML mẫu do CHÍNH MÌNH viết tay, có sẵn từ trước, tại
-//      webos-meta/index.template.html (KHÔNG phải do Vite sinh ra) — trong đó
-//      <div id="root"> đã được đặt đúng vị trí, TRƯỚC thẻ <script>, viết chết sẵn.
-//   3. Dán JS/CSS thật vào đúng chỗ trong khung mẫu đó, ghi thành dist/index.html
-//      cuối cùng — ĐÈ LÊN bản do Vite tự sinh ra.
-// Không còn phụ thuộc bất kỳ hành vi ẩn/thời điểm chạy nào của Vite hay plugin nào nữa
-// — mọi thứ đều do mình tự đọc/tự ghép/tự ghi, kiểm soát 100%.
-import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+// Cách làm đúng (LG gọi là "Hosted Web App"): file .ipk cài lên TV chỉ còn là 1 trang
+// mỏng, nhiệm vụ duy nhất là chuyển hướng sang link Vercel thật. Nhờ vậy app chạy qua
+// https:// như 1 trang web bình thường → YouTube phát được, Supabase hoạt động bình
+// thường, và mọi rắc rối của file:// (chặn tải module, sai đường dẫn định tuyến...) biến
+// mất hoàn toàn.
+//
+// Lợi ích kèm theo, rất đáng giá: mỗi lần cập nhật code sau này bạn CHỈ cần deploy lại
+// Vercel là TV tự có bản mới — KHÔNG phải build, đóng gói .ipk, cài lại lên TV nữa.
+//
+// Script này chỉ làm 3 việc đơn giản:
+//   1. Đọc link app thật từ webos-meta/tv-app-url.txt.
+//   2. Chèn link đó vào khung trang chuyển hướng webos-meta/loader.template.html.
+//   3. Ghi kết quả + appinfo.json + bộ icon vào thư mục dist-webos/ để đem đi đóng gói.
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..');
-const distDir = join(root, 'dist');
-const assetsDir = join(distDir, 'assets');
-const appinfoSrc = join(root, 'webos-meta', 'appinfo.json');
-const appinfoDest = join(distDir, 'appinfo.json');
-const templateSrc = join(root, 'webos-meta', 'index.template.html');
-const indexDest = join(distDir, 'index.html');
+
+const metaDir = join(root, 'webos-meta');
+const appinfoSrc = join(metaDir, 'appinfo.json');
+const templateSrc = join(metaDir, 'loader.template.html');
+const urlFileSrc = join(metaDir, 'tv-app-url.txt');
+const iconsSrcDir = join(root, 'public', 'webos');
+
+const outDir = join(root, 'dist-webos');
+const outIconsDir = join(outDir, 'webos');
 
 function fail(msg) {
-  console.error(`[webos] ${msg}`);
+  console.error(`\n[webos] ${msg}\n`);
   process.exit(1);
 }
 
-if (!existsSync(distDir)) {
-  fail('Không thấy thư mục dist/ — chạy "npm run build" trước đã nhé.');
-}
-if (!existsSync(appinfoSrc)) {
-  fail('Không thấy webos-meta/appinfo.json.');
-}
-if (!existsSync(templateSrc)) {
-  fail('Không thấy webos-meta/index.template.html.');
-}
-if (!existsSync(assetsDir)) {
-  fail('Không thấy thư mục dist/assets/ — bản build có vẻ không đúng, kiểm tra lại "npm run build".');
-}
+if (!existsSync(appinfoSrc)) fail('Không thấy file webos-meta/appinfo.json.');
+if (!existsSync(templateSrc)) fail('Không thấy file webos-meta/loader.template.html.');
+if (!existsSync(urlFileSrc)) fail('Không thấy file webos-meta/tv-app-url.txt.');
+if (!existsSync(iconsSrcDir)) fail('Không thấy thư mục public/webos/ (chứa icon.png, largeIcon.png, splash.png).');
 
-// appinfo.json cần nằm cùng cấp với index.html để ares-package nhận đúng gói app.
-mkdirSync(distDir, { recursive: true });
-copyFileSync(appinfoSrc, appinfoDest);
+// --- 1. Đọc & kiểm tra link app ------------------------------------------------------
+// Bỏ qua dòng trống và dòng ghi chú (bắt đầu bằng #), lấy dòng thật đầu tiên.
+const appUrl = readFileSync(urlFileSrc, 'utf-8')
+  .split('\n')
+  .map((line) => line.trim())
+  .find((line) => line.length > 0 && !line.startsWith('#'));
 
-// Tìm đúng file JS và CSS thật đã build ra (tên có mã hash ngẫu nhiên, không cố định
-// trước được — nên quét thư mục assets/ để tìm, thay vì đoán tên).
-const assetFiles = readdirSync(assetsDir);
-const jsFiles = assetFiles.filter((f) => f.endsWith('.js'));
-const cssFiles = assetFiles.filter((f) => f.endsWith('.css'));
-
-if (jsFiles.length === 0) {
-  fail('Không tìm thấy file .js nào trong dist/assets/ — bản build có vấn đề.');
+if (!appUrl) {
+  fail('File webos-meta/tv-app-url.txt chưa có link nào — mở file đó ra, điền link Vercel của bạn vào dòng đầu tiên.');
 }
-if (jsFiles.length > 1) {
-  console.warn(
-    `[webos] Cảnh báo: tìm thấy ${jsFiles.length} file .js trong dist/assets/ (đáng lẽ chỉ có 1 do đã bật inlineDynamicImports) — sẽ gộp hết lại, nhưng nên kiểm tra lại cấu hình build nếu thấy app chạy sai.`,
+if (appUrl.includes('DAN-LINK-VERCEL-CUA-BAN')) {
+  fail(
+    'File webos-meta/tv-app-url.txt vẫn đang để link mẫu.\n' +
+      '        Mở file đó ra, thay dòng đầu tiên bằng link Vercel thật của bạn\n' +
+      '        (dạng https://ten-app.vercel.app — chính là link bạn vẫn mở trên điện thoại).'
+  );
+}
+if (!/^https:\/\/[^\s"'\\<>]+$/.test(appUrl)) {
+  fail(
+    `Link trong webos-meta/tv-app-url.txt không hợp lệ: "${appUrl}"\n` +
+      '        Link phải bắt đầu bằng https:// và không chứa dấu cách hay dấu nháy.'
   );
 }
 
-const jsContent = jsFiles.map((f) => readFileSync(join(assetsDir, f), 'utf-8')).join('\n;\n');
-const cssContent = cssFiles.map((f) => readFileSync(join(assetsDir, f), 'utf-8')).join('\n');
+// Bỏ dấu "/" thừa ở cuối cho gọn (https://abc.vercel.app/ → https://abc.vercel.app).
+const cleanUrl = appUrl.replace(/\/+$/, '');
 
-// "Escape" mọi chuỗi "</script" hoặc "</style" xuất hiện BÊN TRONG nội dung JS/CSS
-// thật (ví dụ: code xử lý/soát lọc HTML có thể chứa chuỗi chữ y hệt "<script>" như 1
-// đoạn text bình thường) — nếu không escape, trình duyệt sẽ hiểu nhầm đó là điểm KẾT
-// THÚC thẻ <script>/<style> thật của trang, cắt cụt code giữa chừng. Đây là 1 lỗi HTML
-// kinh điển khi nhúng JS/CSS thẳng vào HTML, luôn phải xử lý.
-function escapeForInlineTag(code, tagName) {
-  const pattern = new RegExp(`</${tagName}`, 'gi');
-  return code.replace(pattern, `<\\/${tagName}`);
+// --- 2. Dọn & tạo lại thư mục đầu ra -------------------------------------------------
+// Xoá sạch rồi tạo mới, để không còn sót file cũ từ lần đóng gói trước (trước đây từng
+// có lỗi TV chạy nhầm bản cũ vì file thừa còn sót lại).
+rmSync(outDir, { recursive: true, force: true });
+mkdirSync(outIconsDir, { recursive: true });
+
+// --- 3. appinfo.json + bộ icon -------------------------------------------------------
+copyFileSync(appinfoSrc, join(outDir, 'appinfo.json'));
+
+const iconFiles = readdirSync(iconsSrcDir).filter((f) => f.toLowerCase().endsWith('.png'));
+if (iconFiles.length === 0) {
+  fail('Thư mục public/webos/ không có file .png nào — cần icon.png, largeIcon.png, splash.png.');
 }
-const safeJs = escapeForInlineTag(jsContent, 'script');
-const safeCss = escapeForInlineTag(cssContent, 'style');
+iconFiles.forEach((f) => copyFileSync(join(iconsSrcDir, f), join(outIconsDir, f)));
 
+// --- 4. Trang chuyển hướng -----------------------------------------------------------
 const template = readFileSync(templateSrc, 'utf-8');
-// Dùng hàm thay vì chuỗi trực tiếp trong .replace() — vì nếu dùng chuỗi, các ký tự "$"
-// xuất hiện rất phổ biến trong code JS đã nén (ví dụ "$1", "$&"...) sẽ bị chính
-// JavaScript hiểu nhầm thành ký hiệu đặc biệt của .replace() và làm hỏng nội dung.
-const finalHtml = template
-  .replace('__YTUBE_CSS__', () => safeCss)
-  .replace('__YTUBE_JS__', () => safeJs);
+if (!template.includes('__YTUBE_APP_URL__')) {
+  fail('File webos-meta/loader.template.html thiếu chỗ đánh dấu __YTUBE_APP_URL__ — file có vẻ đã bị sửa nhầm.');
+}
+// Dùng hàm thay vì chuỗi trong .replace() — nếu dùng chuỗi, các ký tự "$" nếu có trong
+// link sẽ bị JavaScript hiểu nhầm thành ký hiệu đặc biệt và làm hỏng nội dung.
+const html = template.replace('__YTUBE_APP_URL__', () => cleanUrl);
+writeFileSync(join(outDir, 'index.html'), html, 'utf-8');
 
-writeFileSync(indexDest, finalHtml, 'utf-8');
+// --- 5. Xong -------------------------------------------------------------------------
+const appVersion = JSON.parse(readFileSync(appinfoSrc, 'utf-8')).version;
 
-console.log(
-  `[webos] Đã tự ghép ${jsFiles.length} file JS + ${cssFiles.length} file CSS thật vào dist/index.html (viết đè bản Vite tự sinh) — giờ chạy: ares-package -n ./dist`,
-);
+console.log(`
+[webos] Đã tạo xong thư mục dist-webos/ (app phiên bản ${appVersion}).
+[webos] App trên TV sẽ mở: ${cleanUrl}
+[webos] ${iconFiles.length} file icon + appinfo.json + trang chuyển hướng đã sẵn sàng.
+
+Bước tiếp theo, chạy lần lượt:
+
+  ares-package -n ./dist-webos
+  ares-install --device <ten-TV> -r com.ytube.minacom
+  ares-install --device <ten-TV> com.ytube.minacom_${appVersion}_all.ipk
+  ares-launch  --device <ten-TV> com.ytube.minacom
+`);

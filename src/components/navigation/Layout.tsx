@@ -9,9 +9,12 @@ import { useTimeGate } from '@/hooks/useTimeGate';
 import { useProfileContext } from '@/context/ProfileContext';
 import { isSupabaseConfigured } from '@/lib/supabaseClient';
 
-// Lưu ý: cố tình KHÔNG khai báo 'continue' ở đây — vùng không khai báo sẽ mặc định nằm
-// trên đúng 1 hàng ngang (xem useTvNavigation), đúng ý muốn "Tiếp tục xem" tối đa 1 hàng.
-const SECTION_COLS = { playlist: 3, video: 3, detailback: 1 };
+// Lưu ý: cố tình KHÔNG khai báo 'continue' và 'topbar' ở đây — vùng không khai báo sẽ mặc
+// định nằm trên đúng 1 hàng ngang (xem useTvNavigation), đúng ý muốn "Tiếp tục xem" tối đa
+// 1 hàng, và thanh trên cùng (hồ sơ + đổi giao diện + Bố mẹ) cũng là 1 hàng ngang.
+// 'side' = 1 cột: menu bên trái là 1 cột DỌC, nên phải đi bằng mũi tên lên/xuống mới đúng
+// trực giác (bấm trái/phải sẽ nhảy sang vùng khác — xem useTvNavigation).
+const SECTION_COLS = { side: 1, playlist: 3, video: 3, detailback: 1 };
 
 /**
  * Layout — khung sườn cố định (Sidebar + TopBar) bao quanh mọi trang, xử lý:
