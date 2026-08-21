@@ -42,10 +42,11 @@ export function HomePage() {
     return false;
   });
 
-  // "Playlist đề xuất" mỗi hàng tối đa 3 playlist (ưu tiên lấp đầy hàng 1 trước khi
-  // xuống hàng 2) — cố định 3 cột, KHÔNG tính động theo số lượng (tránh trường hợp ít
-  // playlist lại bị dồn thành 1 cột đứng dọc). Xem thêm ở useTvNavigation (data-cols).
-  const playlistCols = 3;
+  // "Playlist đề xuất" là lưới nhiều hàng, ưu tiên lấp đầy hàng 1 trước khi xuống hàng 2.
+  // Số cột cố định (KHÔNG tính động theo số lượng, tránh trường hợp ít playlist lại bị dồn
+  // thành 1 cột đứng dọc): 2 cột trên TV vì thẻ trên TV rất to (700px, giống YouTube TV),
+  // 3 cột trên web/điện thoại. Xem thêm ở useTvNavigation (data-cols).
+  const playlistCols = document.documentElement.hasAttribute('data-tv') ? 2 : 3;
 
   const openSource = (source: AllowedSource) => {
     if (source.type === 'youtube_playlist' || source.type === 'custom_playlist') {

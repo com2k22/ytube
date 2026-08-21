@@ -29,6 +29,13 @@ body {
 }
 
 /* ============ THEME 1: DARK TV ============ */
+/* --focus-color: màu viền sáng đánh dấu ô đang được chọn bằng điều khiển TV. Khai báo
+   thành biến để chế độ TV vẽ được viền đó quanh riêng phần ẢNH của thẻ (giống app
+   YouTube trên TV) mà không phải viết lại 2 lần cho 2 theme. */
+:root,
+[data-theme='dark'] {
+  --focus-color: #7c9cff;
+}
 [data-theme='dark'] body,
 body {
   background: #0e0f13;
@@ -78,6 +85,9 @@ body {
 [data-theme='dark'] .submit-btn { background: #7c9cff; color: #0e0f13; }
 
 /* ============ THEME 2: CHIBI CUTE (hồng, đáng yêu, nền dịu mắt) ============ */
+[data-theme='chibi'] {
+  --focus-color: #ff9fc4;
+}
 [data-theme='chibi'] body,
 [data-theme='chibi'] {
   background: linear-gradient(180deg, #fff8fb 0%, #ffeef5 100%);
@@ -317,35 +327,96 @@ body {
 .block-sound-note { font-size: 15px; opacity: 0.6; margin-bottom: 22px; }
 .block-card .submit-btn { font-size: 18px; padding: 16px; }
 
+
 /* ====================================================================================
-   CHẾ ĐỘ TV — phóng to toàn bộ giao diện để ngồi xem từ 3-4m vẫn đọc rõ
+   CHẾ ĐỘ TV — dựng lại theo đúng tỉ lệ & bố cục của app YouTube trên TV LG (webOS)
    ------------------------------------------------------------------------------------
    Chỉ có hiệu lực khi thẻ <html> có thuộc tính data-tv (do src/main.tsx tự gắn khi phát
-   hiện đang chạy trên TV — xem hàm isTvScreen ở đó). Bản mở trên điện thoại/máy tính
-   KHÔNG bị ảnh hưởng gì, giữ nguyên giao diện cũ.
+   hiện đang chạy trên TV). Bản mở trên điện thoại/máy tính KHÔNG bị ảnh hưởng gì.
 
-   Nguyên tắc chọn số: màn TV 1920px ngồi xa 3-4m thì chữ nội dung nên từ ~24px trở lên
-   (chữ 14-17px như bản web là quá bé). Ở đây phóng khoảng 1.4-1.5 lần cho toàn bộ.
-
-   Riêng --card-w 460px được tính để mỗi hàng vừa đúng 3 thẻ và KHÔNG bao giờ lọt được
-   thẻ thứ 4: chỗ trống cho nội dung = 1920 - 330 (menu trái) - 96 (lề) = 1494px;
-   3 thẻ = 460*3 + 30*2 = 1440px (vừa), 4 thẻ = 1960px (không thể lọt).
+   3 đặc điểm chính chép theo YouTube TV:
+   1. Menu trái thu lại thành 1 DẢI ICON hẹp (132px). Khi bấm điều khiển sang menu, dải
+      này tự bung rộng ra và hiện lại chữ, ĐÈ LÊN nội dung chứ không đẩy nội dung sang
+      ngang (nhờ vậy các hàng video không bị giật/nhảy chỗ mỗi lần chọn menu).
+   2. Ảnh video RẤT TO — 700px, tức ~36% bề ngang màn hình, đúng như YouTube. Mỗi hàng
+      hiện 2 thẻ trọn vẹn + thẻ thứ 3 ló ra một phần, ngầm báo "còn nữa, kéo tiếp đi".
+   3. Thẻ KHÔNG còn khung hộp — chỉ còn ảnh bo góc, chữ nằm thẳng trên nền trang; viền
+      sáng đánh dấu ô đang chọn ôm quanh riêng phần ảnh. Đây là điểm làm giao diện trông
+      thoáng và "giống app TV xịn" nhất.
    ==================================================================================== */
 [data-tv] {
-  --radius: 26px;
-  --card-w: 460px;
-  --shelf-gap: 30px;
+  --radius: 18px;
+  --card-w: 700px;
+  --shelf-gap: 34px;
+  --rail-w: 132px;
+  --rail-open-w: 360px;
 }
 
-/* --- Menu bên trái --- */
-[data-tv] .sidebar { width: 330px; padding: 18px 20px 26px; }
-[data-tv] .brand { font-size: 34px; padding: 22px 18px 0; gap: 12px; }
-[data-tv] .logo-badge { width: 54px; height: 38px; font-size: 19px; border-radius: 13px; padding-left: 4px; }
-[data-tv] .side-item { font-size: 26px; padding: 22px 26px; margin-bottom: 12px; border-radius: 20px; gap: 16px; }
+/* --- Menu trái: dải icon, bung ra đè lên nội dung khi được chọn --- */
+[data-tv] .layout { position: relative; }
+/* Ô trống giữ đúng chỗ cho dải icon. Nhờ nó mà sidebar bên dưới có thể "bay" lên trên
+   (position: absolute) để bung rộng mà không xô lệch phần nội dung bên phải. */
+[data-tv] .layout::before { content: ''; flex: 0 0 var(--rail-w); }
+[data-tv] .sidebar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: var(--rail-w);
+  z-index: 40;
+  padding: 26px 12px;
+  overflow: hidden;
+  transition: width 0.18s ease;
+}
+[data-tv] .sidebar:focus-within {
+  width: var(--rail-open-w);
+  padding: 26px 20px;
+  /* Bóng đổ để thấy rõ menu đang NẰM ĐÈ lên nội dung, không phải đẩy nội dung đi. */
+  box-shadow: 14px 0 40px rgba(0, 0, 0, 0.45);
+}
+
+[data-tv] .brand { font-size: 34px; padding: 0 0 24px; justify-content: center; gap: 12px; }
+[data-tv] .brand-text { display: none; }
+[data-tv] .logo-badge { width: 56px; height: 40px; font-size: 20px; border-radius: 14px; padding-left: 4px; }
+[data-tv] .sidebar:focus-within .brand { justify-content: flex-start; padding-left: 12px; }
+[data-tv] .sidebar:focus-within .brand-text { display: inline; }
+
+[data-tv] .side-item {
+  width: 88px;
+  height: 88px;
+  padding: 0;
+  margin: 0 auto 16px;
+  justify-content: center;
+  gap: 0;
+  border-radius: 26px;
+  white-space: nowrap;
+  border-width: 4px;
+}
+[data-tv] .side-icon { font-size: 42px; line-height: 1; }
+[data-tv] .side-text { display: none; }
+[data-tv] .sidebar:focus-within .side-item {
+  width: auto;
+  height: auto;
+  padding: 20px 22px;
+  margin: 0 0 12px;
+  justify-content: flex-start;
+  gap: 18px;
+  border-radius: 22px;
+}
+[data-tv] .sidebar:focus-within .side-text { display: inline; font-size: 26px; }
 [data-tv] .deco { font-size: 30px; }
 
+/* --- Cột nội dung bên phải ---
+   min-width: 0 là bắt buộc: thiếu nó thì hàng thẻ dài sẽ ĐẨY PHÌNH cả trang ra ngang
+   thay vì cuộn ngang gọn bên trong hàng đó. */
+[data-tv] .content-col { min-width: 0; }
+[data-tv] .main { min-width: 0; padding: 30px 44px 90px; }
+[data-tv] .greet { font-size: 36px; margin: 4px 0 30px; }
+[data-tv] .section-title { font-size: 30px; margin: 0 0 20px; opacity: 0.92; }
+[data-tv] .back-btn { font-size: 23px; padding: 18px 30px; border-radius: 20px; }
+
 /* --- Thanh trên cùng --- */
-[data-tv] .topbar { height: 118px; padding: 0 32px; }
+[data-tv] .topbar { height: 118px; padding: 0 44px 0 32px; }
 [data-tv] .profiles { gap: 18px; }
 [data-tv] .profile-btn { font-size: 26px; padding: 12px 30px 12px 12px; border-width: 4px; }
 [data-tv] .avatar { width: 64px; height: 64px; font-size: 34px; }
@@ -353,31 +424,47 @@ body {
 [data-tv] .theme-toggle,
 [data-tv] .lock-btn { font-size: 22px; padding: 18px 28px; border-radius: 20px; gap: 10px; }
 
-/* --- Khung nội dung chính --- */
-[data-tv] .main { padding: 34px 48px 90px; }
-[data-tv] .greet { font-size: 34px; margin: 6px 0 32px; }
-[data-tv] .section-title { font-size: 30px; margin: 0 0 22px; }
-[data-tv] .back-btn { font-size: 23px; padding: 18px 30px; border-radius: 20px; }
+/* --- Hàng thẻ: bỏ giới hạn 3 thẻ của bản web.
+   Trên TV, hàng thẻ cứ chiếm trọn bề ngang còn lại và tự cắt ở mép phải — nhờ vậy thẻ
+   kế tiếp ló ra một phần đúng kiểu YouTube. --- */
+[data-tv] .shelf-cap3 { max-width: none; }
 
-/* --- Thẻ video / playlist --- */
-[data-tv] .card-thumb { font-size: 64px; }
-[data-tv] .card-body { padding: 18px 22px 24px; }
-[data-tv] .card-title { font-size: 25px; }
-[data-tv] .card-sub { font-size: 19px; margin-top: 8px; }
-[data-tv] .duration { font-size: 17px; padding: 5px 12px; border-radius: 10px; top: 12px; right: 12px; }
-[data-tv] .watching-badge { font-size: 16px; padding: 5px 13px; top: 12px; left: 12px; }
-[data-tv] .progress-wrap { height: 10px; left: 12px; right: 12px; bottom: 12px; }
+/* Hàng thẻ bị "cắt gọn" ở mép (vì có cuộn ngang), nên phải chừa sẵn 12px lề bên trong —
+   nếu không, viền sáng của ô đang chọn (vốn vẽ LÒI RA ngoài thẻ) sẽ bị cắt cụt ở mép
+   trái và mép trên. Lùi margin -12px để bù lại, giữ thẻ đứng đúng vị trí cũ. */
+[data-tv] .shelf,
+[data-tv] .playlist-shelf2 { padding: 12px 0 20px 12px; margin-left: -12px; }
 
-/* --- Hàng kênh yêu thích --- */
-[data-tv] .channel-shelf .channel-item { width: 176px; padding: 14px 8px; border-radius: 26px; }
-[data-tv] .channel-avatar { width: 132px; height: 132px; font-size: 56px; }
-[data-tv] .channel-name { font-size: 21px; }
+/* --- Thẻ video/playlist: bỏ khung hộp, chỉ còn ảnh + chữ (giống YouTube) --- */
+[data-tv] .card { background: transparent; border: none; overflow: visible; border-radius: 0; }
+[data-tv] .card-thumb { border-radius: var(--radius); overflow: hidden; font-size: 76px; }
+[data-tv] .card-body { padding: 16px 2px 0; }
+[data-tv] .card-title { font-size: 32px; line-height: 1.28; }
+[data-tv] .card-sub { font-size: 24px; margin-top: 8px; opacity: 0.6; }
+/* Thời lượng nằm GÓC DƯỚI PHẢI của ảnh (đúng như YouTube), thay vì góc trên phải —
+   vừa quen mắt hơn, vừa tránh đè lên chiếc nơ 🎀 của theme Chibi ở góc trên phải. */
+[data-tv] .duration { font-size: 20px; padding: 6px 14px; border-radius: 10px; top: auto; bottom: 16px; right: 14px; }
+[data-tv] .watching-badge { font-size: 19px; padding: 6px 16px; top: 14px; left: 14px; }
+/* Thanh tiến độ xem chạy sát mép dưới cùng của ảnh, kéo hết bề ngang — giống YouTube. */
+[data-tv] .progress-wrap { height: 8px; left: 0; right: 0; bottom: 0; border-radius: 0; }
+[data-tv] .card .card-thumb::after { top: 12px; right: 14px; font-size: 30px; }
 
-/* --- Viền sáng đánh dấu ô đang chọn bằng điều khiển: dày hơn cho dễ thấy từ xa --- */
+/* Viền sáng đánh dấu ô đang chọn: ôm quanh riêng phần ẢNH, không ôm cả phần chữ —
+   nếu ôm cả chữ sẽ thành 1 khung to rỗng trông rất xấu khi thẻ đã bỏ khung hộp. */
+[data-tv] .card.tv-focused { outline: none; box-shadow: none; transform: none; }
+[data-tv] .card.tv-focused .card-thumb {
+  outline: 6px solid var(--focus-color);
+  outline-offset: 5px;
+}
 [data-tv] .tv-focused { outline-width: 6px; }
 
+/* --- Hàng kênh yêu thích --- */
+[data-tv] .channel-shelf .channel-item { width: 220px; padding: 16px 8px; border-radius: 28px; }
+[data-tv] .channel-avatar { width: 160px; height: 160px; font-size: 66px; }
+[data-tv] .channel-name { font-size: 24px; }
+
 /* --- Trang phát video --- */
-[data-tv] .player-wrap { max-width: 1400px; border-radius: 28px; }
+[data-tv] .player-wrap { max-width: 1500px; border-radius: 24px; }
 [data-tv] .player-note-text { font-size: 19px; max-width: 1000px; }
 [data-tv] .player-note { font-size: 18px; gap: 12px; }
 [data-tv] .player-note span { padding: 5px 14px; }

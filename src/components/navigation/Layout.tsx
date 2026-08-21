@@ -70,7 +70,10 @@ export function Layout() {
         </div>
       )}
       <Sidebar />
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+      {/* class "content-col" để CSS chế độ TV chỉnh được cột nội dung này (cần khai báo
+          min-width: 0 thì các hàng thẻ mới cuộn ngang được bên trong, thay vì đẩy phình
+          cả trang ra ngang) */}
+      <div className="content-col" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <TopBar onOpenParentGate={() => setPinOpen(true)} />
         <Outlet />
       </div>
