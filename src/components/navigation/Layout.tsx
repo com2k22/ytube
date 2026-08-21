@@ -7,6 +7,7 @@ import { BlockScreen } from '@/components/parent-dashboard/BlockScreen';
 import { useTvNavigation } from '@/hooks/useTvNavigation';
 import { useTimeGate } from '@/hooks/useTimeGate';
 import { useProfileContext } from '@/context/ProfileContext';
+import { isSupabaseConfigured } from '@/lib/supabaseClient';
 
 const SECTION_COLS = { continue: 3, playlist: 3, video: 3, detailback: 1 };
 
@@ -48,6 +49,25 @@ export function Layout() {
 
   return (
     <div className="layout" ref={layoutRef}>
+      {!isSupabaseConfigured && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 9999,
+            background: '#e05a5a',
+            color: '#fff',
+            padding: '10px 16px',
+            fontSize: 14,
+            textAlign: 'center',
+          }}
+        >
+          ⚠️ Chưa cấu hình Supabase: thêm VITE_SUPABASE_URL và VITE_SUPABASE_ANON_KEY vào
+          Vercel &gt; Settings &gt; Environment Variables rồi deploy lại (xem README, Bước D).
+        </div>
+      )}
       <Sidebar />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <TopBar onOpenParentGate={() => setPinOpen(true)} />

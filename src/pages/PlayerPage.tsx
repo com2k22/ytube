@@ -80,6 +80,9 @@ export function PlayerPage() {
     if (session?.end_after_current) navigate('/');
   };
 
+  // Đang mở video từ trong 1 playlist (có playlistId) → tự phát + tự toàn màn hình ngay.
+  const autoFullscreen = Boolean(playlistId);
+
   const goToVideo = (v: ResolvedVideo) => {
     const p = new URLSearchParams({ videoId: v.videoId, title: v.title, playlistId: playlistId ?? '' });
     if (sourceId) p.set('sourceId', sourceId);
@@ -93,10 +96,22 @@ export function PlayerPage() {
       </button>
 
       {kind === 'youtube' && ytVideoId && (
-        <SafeYouTubePlayer videoId={ytVideoId} title={title} onProgress={handleProgress} onEnded={handleEnded} />
+        <SafeYouTubePlayer
+          videoId={ytVideoId}
+          title={title}
+          onProgress={handleProgress}
+          onEnded={handleEnded}
+          autoFullscreen={autoFullscreen}
+        />
       )}
       {kind === 'direct' && directUrl && (
-        <DirectVideoPlayer url={directUrl} title={title} onProgress={handleProgress} onEnded={handleEnded} />
+        <DirectVideoPlayer
+          url={directUrl}
+          title={title}
+          onProgress={handleProgress}
+          onEnded={handleEnded}
+          autoFullscreen={autoFullscreen}
+        />
       )}
       {!kind && <p style={{ opacity: 0.6 }}>Đang tải video...</p>}
 

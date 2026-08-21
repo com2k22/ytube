@@ -33,6 +33,8 @@ interface Props {
   onProgress?: (percent: number) => void;
   /** Gọi khi video phát xong — dùng cho "xem xong phiên rồi tắt" / tự chuyển video kế tiếp. */
   onEnded?: () => void;
+  /** true khi video được mở từ trong 1 playlist — tự phát + tự vào chế độ toàn màn hình. */
+  autoFullscreen?: boolean;
 }
 
 /**
@@ -40,7 +42,8 @@ interface Props {
  * với rel=0 + modestbranding=1 + iv_load_policy=3 để KHÔNG hiện gợi ý video liên quan.
  * Dùng chính thức YouTube IFrame Player API để theo dõi tiến độ xem thật.
  */
-export function SafeYouTubePlayer({ videoId, title, onProgress, onEnded }: Props) {
+export function SafeYouTubePlayer({ videoId, title, onProgress, onEnded, autoFullscreen }: Props) {
+  const wrapRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<any>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval>>();
@@ -48,6 +51,18 @@ export function SafeYouTubePlayer({ videoId, title, onProgress, onEnded }: Props
   const onEndedRef = useRef(onEnded);
   onProgressRef.current = onProgress;
   onEndedRef.current = onEnded;
+
+  // Bấm vào 1 video trong playlist → vào toàn màn hình ngay, càng gần lúc bấm (cử chỉ
+  // của người dùng) càng ít khả năng bị trình duyệt chặn, nên gọi sớm ở đây thay vì
+  // đợi script YouTube IFrame API tải xong (có thể mất thêm 1 nhịp mạng).
+  useEffect(() => {
+    if (autoFullscreen) {
+      wrapRef.current?.requestFullscreen?.().catch(() => {
+        /* 1 số trình duyệt/TV không hỗ trợ hoặc chặn — bỏ qua, video vẫn phát bình thường */
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [videoId, autoFullscreen]);
 
   useEffect(() => {
     let cancelled = false;
@@ -57,7 +72,13 @@ export function SafeYouTubePlayer({ videoId, title, onProgress, onEnded }: Props
       playerRef.current = new window.YT.Player(containerRef.current, {
         videoId,
         host: 'https://www.youtube-nocookie.com',
-        playerVars: { rel: 0, modestbranding: 1, iv_load_policy: 3, playsinline: 1 },
+        playerVars: {
+          rel: 0,
+          modestbranding: 1,
+          iv_load_policy: 3,
+          playsinline: 1,
+          autoplay: autoFullscreen ? 1 : 0,
+        },
         events: {
           onReady: () => {
             intervalRef.current = setInterval(() => {
@@ -88,7 +109,7 @@ export function SafeYouTubePlayer({ videoId, title, onProgress, onEnded }: Props
   }, [videoId]);
 
   return (
-    <div className="player-wrap">
+    <div className="player-wrap" ref={wrapRef}>
       <div ref={containerRef} title={title} />
     </div>
   );

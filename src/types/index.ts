@@ -17,7 +17,8 @@ export type SourceType = 'youtube_playlist' | 'youtube_video' | 'youtube_channel
 
 export interface AllowedSource {
   id: string;
-  profile_id: string;
+  /** null = nội dung dùng chung cho cả Mina & Cốm (không giới hạn riêng 1 bé). */
+  profile_id: string | null;
   type: SourceType;
   title: string;
   url: string;

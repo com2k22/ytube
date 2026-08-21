@@ -102,13 +102,6 @@ export function HomePage() {
           </div>
         </>
       )}
-
-      <div className="section-title">🎬 Trình phát video an toàn</div>
-      <div className="player-note">
-        <span className="ok">✓ rel=0</span>
-        <span className="ok">✓ modestbranding=1</span>
-        <span className="no">✕ Không gợi ý video ngoài whitelist</span>
-      </div>
     </main>
   );
 }
