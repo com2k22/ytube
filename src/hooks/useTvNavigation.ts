@@ -31,14 +31,21 @@ export function useTvNavigation(
   const sideFocusRef = useRef(0);
   /** Bộ đếm thử lại của resetFocus (xem giải thích ở hàm đó). */
   const resetTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  /** Phần tử đang được chọn thật sự — dùng để phát hiện danh sách ô vừa thay đổi. */
+  const focusedElRef = useRef<HTMLElement | null>(null);
   const { onEscape, enabled = true } = options;
 
   const getFocusables = useCallback((): HTMLElement[] => {
     if (!containerRef.current) return [];
-    // Nếu đang có 1 lớp phủ "khoá màn hình" (màn hình Chưa đến giờ xem, bảng nhập PIN) thì
-    // CHỈ những ô bên trong lớp phủ đó mới chọn được — phía sau bị khoá hoàn toàn. Lớp phủ
-    // tự khai báo bằng thuộc tính data-nav-scope.
-    const scope = containerRef.current.querySelector<HTMLElement>('[data-nav-scope]');
+    // Nếu đang có 1 lớp phủ "khoá màn hình" (màn hình Chưa đến giờ xem, bảng nhập PIN, danh
+    // sách chọn hồ sơ xổ xuống) thì CHỈ những ô bên trong lớp phủ đó mới chọn được — phía
+    // sau bị khoá hoàn toàn. Lớp phủ tự khai báo bằng thuộc tính data-nav-scope.
+    //
+    // Lấy cái CUỐI CÙNG trong danh sách: nếu lỡ có 2 lớp cùng lúc (vd danh sách hồ sơ đang
+    // xổ thì màn hình Chưa đến giờ xem bật lên), lớp nằm sau trong mã nguồn là lớp quan
+    // trọng hơn (các lớp khoá của Layout luôn đứng cuối) nên phải thắng.
+    const scopes = containerRef.current.querySelectorAll<HTMLElement>('[data-nav-scope]');
+    const scope = scopes.length > 0 ? scopes[scopes.length - 1] : null;
     const root: HTMLElement = scope ?? containerRef.current;
     return Array.from(root.querySelectorAll<HTMLElement>('[data-region]')).filter(
       // getClientRects().length > 0 = phần tử đang thật sự được vẽ ra màn hình.
@@ -49,15 +56,28 @@ export function useTvNavigation(
     );
   }, [containerRef]);
 
-  /** Ô nội dung đầu tiên (bỏ qua menu trái và thanh trên cùng) — dùng làm điểm đứng mặc định. */
+  /**
+   * Ô mặc định khi mới vào 1 trang. Thứ tự ưu tiên:
+   *  1. Khung video (trang phát) — để bấm OK là tạm dừng/phát tiếp ngay.
+   *  2. Nội dung thật đầu tiên: video/playlist/thẻ đầu tiên.
+   *  3. Cùng lắm mới tới nút "← Quay lại".
+   *
+   * Cố ý BỎ QUA nút Quay lại ở bước 2: nút đó luôn đứng đầu trang playlist/kênh nên trước
+   * đây mở playlist ra là ô chọn nằm ngay trên nút Quay lại — bấm OK theo phản xạ là thoát
+   * ra luôn, rất khó chịu. Giờ ô chọn rơi thẳng vào video/playlist đầu tiên.
+   */
   const findFirstContent = useCallback((focusables: HTMLElement[]): number => {
-    // Trang phát video: ưu tiên đứng ngay ở KHUNG VIDEO, để bấm OK là tạm dừng/phát tiếp.
-    const playerIdx = focusables.findIndex((el) => el.getAttribute('data-region') === 'player');
+    const regionOf = (el: HTMLElement) => el.getAttribute('data-region') ?? '';
+    const playerIdx = focusables.findIndex((el) => regionOf(el) === 'player');
     if (playerIdx >= 0) return playerIdx;
-    return focusables.findIndex((el) => {
-      const region = el.getAttribute('data-region');
-      return region !== 'side' && region !== 'topbar';
-    });
+
+    const skip = ['side', 'topbar', 'detailback'];
+    const contentIdx = focusables.findIndex((el) => !skip.includes(regionOf(el)));
+    if (contentIdx >= 0) return contentIdx;
+
+    // Trang chưa có nội dung nào (đang tải, hoặc playlist rỗng) → tạm đứng ở nút Quay lại,
+    // để ít nhất bé vẫn thoát ra được.
+    return focusables.findIndex((el) => regionOf(el) === 'detailback');
   }, []);
 
   /**
@@ -136,6 +156,7 @@ export function useTvNavigation(
       const clamped = Math.max(0, Math.min(index, focusables.length - 1));
       focusIndexRef.current = clamped;
       const el = focusables[clamped];
+      focusedElRef.current = el ?? null;
       if (el) {
         el.classList.add('tv-focused');
         el.focus({ preventScroll: true });
@@ -163,10 +184,14 @@ export function useTvNavigation(
       if (focusables.length === 0) return;
       const sections = buildSections(focusables);
       const idx = focusIndexRef.current;
-      const sec = sections.find((s) => idx >= s.start && idx < s.start + s.count);
+
+      // Danh sách ô vừa đổi (mở/đóng danh sách chọn hồ sơ, tải xong nội dung, đổi trang...)
+      // → số thứ tự cũ không còn đúng nữa. Phải neo lại rồi mới xử lý phím tiếp theo, KHÔNG
+      // được dùng số cũ: dùng bừa sẽ bấm nhầm sang ô hoàn toàn khác.
+      const stale = focusables[idx] !== focusedElRef.current;
+      const sec = stale ? undefined : sections.find((s) => idx >= s.start && idx < s.start + s.count);
       if (!sec) {
-        // Mất dấu ô đang chọn (thường do vừa đổi trang) → đặt lại vào NỘI DUNG, cố ý không
-        // rơi về ô số 0 vì ô số 0 là mục đầu của menu bên trái.
+        // Neo lại vào NỘI DUNG, cố ý không rơi về ô số 0 vì ô số 0 là mục đầu của menu trái.
         const first = findFirstContent(focusables);
         setFocus(first >= 0 ? first : 0, focusables);
         return;
@@ -242,7 +267,10 @@ export function useTvNavigation(
           break;
         case 'Escape':
           e.preventDefault();
-          onEscape?.();
+          // Đang có lớp phủ (danh sách chọn hồ sơ, bảng PIN...) thì phím Back là để ĐÓNG lớp
+          // đó — việc đóng do chính component đó tự lo. Ở đây không quay lại trang trước,
+          // nếu không bấm Back 1 cái là vừa đóng vừa nhảy về trang trước.
+          if (!containerRef.current?.querySelector('[data-nav-scope]')) onEscape?.();
           break;
         default:
           break;
@@ -251,7 +279,7 @@ export function useTvNavigation(
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [enabled, getFocusables, buildSections, setFocus, onEscape, findFirstContent]);
+  }, [enabled, getFocusables, buildSections, setFocus, onEscape, findFirstContent, containerRef]);
 
   /**
    * Đặt ô đang chọn về NỘI DUNG chính (không phải menu trái / thanh trên cùng). Gọi lại

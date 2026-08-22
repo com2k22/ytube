@@ -16,7 +16,17 @@ import { isSupabaseConfigured } from '@/lib/supabaseClient';
 // trực giác (bấm trái/phải sẽ nhảy sang vùng khác — xem useTvNavigation).
 // 'pin' = 3 cột: bàn phím số của bảng nhập PIN xếp 4 hàng × 3 cột.
 // 'block' / 'pinclose' = 1 cột: các nút xếp dọc trong lớp phủ khoá màn hình.
-const SECTION_COLS = { side: 1, playlist: 3, video: 3, detailback: 1, pin: 3, block: 1, pinclose: 1 };
+// 'profmenu' = 1 cột: danh sách chọn hồ sơ xổ xuống từ thanh trên cùng, xếp dọc.
+const SECTION_COLS = {
+  side: 1,
+  playlist: 3,
+  video: 3,
+  detailback: 1,
+  pin: 3,
+  block: 1,
+  pinclose: 1,
+  profmenu: 1,
+};
 
 /**
  * Layout — khung sườn cố định (Sidebar + TopBar) bao quanh mọi trang, xử lý:

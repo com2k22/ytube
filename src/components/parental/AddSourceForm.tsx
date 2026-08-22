@@ -288,16 +288,9 @@ export function AddSourceForm() {
                       <div className="added-item" key={v.id} style={{ justifyContent: 'space-between' }}>
                         <div style={{ display: 'flex', gap: 8, alignItems: 'center', minWidth: 0 }}>
                           <span>🎬</span>
-                          <span
-                            style={{
-                              whiteSpace: 'nowrap',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              maxWidth: 260,
-                            }}
-                          >
-                            {v.title}
-                          </span>
+                          {/* class "ellip" thay cho maxWidth cứng: trên điện thoại CSS tự
+                              rút ngắn lại cho vừa màn hình (xem @media trong theme.css) */}
+                          <span className="ellip">{v.title}</span>
                         </div>
                         <button
                           className="icon-btn"
@@ -345,15 +338,7 @@ export function AddSourceForm() {
                 <div className="added-item" key={it.videoId} style={{ justifyContent: 'space-between' }}>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', minWidth: 0 }}>
                     <span style={{ opacity: 0.6, fontSize: 12 }}>{i + 1}.</span>
-                    <span
-                      style={{
-                        fontWeight: 700,
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        maxWidth: 300,
-                      }}
-                    >
+                    <span className="ellip" style={{ fontWeight: 700 }}>
                       {it.title}
                     </span>
                   </div>
@@ -404,7 +389,7 @@ export function AddSourceForm() {
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', minWidth: 0 }}>
                 <span>{SOURCE_TYPE_ICON[s.type] ?? '📄'}</span>
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 280 }}>
+                  <div className="ellip" style={{ fontWeight: 700 }}>
                     {s.title}
                   </div>
                   <div style={{ fontSize: 11, opacity: 0.6 }}>

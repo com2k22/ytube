@@ -6,9 +6,11 @@ export const PROFILE_IDS = {
   COM: '22222222-2222-2222-2222-222222222222',
 } as const;
 
+// Icon đại diện cho từng bé — dùng ở nút chọn hồ sơ (thanh trên cùng), menu bên trái, và
+// nhãn "dành cho bé nào" trong khu Bố mẹ. Đổi ở đây là đổi đồng loạt mọi nơi.
 export const PROFILE_EMOJI: Record<string, string> = {
-  [PROFILE_IDS.MINA]: '🐻',
-  [PROFILE_IDS.COM]: '🦊',
+  [PROFILE_IDS.MINA]: '🐵',
+  [PROFILE_IDS.COM]: '🦄',
 };
 
 export const SOURCE_TYPE_ICON: Record<string, string> = {

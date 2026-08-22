@@ -75,6 +75,9 @@ body {
 [data-theme='dark'] .theme-toggle,
 [data-theme='dark'] .lock-btn { background: #23242c; color: #f2f3f5; }
 [data-theme='dark'] .profile-btn.active { border-color: #7c9cff; background: #1e2030; }
+[data-theme='dark'] .profile-menu { background: #1b1c22; border: 1px solid #2a2c38; }
+[data-theme='dark'] .profile-menu-item { background: #23242c; color: #f2f3f5; }
+[data-theme='dark'] .profile-menu-item.active { border-color: #7c9cff; background: #1e2030; }
 [data-theme='dark'] .avatar { background: #2a2c38; }
 [data-theme='dark'] .toast { background: #7c9cff; color: #0e0f13; }
 [data-theme='dark'] .key { background: #23242c; color: #f2f3f5; }
@@ -138,6 +141,9 @@ body {
 [data-theme='chibi'] .theme-toggle,
 [data-theme='chibi'] .lock-btn { background: #fff0f6; color: #ff5c9e; }
 [data-theme='chibi'] .profile-btn.active { border-color: #ff9fc4; background: #fff0f6; }
+[data-theme='chibi'] .profile-menu { background: #fff7fb; border: 3px solid #ffd6ea; }
+[data-theme='chibi'] .profile-menu-item { background: #fff0f6; color: #c2447a; }
+[data-theme='chibi'] .profile-menu-item.active { border-color: #ff9fc4; color: #ff5c9e; }
 [data-theme='chibi'] .avatar { background: #ffe0ee; }
 [data-theme='chibi'] .toast { background: #ff9fc4; color: #fff; }
 [data-theme='chibi'] .key { background: #fff0f6; color: #ff5c9e; }
@@ -170,11 +176,29 @@ body {
   font-size: 13px; padding-left: 3px; flex-shrink: 0;
 }
 
+/* justify-content: flex-end — thanh trên cùng giờ chỉ còn nút chọn hồ sơ, đặt ở GÓC PHẢI. */
 .topbar {
   position: sticky; top: 0; z-index: 20;
-  height: 86px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px;
+  height: 86px; display: flex; align-items: center; justify-content: flex-end; padding: 0 20px;
 }
 .profiles { display: flex; gap: 12px; align-items: center; }
+
+/* --- Nút chọn hồ sơ + danh sách xổ xuống --- */
+.profile-switch { position: relative; }
+.profile-caret { margin-left: 4px; font-size: 0.8em; opacity: 0.7; transition: transform 0.15s ease; }
+.profile-caret.up { transform: rotate(180deg); }
+.profile-menu {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 60;
+  min-width: 100%; padding: 8px; border-radius: 18px;
+  display: flex; flex-direction: column; gap: 6px;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.45);
+}
+.profile-menu-item {
+  display: flex; align-items: center; gap: 10px; white-space: nowrap;
+  padding: 10px 18px 10px 10px; border-radius: 999px; cursor: pointer;
+  font-weight: 700; font-size: 17px; border: 3px solid transparent;
+}
+.profile-check { margin-left: auto; padding-left: 10px; }
 .profile-btn {
   display: flex; align-items: center; gap: 10px;
   padding: 8px 20px 8px 8px; border-radius: 999px; border: 3px solid transparent;
@@ -206,6 +230,10 @@ body {
 /* 2 nút chức năng ở đáy menu (Giao diện / Bố mẹ) — nhạt hơn chút để nhóm menu chính
    ở trên vẫn là phần nổi bật nhất. */
 .side-action { opacity: 0.88; }
+
+/* Cắt bớt tên dài thành "..." — dùng ở danh sách nội dung trong khu Bố mẹ. Khai báo bằng
+   class (thay vì maxWidth cứng trong JSX) để trên điện thoại rút lại được cho vừa màn hình. */
+.ellip { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px; }
 .side-item {
   display: flex; align-items: center; gap: 12px;
   padding: 16px 18px; margin-bottom: 8px; border-radius: 14px;
@@ -432,6 +460,9 @@ body {
 [data-tv] .topbar { height: 118px; padding: 0 44px 0 32px; }
 [data-tv] .profiles { gap: 18px; }
 [data-tv] .profile-btn { font-size: 28px; font-weight: 800; padding: 12px 30px 12px 12px; border-width: 4px; }
+[data-tv] .profile-menu { border-radius: 24px; padding: 12px; gap: 10px; top: calc(100% + 10px); }
+[data-tv] .profile-menu-item { font-size: 28px; font-weight: 800; padding: 12px 30px 12px 12px; border-width: 4px; gap: 14px; }
+[data-tv] .profile-menu-item .avatar { width: 64px; height: 64px; font-size: 34px; }
 [data-tv] .avatar { width: 64px; height: 64px; font-size: 34px; }
 [data-tv] .top-actions { gap: 18px; }
 [data-tv] .theme-toggle,
@@ -551,3 +582,102 @@ body {
 [data-tv] .block-card p { font-size: 27px; margin: 0 0 28px; }
 [data-tv] .block-sound-note { font-size: 21px; margin-bottom: 30px; }
 [data-tv] .block-card .submit-btn { font-size: 26px; padding: 22px; }
+
+/* ====================================================================================
+   GIAO DIỆN ĐIỆN THOẠI (màn hình hẹp dưới 760px)
+   ------------------------------------------------------------------------------------
+   App vốn được dựng cho màn hình rộng (TV + máy tính): menu trái 248px + thẻ video 340px
+   = đã hơn 600px, nhét vào điện thoại 390px thì tràn hết ra ngoài, phải kéo ngang mới xem
+   được. Khối dưới đây thu gọn lại cho vừa màn hình dọc.
+
+   Ưu tiên số 1 là KHU VỰC BỐ MẸ (thêm/sửa nội dung) — vì đó là việc bố mẹ hay làm nhất
+   trên điện thoại. Không ảnh hưởng gì tới TV (TV rộng 1920px, không khớp @media này) và
+   máy tính.
+   ==================================================================================== */
+@media (max-width: 760px) {
+  /* --- Menu trái thu thành dải icon hẹp, nhường chỗ cho nội dung --- */
+  .sidebar { width: 64px; padding: 8px 6px 12px; }
+  .brand { font-size: 0; padding: 8px 0 0; justify-content: center; gap: 0; }
+  .logo-badge { width: 34px; height: 24px; font-size: 12px; border-radius: 8px; }
+  .side-item {
+    width: 48px; height: 48px; padding: 0; gap: 0;
+    margin: 0 auto 8px; justify-content: center; border-radius: 14px;
+  }
+  .side-icon { font-size: 24px; line-height: 1; }
+  .side-text { display: none; }
+  .sidebar-deco { display: none; }
+
+  /* --- Thanh trên cùng + khung nội dung --- */
+  .topbar { height: 58px; padding: 0 12px; }
+  .profile-btn { font-size: 14px; padding: 5px 14px 5px 5px; border-width: 2px; }
+  .avatar { width: 32px; height: 32px; font-size: 17px; }
+  .profile-menu-item { font-size: 14px; padding: 7px 14px 7px 5px; border-width: 2px; }
+  .profile-menu-item .avatar { width: 32px; height: 32px; font-size: 17px; }
+  .main { padding: 14px 12px 48px; min-width: 0; }
+  .content-col { min-width: 0; }
+  .greet { font-size: 18px; margin: 2px 0 16px; }
+  .section-title { font-size: 16px; margin: 0 0 12px; }
+  .back-btn { font-size: 14px; padding: 10px 16px; }
+
+  /* --- Thẻ video: 1 thẻ chiếm gần trọn bề ngang, thẻ sau ló ra để biết còn kéo được --- */
+  .shelf .card { flex: 0 0 82%; }
+  .shelf-cap3 { max-width: none; }
+  /* !important: bề rộng cột của lưới này được đặt thẳng trong JSX (HomePage.tsx) nên phải
+     đè mới thắng được — trên điện thoại luôn là 1 cột. */
+  .playlist-shelf2 { grid-template-columns: 1fr !important; }
+  .playlist-shelf2 .card { width: 100%; }
+  .grid3 { grid-template-columns: 1fr; gap: 16px; }
+  .card-title { font-size: 15px; }
+  .card-sub { font-size: 12px; }
+  .channel-shelf .channel-item { width: 96px; }
+  .channel-avatar { width: 72px; height: 72px; font-size: 30px; }
+  .channel-name { font-size: 12px; }
+
+  /* --- KHU VỰC BỐ MẸ — phần được tối ưu kỹ nhất --- */
+  .parent-tabs { flex-wrap: wrap; gap: 8px; margin: 14px 0 18px; }
+  .tab-btn { font-size: 13.5px; padding: 10px 14px; }
+  .mini-profiles { flex-wrap: wrap; gap: 8px; }
+  .mini-profile-btn { font-size: 13px; padding: 8px 14px; }
+
+  /* max-width của các thẻ cài đặt cũng đặt thẳng trong JSX → cần !important để phủ hết
+     bề ngang màn hình, không còn thừa lề hai bên. */
+  .settings-card { max-width: 100% !important; padding: 14px 14px 16px; border-radius: 16px; }
+  .settings-card h4 { font-size: 15px; margin: 0 0 14px; }
+
+  /* Mỗi dòng cài đặt xuống hàng: nhãn ở trên, ô nhập bên dưới chiếm trọn bề ngang —
+     nằm ngang như bản máy tính thì ô nhập bị bóp còn vài chục pixel, không bấm nổi. */
+  .settings-row { flex-direction: column; align-items: stretch; gap: 8px; }
+  .settings-row label { min-width: 0; font-size: 13.5px; }
+  .settings-row input[type='number'] { width: 100%; }
+
+  /* font-size 16px là cỡ nhỏ nhất mà Safari trên iPhone KHÔNG tự phóng to trang khi bấm
+     vào ô nhập — để nhỏ hơn là mỗi lần gõ màn hình lại nhảy loạn. */
+  .form-row input,
+  .form-row select,
+  .settings-row input[type='number'],
+  .window-row input[type='time'] { font-size: 16px; padding: 12px 12px; width: 100%; box-sizing: border-box; }
+  .form-row label { font-size: 13px; }
+
+  .day-pills { flex-wrap: wrap; gap: 8px; }
+  .day-pill { font-size: 13px; padding: 10px 14px; }
+  .window-row { flex-wrap: wrap; gap: 8px; }
+  .window-row input[type='time'] { width: auto; flex: 1 1 120px; }
+  .add-window-btn { font-size: 13px; padding: 11px 16px; }
+  .submit-btn { font-size: 15px; padding: 14px; }
+  .icon-btn { font-size: 20px; padding: 4px; }
+
+  /* Tên nội dung dài: rút theo bề ngang màn hình thay vì con số cứng 300px */
+  .ellip { max-width: 46vw; }
+  .added-item { padding: 10px 12px; gap: 8px; }
+  .added-list { font-size: 13px; }
+
+  /* --- Bảng nhập PIN vừa màn hình dọc --- */
+  .modal { width: min(92vw, 340px); padding: 20px; }
+  .block-card { width: min(92vw, 420px); padding: 28px 20px; }
+  .block-emoji { font-size: 62px; }
+  .block-card h2 { font-size: 22px; }
+  .block-card p { font-size: 14px; }
+
+  /* --- Trình phát video --- */
+  .player-wrap { border-radius: 14px; margin: 12px 0 12px; }
+}
