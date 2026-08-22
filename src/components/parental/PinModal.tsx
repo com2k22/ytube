@@ -68,11 +68,10 @@ export function PinModal({ open, onClose, onSuccess }: Props) {
   if (!open) return null;
 
   return (
-    <div className="overlay show" onClick={(e) => e.target === e.currentTarget && onClose()}>
+    // data-nav-scope: khoá màn hình lại, chỉ bấm được các phím trong bảng này (giống
+    // BlockScreen) — nhờ vậy trên TV không lỡ tay chọn trúng video phía sau.
+    <div className="overlay show" data-nav-scope onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className={`modal ${shake ? 'shake' : ''}`}>
-        <button className="close-x" onClick={onClose}>
-          ✕
-        </button>
         <h3>🔒 Nhập mã PIN phụ huynh</h3>
         <p className="sub">Mã mặc định demo: 1234</p>
         <div className="pin-dots">
@@ -81,13 +80,28 @@ export function PinModal({ open, onClose, onSuccess }: Props) {
           ))}
         </div>
         <div className="keypad">
+          {/* data-region + tabIndex: để bấm được bàn phím số này bằng điều khiển TV
+              (4 hàng × 3 cột — số cột khai báo ở SECTION_COLS trong Layout.tsx). */}
           {KEYS.map((k) => (
-            <button key={k} className={`key ${k.length > 1 ? 'wide' : ''}`} onClick={() => pressKey(k)}>
+            <button
+              key={k}
+              className={`key ${k.length > 1 ? 'wide' : ''}`}
+              data-region="pin"
+              tabIndex={0}
+              onClick={() => pressKey(k)}
+            >
               {k === 'xóa' ? '⌫' : k === 'nhập' ? '✓' : k}
             </button>
           ))}
         </div>
         <div className="err">{error}</div>
+        {/* Nút ✕ cố ý đặt CUỐI trong mã nguồn (vị trí hiển thị vẫn ở góc trên phải nhờ CSS
+            position: absolute). Lý do: điều khiển TV chạy theo thứ tự trong mã nguồn — để
+            nút này lên đầu thì mở bảng ra ô chọn nằm ngay trên nút Đóng, bấm OK là thoát
+            luôn. Đặt xuống cuối thì ô chọn rơi đúng vào phím số 1. */}
+        <button className="close-x" data-region="pinclose" tabIndex={0} onClick={onClose}>
+          ✕
+        </button>
       </div>
     </div>
   );

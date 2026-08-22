@@ -65,6 +65,30 @@ export function SafeYouTubePlayer({ videoId, title, onProgress, onEnded, autoFul
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [videoId, autoFullscreen]);
 
+  /**
+   * Tắt phụ đề (CC) của trình phát YouTube.
+   *
+   * Vì sao phải làm bằng tay thế này: tài liệu chính thức của YouTube CHỈ có tham số ép
+   * BẬT phụ đề (cc_load_policy=1), KHÔNG có tham số nào ép tắt. Để 0 thì YouTube vẫn tự
+   * bật lại theo thói quen xem trước đó. Cách duy nhất tắt được là gọi unloadModule để gỡ
+   * hẳn bộ phụ đề ra khỏi trình phát. Hàm này không nằm trong tài liệu chính thức nhưng là
+   * cách được dùng phổ biến và có tác dụng thật; gọi cả 2 tên module vì trình phát YouTube
+   * qua các đời dùng lúc thì 'captions', lúc thì 'cc'.
+   *
+   * Lưu ý: nếu chữ đã được ĐỐT SẴN vào hình ảnh video (kiểu video có sẵn chữ trên hình)
+   * thì không cách nào tắt được — đó là một phần của hình, không phải phụ đề.
+   */
+  const hideCaptions = () => {
+    const p = playerRef.current;
+    if (!p) return;
+    try {
+      p.unloadModule?.('captions');
+      p.unloadModule?.('cc');
+    } catch {
+      /* trình phát đời khác không có hàm này — bỏ qua, không ảnh hưởng việc xem */
+    }
+  };
+
   useEffect(() => {
     let cancelled = false;
 
@@ -79,9 +103,15 @@ export function SafeYouTubePlayer({ videoId, title, onProgress, onEnded, autoFul
           iv_load_policy: 3,
           playsinline: 1,
           autoplay: autoFullscreen ? 1 : 0,
+          // cc_load_policy: 0 = KHÔNG chủ động bật phụ đề. Lưu ý: YouTube không có tham số
+          // nào ép TẮT hẳn phụ đề — chỉ có tham số ép BẬT (đặt 1). Khi để 0, YouTube vẫn có
+          // thể tự bật lại theo thói quen xem trước đó của thiết bị. Vì vậy còn phải gỡ hẳn
+          // bộ phụ đề bằng tay ở phần onReady bên dưới.
+          cc_load_policy: 0,
         },
         events: {
           onReady: () => {
+            hideCaptions();
             if (autoFullscreen) {
               // Trình duyệt luôn cho phép tự phát nếu video đang TẮT TIẾNG — nên chủ động
               // tắt tiếng rồi tự bấm play qua API (đáng tin cậy hơn nhiều so với chỉ dựa
@@ -99,6 +129,9 @@ export function SafeYouTubePlayer({ videoId, title, onProgress, onEnded, autoFul
             }, 5000);
           },
           onStateChange: (e: any) => {
+            // Gỡ phụ đề lần nữa ngay khi video BẮT ĐẦU CHẠY: lúc onReady, bộ phụ đề nhiều
+            // khi còn chưa nạp xong nên gỡ chưa ăn — gỡ thêm lần này mới chắc.
+            if (e.data === window.YT.PlayerState.PLAYING) hideCaptions();
             if (autoFullscreen && !unmutedRef.current && e.data === window.YT.PlayerState.PLAYING) {
               unmutedRef.current = true;
               playerRef.current?.unMute?.();

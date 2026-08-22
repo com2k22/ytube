@@ -260,6 +260,11 @@ iPad là thấy bản mới ngay (không cần cài lại).
   (dù Short nay có thể dài tới vậy) vì rất nhiều bài hát/truyện thiếu nhi bình thường chỉ
   dài 1–3 phút, nâng lên sẽ xoá oan gần hết nội dung tử tế. Nếu vẫn thấy lọt Short: mở
   `src/lib/youtube.ts`, sửa số ở dòng `const SHORT_MAX_SECONDS = 60;` rồi deploy lại.
+- **Phụ đề (CC) mặc định TẮT**: YouTube chỉ có tham số ép BẬT phụ đề, không có tham số nào
+  ép tắt — nên app phải gỡ hẳn bộ phụ đề ra khỏi trình phát bằng tay (2 lần: lúc trình phát
+  sẵn sàng và lúc video bắt đầu chạy). Cách này có tác dụng thật nhưng không nằm trong tài
+  liệu chính thức của YouTube, nên nếu một bản cập nhật nào đó của YouTube làm nó thôi tác
+  dụng thì phụ đề có thể hiện lại. Riêng chữ ĐỐT SẴN vào hình ảnh video thì không thể tắt.
 - **Giao diện của mỗi bé được lưu riêng trong Supabase** (cột `theme_preference` bảng
   `profiles`), nên sửa code không đổi được giao diện mặc định. Muốn cả 2 bé về giao diện
   tối: chạy file `supabase/005_default_theme_dark.sql` trong SQL Editor của Supabase —

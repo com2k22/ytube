@@ -46,7 +46,11 @@ export function BlockScreen({ nextWindowStart, onOpenParentGate, isPreview }: Pr
   }, []);
 
   return (
-    <div className="overlay show">
+    // data-nav-scope = KHOÁ MÀN HÌNH: khi lớp phủ này hiện ra, bộ điều khiển bằng phím mũi
+    // tên chỉ còn thấy các nút BÊN TRONG nó, toàn bộ nội dung phía sau không chọn/bấm được
+    // nữa (xem getFocusables trong useTvNavigation). Trước đây bé vẫn di chuyển và bấm được
+    // vào các video phía sau tấm chắn này.
+    <div className="overlay show" data-nav-scope>
       <div className="block-card">
         <div className="block-emoji">🦉</div>
         <h2>Chưa đến giờ xem TV rồi!</h2>
@@ -57,6 +61,8 @@ export function BlockScreen({ nextWindowStart, onOpenParentGate, isPreview }: Pr
         <div className="block-sound-note">🔈 đang phát một giai điệu nhẹ nhàng...</div>
         <button
           className="submit-btn"
+          data-region="block"
+          tabIndex={0}
           onClick={() => (isPreview ? onOpenParentGate() : setAcknowledged(true))}
         >
           {isPreview ? 'Đóng xem thử' : acknowledged ? '💛 Con đã hiểu rồi' : 'VÂNG, con hiểu rồi'}
@@ -64,6 +70,8 @@ export function BlockScreen({ nextWindowStart, onOpenParentGate, isPreview }: Pr
         {!isPreview && (
           <button
             className="icon-btn"
+            data-region="block"
+            tabIndex={0}
             style={{ display: 'block', margin: '14px auto 0', fontSize: 12.5, opacity: 0.6 }}
             onClick={onOpenParentGate}
           >

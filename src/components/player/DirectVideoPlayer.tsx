@@ -50,7 +50,15 @@ export function DirectVideoPlayer({ url, title, onProgress, onEnded, autoFullscr
         /* vẫn có thể bị chặn trên 1 số trình duyệt/TV — bé bấm nút play trên player là được */
       });
     }
+    /** Tắt sẵn mọi phụ đề đi kèm video (nếu có) — mặc định app không hiện phụ đề. */
+    const hideTextTracks = () => {
+      const tracks = video.textTracks;
+      for (let i = 0; i < tracks.length; i += 1) tracks[i].mode = 'disabled';
+    };
+    hideTextTracks();
+
     const onPlaying = () => {
+      hideTextTracks();
       if (autoFullscreen) video.muted = false;
     };
 
