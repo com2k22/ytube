@@ -26,7 +26,60 @@ export interface YtPlaylistInfo {
   itemCount: number;
 }
 
-/** Lấy danh sách video trong 1 playlist YouTube (tối đa 50 video / trang, lấy 1 trang đầu). */
+// =====================================================================================
+// LỌC BỎ VIDEO NGẮN (YouTube Shorts)
+// -------------------------------------------------------------------------------------
+// YouTube Data API KHÔNG có ô nào đánh dấu "đây là Short" — nên không thể hỏi thẳng.
+// Cách nhận biết đáng tin cậy nhất mà app tự làm được: xem ĐỘ DÀI video. Short kinh điển
+// dài tối đa 60 giây, nên mọi video từ 60 giây trở xuống đều bị loại.
+//
+// Vì sao KHÔNG đặt ngưỡng cao hơn (dù YouTube nay cho Short dài tới 3 phút): rất nhiều
+// bài hát/truyện thiếu nhi bình thường chỉ dài 1-3 phút — đặt ngưỡng 3 phút sẽ xoá oan
+// gần hết nội dung tử tế của bé. Nếu sau này vẫn thấy lọt Short, sửa đúng con số dưới
+// đây (ví dụ lên 90) rồi deploy lại.
+const SHORT_MAX_SECONDS = 60;
+
+/** Đổi chuỗi độ dài kiểu YouTube ("PT1M30S", "PT45S", "PT1H2M3S") thành số giây. */
+function parseIsoDurationToSeconds(iso: string): number {
+  const m = /^P(?:(\d+)D)?T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/.exec(iso ?? '');
+  if (!m) return 0;
+  const [, d, h, min, s] = m;
+  return Number(d ?? 0) * 86400 + Number(h ?? 0) * 3600 + Number(min ?? 0) * 60 + Number(s ?? 0);
+}
+
+/**
+ * Hỏi YouTube độ dài của 1 loạt video, trả về danh sách id của những video KHÔNG phải
+ * Short (dài hơn SHORT_MAX_SECONDS). Mỗi lần hỏi được tối đa 50 video nên phải chia lô.
+ * Nếu gọi lỗi thì cố ý GIỮ NGUYÊN cả danh sách (thà lọt vài Short còn hơn tự dưng mất
+ * sạch nội dung của bé vì mạng chập chờn).
+ */
+async function filterOutShorts(videoIds: string[], key: string): Promise<Set<string>> {
+  const keep = new Set<string>(videoIds);
+  for (let i = 0; i < videoIds.length; i += 50) {
+    const batch = videoIds.slice(i, i + 50);
+    try {
+      const url = `${API_BASE}/videos?part=contentDetails&id=${batch.join(',')}&key=${key}`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        console.error('[Ytube] Lỗi gọi YouTube API (videos.contentDetails):', await res.text());
+        continue;
+      }
+      const data = await res.json();
+      for (const item of data.items ?? []) {
+        const seconds = parseIsoDurationToSeconds(item.contentDetails?.duration);
+        if (seconds > 0 && seconds <= SHORT_MAX_SECONDS) keep.delete(item.id);
+      }
+    } catch (err) {
+      console.error('[Ytube] Không kiểm tra được độ dài video (bỏ qua bước lọc Short):', err);
+    }
+  }
+  return keep;
+}
+
+/**
+ * Lấy danh sách video trong 1 playlist YouTube (tối đa 50 video / trang, lấy 1 trang đầu).
+ * ĐÃ TỰ LỌC BỎ Shorts — xem giải thích ở SHORT_MAX_SECONDS phía trên.
+ */
 export async function fetchPlaylistItems(playlistId: string): Promise<YtPlaylistItem[]> {
   const key = getApiKey();
   if (!key) {
@@ -42,12 +95,25 @@ export async function fetchPlaylistItems(playlistId: string): Promise<YtPlaylist
     return [];
   }
   const data = await res.json();
-  return (data.items ?? []).map((item: any) => ({
-    videoId: item.snippet?.resourceId?.videoId ?? '',
-    title: item.snippet?.title ?? 'Không có tiêu đề',
-    thumbnail: item.snippet?.thumbnails?.medium?.url ?? item.snippet?.thumbnails?.default?.url ?? null,
-    position: item.snippet?.position ?? 0,
-  }));
+  const items: YtPlaylistItem[] = (data.items ?? [])
+    .map((item: any) => ({
+      videoId: item.snippet?.resourceId?.videoId ?? '',
+      title: item.snippet?.title ?? 'Không có tiêu đề',
+      thumbnail: item.snippet?.thumbnails?.medium?.url ?? item.snippet?.thumbnails?.default?.url ?? null,
+      position: item.snippet?.position ?? 0,
+    }))
+    // Video đã bị xoá/để riêng tư thì YouTube vẫn trả về nhưng không có id — bỏ luôn.
+    .filter((it: YtPlaylistItem) => it.videoId.length > 0);
+
+  if (items.length === 0) return items;
+  const keep = await filterOutShorts(
+    items.map((it) => it.videoId),
+    key
+  );
+  const kept = items.filter((it) => keep.has(it.videoId));
+  const removed = items.length - kept.length;
+  if (removed > 0) console.info(`[Ytube] Đã lọc bỏ ${removed} video ngắn (Shorts) khỏi playlist.`);
+  return kept;
 }
 
 /** Lấy thông tin cơ bản 1 playlist (tiêu đề, ảnh, số video). */
@@ -114,7 +180,12 @@ export async function resolveChannelHandle(
   };
 }
 
-/** Từ 1 kênh YouTube, lấy danh sách các playlist công khai của kênh đó. */
+/**
+ * Từ 1 kênh YouTube, lấy danh sách các playlist công khai của kênh đó.
+ * Bỏ qua luôn các playlist do chính chủ kênh đặt tên là "Shorts" (rất nhiều kênh gom
+ * video ngắn vào 1 playlist riêng như vậy) — chặn ngay từ vòng ngoài, khỏi phải vào
+ * trong mới lọc từng video.
+ */
 export async function fetchChannelPlaylists(channelId: string): Promise<YtPlaylistInfo[]> {
   const key = getApiKey();
   if (!key) return [];
@@ -124,12 +195,14 @@ export async function fetchChannelPlaylists(channelId: string): Promise<YtPlayli
   const res = await fetch(url);
   if (!res.ok) return [];
   const data = await res.json();
-  return (data.items ?? []).map((item: any) => ({
-    playlistId: item.id,
-    title: item.snippet?.title ?? 'Playlist',
-    thumbnail: item.snippet?.thumbnails?.medium?.url ?? null,
-    itemCount: item.contentDetails?.itemCount ?? 0,
-  }));
+  return (data.items ?? [])
+    .map((item: any) => ({
+      playlistId: item.id,
+      title: item.snippet?.title ?? 'Playlist',
+      thumbnail: item.snippet?.thumbnails?.medium?.url ?? null,
+      itemCount: item.contentDetails?.itemCount ?? 0,
+    }))
+    .filter((pl: YtPlaylistInfo) => !/\bshorts?\b/i.test(pl.title));
 }
 
 /** Lấy tiêu đề + ảnh của 1 video đơn lẻ (dùng cho loại nguồn "youtube_video"). */

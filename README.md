@@ -253,6 +253,18 @@ iPad là thấy bản mới ngay (không cần cài lại).
 - **Playlist "mượn" từ 1 kênh đã whitelist**: không có "Tiếp tục xem" riêng (vì không
   nằm trong whitelist chính thức) — muốn có Tiếp tục xem, thêm hẳn playlist đó vào
   whitelist qua tab "Thêm nội dung".
+- **Lọc bỏ video ngắn (YouTube Shorts)**: app tự loại mọi video dài **từ 60 giây trở
+  xuống** khỏi mọi playlist/kênh, và bỏ qua luôn các playlist do chủ kênh đặt tên
+  "Shorts". YouTube KHÔNG cung cấp dấu hiệu nào để biết chắc "đây là Short", nên độ dài
+  là cách nhận biết đáng tin cậy nhất app tự làm được. Cố ý không nâng ngưỡng lên 3 phút
+  (dù Short nay có thể dài tới vậy) vì rất nhiều bài hát/truyện thiếu nhi bình thường chỉ
+  dài 1–3 phút, nâng lên sẽ xoá oan gần hết nội dung tử tế. Nếu vẫn thấy lọt Short: mở
+  `src/lib/youtube.ts`, sửa số ở dòng `const SHORT_MAX_SECONDS = 60;` rồi deploy lại.
+- **Giao diện của mỗi bé được lưu riêng trong Supabase** (cột `theme_preference` bảng
+  `profiles`), nên sửa code không đổi được giao diện mặc định. Muốn cả 2 bé về giao diện
+  tối: chạy file `supabase/005_default_theme_dark.sql` trong SQL Editor của Supabase —
+  hoặc đơn giản hơn, trên TV bấm nút 🎨 Giao diện ở cuối menu trái (app tự lưu lại), nhớ
+  làm cho cả Mina lẫn Cốm.
 
 ## 5. Cấu trúc thư mục
 

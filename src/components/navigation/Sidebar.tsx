@@ -5,12 +5,17 @@ import { useThemeContext } from '@/context/ThemeContext';
 import { PROFILE_IDS } from '@/constants';
 
 // Tách riêng icon và chữ (thay vì gộp chung 1 chuỗi như trước) để chế độ TV giấu được
-// phần chữ đi, chỉ chừa dải icon gọn bên trái giống app YouTube trên TV — bấm sang menu
-// thì dải đó tự bung ra hiện lại chữ. Bản web/điện thoại vẫn hiện đủ icon + chữ như cũ.
+// phần chữ đi, chỉ chừa dải icon gọn bên trái giống app YouTube trên TV. Bản web/điện
+// thoại vẫn hiện đủ icon + chữ như cũ.
+//
+// Icon của Mina/Cốm cố ý dùng ĐÚNG con vật ở nút chọn hồ sơ trên thanh trên cùng
+// (🐻 Mina, 🦊 Cốm — xem PROFILE_EMOJI trong constants.ts). Trên TV menu luôn thu gọn
+// chỉ còn icon, nên icon phải tự nói lên được là của ai; dùng 🧒/🎒 như trước thì nhìn
+// icon không tài nào đoán ra mục nào của bé nào.
 const NAV_ITEMS: { icon: string; text: string; profileId?: string }[] = [
   { icon: '🏠', text: 'Trang chủ' },
-  { icon: '🧒', text: 'Cho Mina', profileId: PROFILE_IDS.MINA },
-  { icon: '🎒', text: 'Cho Cốm', profileId: PROFILE_IDS.COM },
+  { icon: '🐻', text: 'Cho Mina', profileId: PROFILE_IDS.MINA },
+  { icon: '🦊', text: 'Cho Cốm', profileId: PROFILE_IDS.COM },
   { icon: '🕘', text: 'Video mới' },
 ];
 

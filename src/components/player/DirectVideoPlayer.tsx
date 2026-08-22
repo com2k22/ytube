@@ -75,8 +75,16 @@ export function DirectVideoPlayer({ url, title, onProgress, onEnded, autoFullscr
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url]);
 
+  /** Bấm nút OK trên điều khiển TV = tạm dừng / phát tiếp (xem giải thích ở SafeYouTubePlayer). */
+  const togglePlay = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (video.paused) video.play().catch(() => {});
+    else video.pause();
+  };
+
   return (
-    <div className="player-wrap" ref={wrapRef}>
+    <div className="player-wrap" ref={wrapRef} data-region="player" tabIndex={0} onClick={togglePlay}>
       <video ref={videoRef} title={title} controls playsInline />
     </div>
   );

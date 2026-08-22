@@ -121,8 +121,26 @@ export function SafeYouTubePlayer({ videoId, title, onProgress, onEnded, autoFul
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [videoId]);
 
+  /**
+   * Bấm nút OK trên điều khiển TV = tạm dừng / phát tiếp.
+   *
+   * Trước đây bấm OK lại thoát toàn màn hình và quay về trang trước. Lý do: bộ điều hướng
+   * bằng phím mũi tên (useTvNavigation) hiểu phím Enter là "bấm vào ô đang chọn", mà ô
+   * đang chọn lúc đó là nút "← Quay lại" — nên OK = bấm Quay lại.
+   * Cách sửa: cho chính khung video này thành 1 ô chọn được (data-region="player"), và
+   * khi mở trang phát thì con trỏ đặt sẵn vào đây (xem resetFocus trong useTvNavigation).
+   * Nhờ vậy OK rơi đúng vào hàm này. Muốn thoát thì bấm nút Back của điều khiển.
+   */
+  const togglePlay = () => {
+    const p = playerRef.current;
+    const YT = window.YT;
+    if (!p?.getPlayerState || !YT?.PlayerState) return;
+    if (p.getPlayerState() === YT.PlayerState.PLAYING) p.pauseVideo?.();
+    else p.playVideo?.();
+  };
+
   return (
-    <div className="player-wrap" ref={wrapRef}>
+    <div className="player-wrap" ref={wrapRef} data-region="player" tabIndex={0} onClick={togglePlay}>
       <div ref={containerRef} title={title} />
     </div>
   );

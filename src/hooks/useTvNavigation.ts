@@ -28,7 +28,11 @@ export function useTvNavigation(
   const getFocusables = useCallback((): HTMLElement[] => {
     if (!containerRef.current) return [];
     return Array.from(containerRef.current.querySelectorAll<HTMLElement>('[data-region]')).filter(
-      (el) => el.offsetParent !== null // bỏ qua phần tử đang ẩn (display:none)
+      // getClientRects().length > 0 = phần tử đang thật sự được vẽ ra màn hình.
+      // (Trước đây dùng offsetParent !== null, nhưng cách đó trả về "không thấy" với các
+      // phần tử position: fixed — mà khung video lúc TOÀN MÀN HÌNH chính là kiểu đó, nên
+      // khung video bị loại khỏi danh sách và bấm OK không tạm dừng được.)
+      (el) => el.getClientRects().length > 0
     );
   }, [containerRef]);
 
@@ -83,6 +87,13 @@ export function useTvNavigation(
     const handleKeyDown = (e: KeyboardEvent) => {
       const active = document.activeElement;
       if (active && ['INPUT', 'SELECT', 'TEXTAREA'].includes(active.tagName)) return; // gõ liệu bình thường
+
+      // Đang xem video TOÀN MÀN HÌNH: khoá hẳn việc di chuyển ô chọn bằng phím mũi tên.
+      // Lúc này bé chẳng nhìn thấy ô nào cả (video che kín màn hình), để mũi tên vẫn chạy
+      // ngầm thì bấm OK sau đó sẽ rơi trúng 1 ô vô hình nào đó — đúng kiểu lỗi "đang xem
+      // tự nhiên nhảy về trang trước". Chỉ còn OK (tạm dừng/phát tiếp) là có tác dụng;
+      // muốn thoát thì bấm nút Back của điều khiển.
+      if (document.fullscreenElement && e.key !== 'Enter') return;
 
       const focusables = getFocusables();
       if (focusables.length === 0) return;
@@ -189,12 +200,17 @@ export function useTvNavigation(
    */
   const resetFocus = useCallback(() => {
     const focusables = getFocusables();
+    // Ở trang phát video, ô chọn phải đặt vào CHÍNH KHUNG VIDEO (data-region="player"),
+    // không phải nút "← Quay lại" đứng ngay trên nó. Nhờ vậy bấm OK là tạm dừng/phát tiếp
+    // — trước đây OK rơi vào nút Quay lại nên đang xem tự nhiên bị thoát ra.
+    const playerIdx = focusables.findIndex((el) => el.getAttribute('data-region') === 'player');
     const firstContent = focusables.findIndex((el) => {
       const region = el.getAttribute('data-region');
       return region !== 'side' && region !== 'topbar';
     });
     returnIdxRef.current = null;
-    setFocus(firstContent >= 0 ? firstContent : 0, focusables);
+    const target = playerIdx >= 0 ? playerIdx : firstContent >= 0 ? firstContent : 0;
+    setFocus(target, focusables);
   }, [getFocusables, setFocus]);
 
   return { resetFocus };

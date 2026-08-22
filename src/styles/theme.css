@@ -93,8 +93,11 @@ body {
   background: linear-gradient(180deg, #fff8fb 0%, #ffeef5 100%);
   color: #7a4a63;
 }
-[data-theme='chibi'] .sidebar { background: #ffffffcc; border-right: 3px dashed #ffb6d5; }
-[data-theme='chibi'] .topbar { background: #ffffffcc; border-bottom: 3px dashed #ffb6d5; }
+/* Nền ĐẶC hoàn toàn (trước đây là #ffffffcc — trắng mờ 80%). Vì thanh trên cùng và menu
+   trái luôn dính tại chỗ khi cuộn, để nền mờ thì nội dung phía dưới trôi qua sẽ HIỆN LỜ MỜ
+   XUYÊN QUA, nhìn như ảnh video bị chồng đè lên nhau — đúng lỗi đã gặp ở Trang chủ. */
+[data-theme='chibi'] .sidebar { background: #fff7fb; border-right: 3px dashed #ffb6d5; }
+[data-theme='chibi'] .topbar { background: #fff7fb; border-bottom: 3px dashed #ffb6d5; }
 [data-theme='chibi'] .card { background: #fffbfd; border: 3px solid #ffd6ea; border-radius: 26px; }
 [data-theme='chibi'] .card-thumb {
   background: linear-gradient(135deg, #ffd6ea, #e8d6ff);
@@ -366,7 +369,6 @@ body {
   --card-w: 700px;
   --shelf-gap: 34px;
   --rail-w: 132px;
-  --rail-open-w: 360px;
 }
 
 /* --- Menu trái: dải icon, bung ra đè lên nội dung khi được chọn --- */
@@ -391,19 +393,14 @@ body {
   overflow: hidden;
   transition: width 0.18s ease;
 }
-[data-tv] .sidebar:focus-within {
-  width: var(--rail-open-w);
-  padding: 26px 20px;
-  /* Bóng đổ để thấy rõ menu đang NẰM ĐÈ lên nội dung, không phải đẩy nội dung đi. */
-  box-shadow: 14px 0 40px rgba(0, 0, 0, 0.45);
-}
-
 [data-tv] .brand { font-size: 34px; padding: 0 0 24px; justify-content: center; gap: 12px; }
 [data-tv] .brand-text { display: none; }
 [data-tv] .logo-badge { width: 56px; height: 40px; font-size: 20px; border-radius: 14px; padding-left: 4px; }
-[data-tv] .sidebar:focus-within .brand { justify-content: flex-start; padding-left: 12px; }
-[data-tv] .sidebar:focus-within .brand-text { display: inline; }
 
+/* Menu trái LUÔN thu gọn thành dải icon — không bung ra nữa, kể cả khi đang chọn vào nó.
+   (Bản trước có kiểu tự bung rộng khi chọn; bỏ đi cho màn hình đứng yên, không xê dịch.)
+   Vì vậy icon phải tự nói lên được mục đó là gì — xem NAV_ITEMS trong Sidebar.tsx: mục
+   của Mina/Cốm dùng đúng con 🐻/🦊 như nút chọn hồ sơ ở thanh trên cùng. */
 [data-tv] .side-item {
   width: 88px;
   height: 88px;
@@ -417,36 +414,24 @@ body {
 }
 [data-tv] .side-icon { font-size: 42px; line-height: 1; }
 [data-tv] .side-text { display: none; }
-[data-tv] .sidebar:focus-within .side-item {
-  width: auto;
-  height: auto;
-  padding: 20px 22px;
-  margin: 0 0 12px;
-  justify-content: flex-start;
-  gap: 18px;
-  border-radius: 22px;
-}
-[data-tv] .sidebar:focus-within .side-text { display: inline; font-size: 26px; }
-[data-tv] .deco { font-size: 30px; }
-/* Khi dải menu đang thu gọn, giấu mấy hình trang trí đi cho dải icon sạch sẽ giống app
-   TV chuẩn (dùng visibility chứ không phải display: none, để khối này vẫn giữ nguyên vai
-   trò "lò xo" đẩy 2 nút Giao diện / Bố mẹ xuống sát đáy). Bung menu ra thì hiện lại. */
+/* Dải icon hẹp thì mấy hình trang trí trông rối mắt — ẩn hẳn đi cho sạch. Dùng visibility
+   chứ không phải display: none, để khối này vẫn giữ vai trò "lò xo" đẩy 2 nút Giao diện /
+   Bố mẹ xuống sát đáy màn hình. */
 [data-tv] .sidebar-deco { visibility: hidden; }
-[data-tv] .sidebar:focus-within .sidebar-deco { visibility: visible; }
 
 /* --- Cột nội dung bên phải ---
    min-width: 0 là bắt buộc: thiếu nó thì hàng thẻ dài sẽ ĐẨY PHÌNH cả trang ra ngang
    thay vì cuộn ngang gọn bên trong hàng đó. */
 [data-tv] .content-col { min-width: 0; }
 [data-tv] .main { min-width: 0; padding: 30px 44px 90px; }
-[data-tv] .greet { font-size: 36px; margin: 4px 0 30px; }
-[data-tv] .section-title { font-size: 30px; margin: 0 0 20px; opacity: 0.92; }
-[data-tv] .back-btn { font-size: 23px; padding: 18px 30px; border-radius: 20px; }
+[data-tv] .greet { font-size: 40px; font-weight: 900; margin: 4px 0 30px; }
+[data-tv] .section-title { font-size: 34px; font-weight: 900; margin: 0 0 20px; opacity: 1; }
+[data-tv] .back-btn { font-size: 26px; font-weight: 800; padding: 20px 32px; border-radius: 20px; }
 
 /* --- Thanh trên cùng --- */
 [data-tv] .topbar { height: 118px; padding: 0 44px 0 32px; }
 [data-tv] .profiles { gap: 18px; }
-[data-tv] .profile-btn { font-size: 26px; padding: 12px 30px 12px 12px; border-width: 4px; }
+[data-tv] .profile-btn { font-size: 28px; font-weight: 800; padding: 12px 30px 12px 12px; border-width: 4px; }
 [data-tv] .avatar { width: 64px; height: 64px; font-size: 34px; }
 [data-tv] .top-actions { gap: 18px; }
 [data-tv] .theme-toggle,
@@ -467,12 +452,14 @@ body {
 [data-tv] .card { background: transparent; border: none; overflow: visible; border-radius: 0; }
 [data-tv] .card-thumb { border-radius: var(--radius); overflow: hidden; font-size: 76px; }
 [data-tv] .card-body { padding: 16px 2px 0; }
-[data-tv] .card-title { font-size: 32px; line-height: 1.28; }
-[data-tv] .card-sub { font-size: 24px; margin-top: 8px; opacity: 0.6; }
+/* Chữ to & đậm hẳn: ngồi cách TV 3-4m thì nét chữ mảnh rất khó đọc, tăng độ đậm giúp
+   dễ đọc hơn cả tăng cỡ chữ. Dòng phụ cũng bớt mờ đi (0.6 → 0.75) cho rõ. */
+[data-tv] .card-title { font-size: 36px; font-weight: 900; line-height: 1.26; }
+[data-tv] .card-sub { font-size: 26px; font-weight: 700; margin-top: 8px; opacity: 0.75; }
 /* Thời lượng nằm GÓC DƯỚI PHẢI của ảnh (đúng như YouTube), thay vì góc trên phải —
    vừa quen mắt hơn, vừa tránh đè lên chiếc nơ 🎀 của theme Chibi ở góc trên phải. */
-[data-tv] .duration { font-size: 20px; padding: 6px 14px; border-radius: 10px; top: auto; bottom: 16px; right: 14px; }
-[data-tv] .watching-badge { font-size: 19px; padding: 6px 16px; top: 14px; left: 14px; }
+[data-tv] .duration { font-size: 22px; font-weight: 800; padding: 6px 14px; border-radius: 10px; top: auto; bottom: 16px; right: 14px; }
+[data-tv] .watching-badge { font-size: 21px; font-weight: 800; padding: 6px 16px; top: 14px; left: 14px; }
 /* Thanh tiến độ xem chạy sát mép dưới cùng của ảnh, kéo hết bề ngang — giống YouTube. */
 [data-tv] .progress-wrap { height: 8px; left: 0; right: 0; bottom: 0; border-radius: 0; }
 [data-tv] .card .card-thumb::after { top: 12px; right: 14px; font-size: 30px; }
@@ -489,7 +476,24 @@ body {
 /* --- Hàng kênh yêu thích --- */
 [data-tv] .channel-shelf .channel-item { width: 220px; padding: 16px 8px; border-radius: 28px; }
 [data-tv] .channel-avatar { width: 160px; height: 160px; font-size: 66px; }
-[data-tv] .channel-name { font-size: 24px; }
+[data-tv] .channel-name { font-size: 26px; font-weight: 800; }
+
+/* Chừa khoảng an toàn khi cuộn tới ô đang chọn.
+   Thanh trên cùng (cao 118px) luôn dính tại chỗ, nên nếu không khai báo dòng này, trình
+   duyệt sẽ cuộn sao cho ô chọn "vừa đủ lọt màn hình" — mà phần trên của ô thì lại nằm
+   NGAY DƯỚI thanh đó, tức là bị che khuất. scroll-margin-top báo cho trình duyệt biết
+   phải chừa sẵn 160px phía trên. */
+[data-tv] .card,
+[data-tv] .channel-item,
+[data-tv] .back-btn,
+[data-tv] .player-wrap,
+[data-tv] .tab-btn,
+[data-tv] .mini-profile-btn { scroll-margin-top: 160px; scroll-margin-bottom: 48px; }
+
+/* Khung video khi đang TOÀN MÀN HÌNH thì bỏ hẳn viền sáng chọn — lúc đó chỉ có mỗi video
+   trên màn hình, vẽ thêm viền chỉ tổ vướng mắt. */
+[data-tv] .player-wrap.tv-focused { outline-offset: -6px; }
+.player-wrap:fullscreen { outline: none !important; box-shadow: none !important; }
 
 /* --- Trang phát video --- */
 [data-tv] .player-wrap { max-width: 1500px; border-radius: 24px; }
