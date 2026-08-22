@@ -46,7 +46,12 @@ export interface ResolvedVideo {
 
 export interface TimeRuleGroup {
   id: string;
-  profile_id: string;
+  /**
+   * null = cấu hình DÙNG CHUNG cho cả 2 bé — đây là cách app dùng hiện nay (xem
+   * supabase/006_shared_time_rules.sql). Kiểu vẫn để nhận string để tương thích với dữ
+   * liệu cũ còn sót lại từ thời mỗi bé có cấu hình riêng.
+   */
+  profile_id: string | null;
   days: DayCode[];
   daily_minutes: number;
   session_minutes: number;

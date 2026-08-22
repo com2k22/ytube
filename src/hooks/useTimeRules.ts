@@ -2,22 +2,23 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import type { TimeRuleGroup } from '@/types';
 
-/** Đọc & chỉnh sửa các "nhóm ngày" quản lý thời gian xem cho 1 hồ sơ. */
-export function useTimeRules(profileId: string | null) {
+/**
+ * Đọc & chỉnh sửa các "nhóm ngày" quản lý thời gian xem.
+ *
+ * Từ bản này, cấu hình giờ xem là DÙNG CHUNG cho cả 2 bé — không còn chia riêng từng hồ
+ * sơ nữa. Quy ước trong cơ sở dữ liệu: những dòng có profile_id để TRỐNG (null) là cấu
+ * hình chung. Xem supabase/006_shared_time_rules.sql để chuyển dữ liệu cũ sang kiểu này.
+ */
+export function useTimeRules() {
   const [groups, setGroups] = useState<TimeRuleGroup[]>([]);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    if (!profileId) {
-      setGroups([]);
-      setLoading(false);
-      return;
-    }
     setLoading(true);
     const { data, error } = await supabase
       .from('time_rule_groups')
       .select('*')
-      .eq('profile_id', profileId)
+      .is('profile_id', null)
       .order('created_at');
     if (error) {
       console.error('[Ytube] Không tải được cấu hình giờ xem:', error.message);
@@ -26,7 +27,7 @@ export function useTimeRules(profileId: string | null) {
     }
     setGroups(data ?? []);
     setLoading(false);
-  }, [profileId]);
+  }, []);
 
   useEffect(() => {
     refresh();
@@ -42,9 +43,9 @@ export function useTimeRules(profileId: string | null) {
     return !error;
   };
 
-  const addGroup = async (profileIdArg: string) => {
+  const addGroup = async () => {
     const { error } = await supabase.from('time_rule_groups').insert({
-      profile_id: profileIdArg,
+      profile_id: null,
       days: [],
       daily_minutes: 60,
       session_minutes: 20,

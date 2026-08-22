@@ -5,7 +5,12 @@ interface Props {
   title: string;
   thumbnail?: string | null;
   type: SourceType;
-  region: 'continue' | 'playlist' | 'videorec';
+  /**
+   * Tên vùng điều hướng bằng điều khiển TV. Mỗi kiểu bố cục 1 tên riêng:
+   *  - 'continue' / 'playlistrec' / 'videorec': các hàng ngang ở Trang chủ.
+   *  - 'playlist': lưới 3 cột ở trang Kênh (số cột khai báo ở SECTION_COLS, Layout.tsx).
+   */
+  region: 'continue' | 'playlist' | 'playlistrec' | 'videorec';
   inProgress?: boolean;
   progressPercent?: number;
   /** Số cột của vùng điều hướng D-pad chứa thẻ này (dùng cho lưới nhiều hàng, cột tính động — xem useTvNavigation). */

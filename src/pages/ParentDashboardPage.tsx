@@ -16,7 +16,7 @@ export function ParentDashboardPage() {
   const [tab, setTab] = useState<Tab>('time');
   const [configProfileId, setConfigProfileId] = useState(activeProfile?.id ?? profiles[0]?.id ?? '');
   const [previewBlock, setPreviewBlock] = useState(false);
-  const { groups } = useTimeRules(configProfileId || null);
+  const { groups } = useTimeRules();
   const navigate = useNavigate();
 
   if (profiles.length === 0) return null;
@@ -62,6 +62,9 @@ export function ParentDashboardPage() {
 
       {tab === 'time' && (
         <div>
+          {/* Cấu hình giờ xem giờ dùng CHUNG cho cả 2 bé nên không còn nút chọn từng bé ở
+              đây nữa. Riêng thẻ "đang xem gì" bên dưới vẫn theo từng bé, vì mỗi bé xem
+              video khác nhau — vẫn cần biết bé nào đang xem để tắt từ xa. */}
           <div className="mini-profiles">
             {profiles.map((p) => (
               <div
@@ -75,7 +78,7 @@ export function ParentDashboardPage() {
           </div>
 
           <SessionLiveCard profileId={configProfile.id} profileLabel={configProfile.name} />
-          <TimeRuleGroupEditor profileId={configProfile.id} profileLabel={configProfile.name} />
+          <TimeRuleGroupEditor />
 
           <button className="add-window-btn" style={{ marginTop: 4 }} onClick={() => setPreviewBlock(true)}>
             🔔 Xem thử màn hình chặn

@@ -23,6 +23,24 @@ const TYPE_LABEL: Record<SourceType, string> = {
   custom_playlist: 'Playlist tự tạo',
 };
 
+/** Tên từng mục trong danh sách "Nội dung đã thêm" (dạng số nhiều, đọc cho tự nhiên). */
+const GROUP_LABEL: Record<SourceType, string> = {
+  custom_playlist: 'Playlist tự tạo',
+  youtube_playlist: 'Playlist YouTube',
+  youtube_channel: 'Kênh YouTube',
+  youtube_video: 'Video riêng lẻ',
+  direct_url: 'Link trực tiếp',
+};
+
+/** Thứ tự các mục hiện ra — để loại hay dùng nhất nằm trên cùng. */
+const GROUP_ORDER: SourceType[] = [
+  'custom_playlist',
+  'youtube_playlist',
+  'youtube_channel',
+  'youtube_video',
+  'direct_url',
+];
+
 const KIDS: { id: string; name: string }[] = [
   { id: PROFILE_IDS.MINA, name: 'Mina' },
   { id: PROFILE_IDS.COM, name: 'Cốm' },
@@ -146,6 +164,21 @@ export function AddSourceForm() {
 
   const removeDraftVideo = (videoId: string) => {
     setDraftItems((prev) => prev.filter((it) => it.videoId !== videoId));
+  };
+
+  /**
+   * Đổi chỗ 1 video lên trên / xuống dưới trong playlist tự tạo.
+   * Thứ tự trong danh sách này CHÍNH LÀ thứ tự phát khi bé xem (và cũng là thứ tự dùng cho
+   * tính năng tự phát video kế tiếp), nên sắp lại ở đây là đổi luôn thứ tự phát.
+   */
+  const moveDraftVideo = (index: number, direction: -1 | 1) => {
+    setDraftItems((prev) => {
+      const target = index + direction;
+      if (target < 0 || target >= prev.length) return prev;
+      const next = [...prev];
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
   };
 
   /** Video đơn lẻ đã có sẵn trong whitelist — cho phép chọn nhanh vào playlist tự tạo, khỏi dán lại link. */
@@ -333,6 +366,11 @@ export function AddSourceForm() {
             {draftItems.length === 0 && (
               <p style={{ fontSize: 12.5, opacity: 0.55 }}>Chưa ghép video nào.</p>
             )}
+            {draftItems.length > 1 && (
+              <div className="hint" style={{ opacity: 0.6, height: 'auto', margin: '0 0 6px' }}>
+                Dùng nút ▲ ▼ để sắp thứ tự — playlist sẽ phát đúng theo thứ tự này.
+              </div>
+            )}
             <div className="added-list">
               {draftItems.map((it, i) => (
                 <div className="added-item" key={it.videoId} style={{ justifyContent: 'space-between' }}>
@@ -342,9 +380,27 @@ export function AddSourceForm() {
                       {it.title}
                     </span>
                   </div>
-                  <button className="icon-btn" title="Bỏ video này" onClick={() => removeDraftVideo(it.videoId)}>
-                    ✕
-                  </button>
+                  <div className="order-btns">
+                    <button
+                      className="icon-btn"
+                      title="Chuyển lên trên"
+                      disabled={i === 0}
+                      onClick={() => moveDraftVideo(i, -1)}
+                    >
+                      ▲
+                    </button>
+                    <button
+                      className="icon-btn"
+                      title="Chuyển xuống dưới"
+                      disabled={i === draftItems.length - 1}
+                      onClick={() => moveDraftVideo(i, 1)}
+                    >
+                      ▼
+                    </button>
+                    <button className="icon-btn" title="Bỏ video này" onClick={() => removeDraftVideo(it.videoId)}>
+                      ✕
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -383,32 +439,46 @@ export function AddSourceForm() {
         {!loading && sources.length === 0 && (
           <p style={{ fontSize: 13, opacity: 0.6 }}>Chưa có nội dung nào — thêm ở form phía trên nhé.</p>
         )}
-        <div className="added-list">
-          {sources.map((s) => (
-            <div className="added-item" key={s.id} style={{ justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center', minWidth: 0 }}>
-                <span>{SOURCE_TYPE_ICON[s.type] ?? '📄'}</span>
-                <div style={{ minWidth: 0 }}>
-                  <div className="ellip" style={{ fontWeight: 700 }}>
-                    {s.title}
-                  </div>
-                  <div style={{ fontSize: 11, opacity: 0.6 }}>
-                    {TYPE_LABEL[s.type]}
-                    {s.type === 'custom_playlist' ? ` (${s.items.length} video)` : ''} · {profileBadge(s.profile_id)}
-                  </div>
-                </div>
+
+        {/* Chia theo từng loại cho dễ tìm: nhiều nội dung rồi mà đổ chung 1 danh sách dài
+            thì rất khó dò ra cái cần sửa. Loại nào chưa có nội dung nào thì ẩn hẳn mục đó. */}
+        {GROUP_ORDER.map((type) => {
+          const items = sources.filter((s) => s.type === type);
+          if (items.length === 0) return null;
+          return (
+            <div key={type} style={{ marginTop: 18 }}>
+              <div className="added-group-title">
+                {SOURCE_TYPE_ICON[type] ?? '📄'} {GROUP_LABEL[type]} ({items.length})
               </div>
-              <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-                <button className="icon-btn" title="Sửa" onClick={() => startEdit(s)}>
-                  ✏️
-                </button>
-                <button className="icon-btn" title="Xoá" onClick={() => onDelete(s)}>
-                  🗑
-                </button>
+              <div className="added-list">
+                {items.map((s) => (
+                  <div className="added-item" key={s.id} style={{ justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', minWidth: 0 }}>
+                      <span>{SOURCE_TYPE_ICON[s.type] ?? '📄'}</span>
+                      <div style={{ minWidth: 0 }}>
+                        <div className="ellip" style={{ fontWeight: 700 }}>
+                          {s.title}
+                        </div>
+                        <div style={{ fontSize: 11, opacity: 0.6 }}>
+                          {s.type === 'custom_playlist' ? `${s.items.length} video · ` : ''}
+                          {profileBadge(s.profile_id)}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                      <button className="icon-btn" title="Sửa" onClick={() => startEdit(s)}>
+                        ✏️
+                      </button>
+                      <button className="icon-btn" title="Xoá" onClick={() => onDelete(s)}>
+                        🗑
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-          ))}
-        </div>
+          );
+        })}
       </div>
     </>
   );

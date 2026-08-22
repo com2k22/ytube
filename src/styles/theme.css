@@ -254,20 +254,6 @@ body {
    "Video đề xuất") — giới hạn độ rộng đúng bằng 3 thẻ + 2 khoảng cách giữa chúng. */
 .shelf-cap3 { max-width: calc(3 * var(--card-w) + 2 * var(--shelf-gap)); }
 
-/* Khối "Playlist đề xuất" ở Trang chủ — lưới nhiều hàng, cố định 3 cột/hàng, ưu tiên lấp
-   đầy hàng 1 trước khi xuống hàng 2 (xem HomePage.tsx). */
-.playlist-shelf2 {
-  display: grid;
-  grid-auto-flow: row;
-  gap: 28px;
-  overflow-x: auto;
-  padding-bottom: 10px;
-  scroll-behavior: smooth;
-  scrollbar-width: none;
-}
-.playlist-shelf2::-webkit-scrollbar { display: none; }
-.playlist-shelf2 .card { width: var(--card-w); }
-
 /* box-sizing: border-box — tính viền vào trong bề rộng đã khai báo. Thiếu dòng này thì
    viền của thẻ (2px, riêng theme Chibi là 3px) bị CỘNG THÊM ra ngoài, làm mỗi hàng rộng
    hơn dự tính vài pixel và thẻ thứ 3 bị cắt cụt mép phải. */
@@ -476,8 +462,7 @@ body {
 /* Hàng thẻ bị "cắt gọn" ở mép (vì có cuộn ngang), nên phải chừa sẵn 12px lề bên trong —
    nếu không, viền sáng của ô đang chọn (vốn vẽ LÒI RA ngoài thẻ) sẽ bị cắt cụt ở mép
    trái và mép trên. Lùi margin -12px để bù lại, giữ thẻ đứng đúng vị trí cũ. */
-[data-tv] .shelf,
-[data-tv] .playlist-shelf2 { padding: 12px 0 20px 12px; margin-left: -12px; }
+[data-tv] .shelf { padding: 12px 0 20px 12px; margin-left: -12px; }
 
 /* --- Thẻ video/playlist: bỏ khung hộp, chỉ còn ảnh + chữ (giống YouTube) --- */
 [data-tv] .card { background: transparent; border: none; overflow: visible; border-radius: 0; }
@@ -622,10 +607,6 @@ body {
   /* --- Thẻ video: 1 thẻ chiếm gần trọn bề ngang, thẻ sau ló ra để biết còn kéo được --- */
   .shelf .card { flex: 0 0 82%; }
   .shelf-cap3 { max-width: none; }
-  /* !important: bề rộng cột của lưới này được đặt thẳng trong JSX (HomePage.tsx) nên phải
-     đè mới thắng được — trên điện thoại luôn là 1 cột. */
-  .playlist-shelf2 { grid-template-columns: 1fr !important; }
-  .playlist-shelf2 .card { width: 100%; }
   .grid3 { grid-template-columns: 1fr; gap: 16px; }
   .card-title { font-size: 15px; }
   .card-sub { font-size: 12px; }
@@ -680,4 +661,44 @@ body {
 
   /* --- Trình phát video --- */
   .player-wrap { border-radius: 14px; margin: 12px 0 12px; }
+}
+
+/* --- Thanh đếm ngược "tự phát video tiếp theo" (trang phát video) --- */
+.autonext-bar {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  padding: 14px 18px; border-radius: 16px; margin: 0 0 18px;
+  border: 2px solid var(--focus-color); background: rgba(124, 156, 255, 0.1);
+}
+.autonext-count {
+  flex-shrink: 0; width: 44px; height: 44px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 900; font-size: 20px; background: var(--focus-color); color: #0e0f13;
+}
+.autonext-text { min-width: 0; flex: 1; }
+.autonext-label { font-size: 13px; opacity: 0.75; }
+.autonext-title { font-weight: 800; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+[data-tv] .autonext-bar { padding: 22px 28px; border-radius: 22px; gap: 24px; margin-bottom: 26px; border-width: 4px; }
+[data-tv] .autonext-count { width: 72px; height: 72px; font-size: 34px; }
+[data-tv] .autonext-label { font-size: 22px; }
+[data-tv] .autonext-title { font-size: 28px; }
+
+/* --- Nút chức năng của bố mẹ trên màn hình chặn --- */
+.block-parent-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+.block-hint { font-size: 12px; opacity: 0.55; margin-top: 12px; line-height: 1.5; }
+[data-tv] .block-parent-actions { gap: 16px; margin-top: 22px; }
+[data-tv] .block-hint { font-size: 19px; margin-top: 20px; }
+
+/* --- Nút đổi thứ tự video trong playlist tự tạo --- */
+.order-btns { display: flex; gap: 2px; flex-shrink: 0; }
+.order-btns .icon-btn:disabled { opacity: 0.25; cursor: default; }
+
+/* --- Tiêu đề từng mục nhỏ trong danh sách "Nội dung đã thêm" --- */
+.added-group-title {
+  font-size: 13px; font-weight: 800; opacity: 0.75;
+  margin: 0 0 8px; padding-bottom: 6px; border-bottom: 1px solid currentColor;
+}
+[data-tv] .added-group-title { font-size: 20px; margin-bottom: 12px; }
+@media (max-width: 760px) {
+  .added-group-title { font-size: 12.5px; }
 }

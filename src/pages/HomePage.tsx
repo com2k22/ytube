@@ -42,12 +42,6 @@ export function HomePage() {
     return false;
   });
 
-  // "Playlist đề xuất" là lưới nhiều hàng, ưu tiên lấp đầy hàng 1 trước khi xuống hàng 2.
-  // Số cột cố định (KHÔNG tính động theo số lượng, tránh trường hợp ít playlist lại bị dồn
-  // thành 1 cột đứng dọc): 2 cột trên TV vì thẻ trên TV rất to (700px, giống YouTube TV),
-  // 3 cột trên web/điện thoại. Xem thêm ở useTvNavigation (data-cols).
-  const playlistCols = document.documentElement.hasAttribute('data-tv') ? 2 : 3;
-
   const openSource = (source: AllowedSource) => {
     if (source.type === 'youtube_playlist' || source.type === 'custom_playlist') {
       navigate(`/playlist/${source.id}`);
@@ -106,18 +100,19 @@ export function HomePage() {
       {recommendedPlaylists.length > 0 && (
         <>
           <div className="section-title">📂 Playlist đề xuất</div>
-          <div
-            className="playlist-shelf2"
-            style={{ marginBottom: 32, gridTemplateColumns: `repeat(${playlistCols}, var(--card-w))` }}
-          >
+          {/* Cùng kiểu hàng ngang cuộn được như khối "Tiếp tục xem" (trước đây khối này là
+              lưới nhiều hàng). Vùng điều hướng đặt tên riêng "playlistrec" — KHÔNG dùng
+              chung tên "playlist" với trang Kênh, vì bên đó playlist xếp lưới 3 cột, còn ở
+              đây là 1 hàng ngang; dùng chung tên thì phím mũi tên sẽ chạy sai ở một trong
+              hai chỗ. */}
+          <div className="shelf shelf-cap3" style={{ marginBottom: 32 }}>
             {recommendedPlaylists.map((source) => (
               <PlaylistCard
                 key={source.id}
                 title={source.title}
                 thumbnail={source.thumbnail}
                 type={source.type}
-                region="playlist"
-                cols={playlistCols}
+                region="playlistrec"
                 onClick={() => openSource(source)}
               />
             ))}

@@ -5,18 +5,15 @@ import type { DayCode, TimeRuleGroup, TimeWindow } from '@/types';
 
 const DAY_ORDER: DayCode[] = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 
-interface Props {
-  profileId: string;
-  profileLabel: string;
-}
-
 /**
  * TimeRuleGroupEditor — cấu hình giờ xem theo từng "nhóm ngày" độc lập: mỗi nhóm tự
  * chọn các ngày trong tuần, với khung giờ / tổng thời gian mỗi ngày / thời gian mỗi
  * lượt xem riêng (ví dụ ngày đi học khác cuối tuần).
+ *
+ * Cấu hình này DÙNG CHUNG cho cả 2 bé — không còn chọn từng hồ sơ như trước nữa.
  */
-export function TimeRuleGroupEditor({ profileId, profileLabel }: Props) {
-  const { groups, addGroup, deleteGroup, saveGroup } = useTimeRules(profileId);
+export function TimeRuleGroupEditor() {
+  const { groups, addGroup, deleteGroup, saveGroup } = useTimeRules();
   const [draft, setDraft] = useState<TimeRuleGroup[]>([]);
   const { showToast } = useToast();
 
@@ -58,7 +55,7 @@ export function TimeRuleGroupEditor({ profileId, profileLabel }: Props) {
 
   const saveAll = async () => {
     await Promise.all(draft.map((g) => saveGroup(g)));
-    showToast(`💾 Đã lưu cài đặt giờ xem cho ${profileLabel}`);
+    showToast('💾 Đã lưu cài đặt giờ xem (áp dụng cho cả 2 bé)');
   };
 
   return (
@@ -67,8 +64,8 @@ export function TimeRuleGroupEditor({ profileId, profileLabel }: Props) {
         📅 Cấu hình theo nhóm ngày
       </div>
       <p style={{ fontSize: 12.5, opacity: 0.6, margin: '-8px 0 16px', maxWidth: 560 }}>
-        Mỗi nhóm chọn các ngày riêng, với khung giờ, tổng thời gian/ngày và thời gian mỗi lượt xem riêng — ví dụ
-        ngày đi học khác cuối tuần.
+        Cài đặt này áp dụng CHUNG cho cả Mina và Cốm. Mỗi nhóm chọn các ngày riêng, với khung giờ, tổng thời
+        gian/ngày và thời gian mỗi lượt xem riêng — ví dụ ngày đi học khác cuối tuần.
       </p>
 
       {draft.map((g, gi) => (
@@ -137,7 +134,7 @@ export function TimeRuleGroupEditor({ profileId, profileLabel }: Props) {
         </div>
       ))}
 
-      <button className="add-window-btn" style={{ marginBottom: 24 }} onClick={() => addGroup(profileId)}>
+      <button className="add-window-btn" style={{ marginBottom: 24 }} onClick={() => addGroup()}>
         + Thêm nhóm ngày
       </button>
 

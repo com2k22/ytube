@@ -260,6 +260,17 @@ iPad là thấy bản mới ngay (không cần cài lại).
   (dù Short nay có thể dài tới vậy) vì rất nhiều bài hát/truyện thiếu nhi bình thường chỉ
   dài 1–3 phút, nâng lên sẽ xoá oan gần hết nội dung tử tế. Nếu vẫn thấy lọt Short: mở
   `src/lib/youtube.ts`, sửa số ở dòng `const SHORT_MAX_SECONDS = 60;` rồi deploy lại.
+- **Quản lý thời gian dùng CHUNG cho cả 2 bé**: một bộ khung giờ + hạn mức phút/ngày áp
+  dụng cho cả Mina và Cốm (Mina xem 30 phút rồi thì Cốm chỉ còn phần còn lại). Muốn chuyển
+  dữ liệu cũ (mỗi bé một bộ riêng) sang kiểu này, chạy `supabase/006_shared_time_rules.sql`
+  trong SQL Editor của Supabase — ⚠️ file đó có xoá cấu hình riêng của bé thứ hai, giữ lại
+  cấu hình của Mina làm bộ chung.
+- **Số phút đã xem trong ngày là ƯỚC LƯỢNG**: tính bằng cách cộng thời gian của các phiên
+  xem trong ngày (bảng `watch_sessions`), bám theo % đã xem của trình phát và cập nhật mỗi
+  ~5 giây. Đủ chính xác để giới hạn giờ xem của bé, không phải để tính từng giây.
+- **"Bố mẹ cho xem ngay"**: nhập đúng PIN ở màn hình chặn là bỏ qua giới hạn giờ, nhưng
+  CHỈ đến khi tắt app — mở lại là tự khoá theo cài đặt (lưu trong sessionStorage, loại bộ
+  nhớ tự mất khi đóng app). Bố mẹ không cần nhớ đi khoá lại.
 - **Phụ đề (CC) mặc định TẮT**: YouTube chỉ có tham số ép BẬT phụ đề, không có tham số nào
   ép tắt — nên app phải gỡ hẳn bộ phụ đề ra khỏi trình phát bằng tay (2 lần: lúc trình phát
   sẵn sàng và lúc video bắt đầu chạy). Cách này có tác dụng thật nhưng không nằm trong tài

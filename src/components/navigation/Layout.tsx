@@ -6,7 +6,7 @@ import { PinModal } from '@/components/parental/PinModal';
 import { BlockScreen } from '@/components/parent-dashboard/BlockScreen';
 import { useTvNavigation } from '@/hooks/useTvNavigation';
 import { useTimeGate } from '@/hooks/useTimeGate';
-import { useProfileContext } from '@/context/ProfileContext';
+import { useTempUnlock } from '@/hooks/useTempUnlock';
 import { isSupabaseConfigured } from '@/lib/supabaseClient';
 
 // Lưu ý: cố tình KHÔNG khai báo 'continue' và 'topbar' ở đây — vùng không khai báo sẽ mặc
@@ -14,6 +14,9 @@ import { isSupabaseConfigured } from '@/lib/supabaseClient';
 // 1 hàng, và thanh trên cùng (hồ sơ + đổi giao diện + Bố mẹ) cũng là 1 hàng ngang.
 // 'side' = 1 cột: menu bên trái là 1 cột DỌC, nên phải đi bằng mũi tên lên/xuống mới đúng
 // trực giác (bấm trái/phải sẽ nhảy sang vùng khác — xem useTvNavigation).
+// 'playlist' / 'video' = 3 cột: lưới 3 thẻ/hàng ở TRANG CHI TIẾT (trang Kênh, trang danh
+// sách video của playlist). Riêng các khối ở Trang chủ ('continue', 'playlistrec',
+// 'videorec') cố ý KHÔNG khai báo ở đây — để mặc định là 1 hàng ngang cuộn được.
 // 'pin' = 3 cột: bàn phím số của bảng nhập PIN xếp 4 hàng × 3 cột.
 // 'block' / 'pinclose' = 1 cột: các nút xếp dọc trong lớp phủ khoá màn hình.
 // 'profmenu' = 1 cột: danh sách chọn hồ sơ xổ xuống từ thanh trên cùng, xếp dọc.
@@ -32,18 +35,19 @@ const SECTION_COLS = {
  * Layout — khung sườn cố định (Sidebar + TopBar) bao quanh mọi trang, xử lý:
  * - Điều hướng D-pad toàn cục (useTvNavigation) trên cả sidebar lẫn nội dung trang.
  * - Cổng PIN phụ huynh (bấm 🔒 Bố mẹ ở cuối menu bên trái — xem Sidebar).
- * - Màn hình chặn ngoài giờ xem (BlockScreen), chỉ áp dụng cho các trang xem của bé,
- *   KHÔNG áp dụng khi đang ở trang /parent để phụ huynh luôn vào được.
- *   Màn hình chặn LUÔN hiển thị suốt thời gian ngoài khung giờ được phép — bấm "VÂNG"
- *   chỉ là xác nhận đã đọc, KHÔNG mở khoá xem nội dung. Cách duy nhất để thoát màn hình
- *   chặn là phụ huynh nhập đúng mã PIN (qua nút "🔒 Bố mẹ" ngay trên màn hình chặn).
+ * - Màn hình chặn (BlockScreen) — 2 trường hợp: CHƯA ĐẾN GIỜ xem, và ĐÃ HẾT thời gian
+ *   của hôm nay. Không áp dụng khi đang ở trang /parent để phụ huynh luôn vào được.
+ *   Bé không tự đóng được — bấm "VÂNG" chỉ là xác nhận đã đọc. Chỉ bố mẹ thoát được, và
+ *   đều phải nhập mã PIN, theo 1 trong 2 đường:
+ *     • "🔓 Cho xem ngay" → mở khoá TẠM, hết hiệu lực khi tắt app (xem useTempUnlock).
+ *     • "🔒 Bố mẹ vào đây" → vào khu Bố mẹ để sửa hẳn cấu hình giờ.
  */
 export function Layout() {
   const layoutRef = useRef<HTMLDivElement>(null);
-  const [pinOpen, setPinOpen] = useState(false);
+  /** Mở bảng PIN để làm gì: vào khu Bố mẹ, hay cho bé xem ngay. null = đang đóng. */
+  const [pinPurpose, setPinPurpose] = useState<'parent' | 'unlock' | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
-  const { activeProfile } = useProfileContext();
 
   const { resetFocus } = useTvNavigation(layoutRef, SECTION_COLS, {
     onEscape: () => {
@@ -51,10 +55,13 @@ export function Layout() {
     },
   });
 
-  const gate = useTimeGate(activeProfile?.id ?? null);
+  const gate = useTimeGate();
+  const { unlocked, grant } = useTempUnlock();
 
+  const pinOpen = pinPurpose !== null;
   const isParentRoute = location.pathname.startsWith('/parent');
-  const showBlockScreen = !isParentRoute && !gate.allowed && !pinOpen;
+  // unlocked = bố mẹ đã nhập PIN cho xem ngay trong phiên này → bỏ qua mọi giới hạn giờ.
+  const showBlockScreen = !isParentRoute && !gate.allowed && !unlocked && !pinOpen;
 
   // Đặt lại ô đang chọn mỗi khi: đổi trang, HOẶC mở/đóng 1 lớp phủ khoá màn hình (bảng
   // PIN, màn hình Chưa đến giờ xem). Lớp phủ mở ra thì ô chọn phải nhảy vào bên trong nó;
@@ -84,7 +91,7 @@ export function Layout() {
           Vercel &gt; Settings &gt; Environment Variables rồi deploy lại (xem README, Bước D).
         </div>
       )}
-      <Sidebar onOpenParentGate={() => setPinOpen(true)} />
+      <Sidebar onOpenParentGate={() => setPinPurpose('parent')} />
       {/* class "content-col" để CSS chế độ TV chỉnh được cột nội dung này (cần khai báo
           min-width: 0 thì các hàng thẻ mới cuộn ngang được bên trong, thay vì đẩy phình
           cả trang ra ngang) */}
@@ -95,15 +102,24 @@ export function Layout() {
 
       <PinModal
         open={pinOpen}
-        onClose={() => setPinOpen(false)}
+        onClose={() => setPinPurpose(null)}
         onSuccess={() => {
-          setPinOpen(false);
-          navigate('/parent');
+          // Cùng 1 bảng PIN, nhưng nhập đúng rồi thì làm gì lại tuỳ nút nào vừa mở nó ra.
+          if (pinPurpose === 'unlock') grant();
+          else navigate('/parent');
+          setPinPurpose(null);
         }}
       />
 
       {showBlockScreen && (
-        <BlockScreen nextWindowStart={gate.nextWindowStart} onOpenParentGate={() => setPinOpen(true)} />
+        <BlockScreen
+          mode={gate.reason === 'daily_limit' ? 'daily_limit' : 'outside_window'}
+          nextWindowStart={gate.nextWindowStart}
+          usedMinutes={gate.usedMinutes}
+          dailyLimitMinutes={gate.dailyLimitMinutes}
+          onOpenParentGate={() => setPinPurpose('parent')}
+          onUnlockRequest={() => setPinPurpose('unlock')}
+        />
       )}
     </div>
   );

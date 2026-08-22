@@ -35,7 +35,10 @@ export function PlayerPage() {
   const { session, startSession, heartbeat } = useWatchSession(activeProfile?.id ?? null);
   const navigate = useNavigate();
   const startedRef = useRef(false);
-  const [nextVideos, setNextVideos] = useState<ResolvedVideo[]>([]);
+  /** Toàn bộ video của playlist, ĐÚNG THỨ TỰ (kể cả video đang phát). */
+  const [playlistVideos, setPlaylistVideos] = useState<ResolvedVideo[]>([]);
+  /** Số giây còn lại trước khi tự chuyển video kế tiếp. null = không đang đếm. */
+  const [autoNextIn, setAutoNextIn] = useState<number | null>(null);
 
   // Xác định video/nội dung thật sự cần phát dựa trên query string hoặc nguồn đã lưu.
   let kind: 'youtube' | 'direct' | null = null;
@@ -70,41 +73,46 @@ export function PlayerPage() {
   }, [session?.is_active, navigate]);
 
   useEffect(() => {
-    // Playlist tự tạo (custom_playlist) → danh sách "video tiếp theo" đọc thẳng từ
-    // source.items đã lưu sẵn, không cần gọi API YouTube.
+    // Giữ NGUYÊN THỨ TỰ và giữ cả video đang phát trong danh sách — nhờ vậy mới biết được
+    // "video kế tiếp" là video nào (video đứng ngay sau video đang xem), thay vì chỉ biết
+    // "các video còn lại".
     if (source?.type === 'custom_playlist') {
-      setNextVideos(
-        source.items
-          .filter((it) => it.videoId !== ytVideoId)
-          .map((it) => ({ videoId: it.videoId, title: it.title, thumbnail: it.thumbnail, sourceType: 'custom_playlist' as const }))
+      setPlaylistVideos(
+        source.items.map((it) => ({
+          videoId: it.videoId,
+          title: it.title,
+          thumbnail: it.thumbnail,
+          sourceType: 'custom_playlist' as const,
+        }))
       );
       return;
     }
     if (!playlistId) {
-      setNextVideos([]);
+      setPlaylistVideos([]);
       return;
     }
     fetchPlaylistItems(playlistId).then((items) =>
-      setNextVideos(
-        items
-          .filter((it) => it.videoId !== ytVideoId)
-          .map((it) => ({ videoId: it.videoId, title: it.title, thumbnail: it.thumbnail, sourceType: 'youtube_playlist' as const }))
+      setPlaylistVideos(
+        items.map((it) => ({
+          videoId: it.videoId,
+          title: it.title,
+          thumbnail: it.thumbnail,
+          sourceType: 'youtube_playlist' as const,
+        }))
       )
     );
-  }, [playlistId, ytVideoId, source?.type, source?.items]);
+  }, [playlistId, source?.type, source?.items]);
+
+  // Vị trí video đang phát trong danh sách, và video đứng ngay sau nó.
+  const currentIndex = playlistVideos.findIndex((v) => v.videoId === ytVideoId);
+  const nextVideo = currentIndex >= 0 ? playlistVideos[currentIndex + 1] ?? null : null;
+  /** Danh sách hiện ở dưới trang — bỏ video đang phát ra cho gọn. */
+  const nextVideos = playlistVideos.filter((v) => v.videoId !== ytVideoId);
 
   const handleProgress = (percent: number) => {
     heartbeat(Math.round(percent * 6)); // ước lượng thô — xem README mục "Giới hạn đã biết"
     if (sourceId && ytVideoId) saveProgress(sourceId, ytVideoId, percent);
   };
-
-  const handleEnded = () => {
-    if (session?.end_after_current) navigate('/');
-  };
-
-  // Mở bất kỳ video nào — dù từ trong playlist, hay bấm trực tiếp 1 video đơn lẻ ở trang
-  // chủ/kênh — đều tự phát + tự vào toàn màn hình ngay, không cần bấm thêm lần nào nữa.
-  const autoFullscreen = true;
 
   const goToVideo = (v: ResolvedVideo) => {
     const p = new URLSearchParams({ videoId: v.videoId, title: v.title });
@@ -112,6 +120,42 @@ export function PlayerPage() {
     if (sourceId) p.set('sourceId', sourceId);
     navigate(`/player?${p.toString()}`);
   };
+
+  const handleEnded = () => {
+    // Bố mẹ đã bấm "xem xong video này rồi tắt" từ xa → về trang chủ, không phát tiếp.
+    if (session?.end_after_current) {
+      navigate('/');
+      return;
+    }
+    // Còn video kế tiếp trong danh sách → đếm ngược 3 giây rồi tự phát.
+    if (nextVideo) setAutoNextIn(3);
+  };
+
+  /**
+   * Đồng hồ đếm ngược tự chuyển video. Tách riêng khỏi handleEnded để React quản lý được
+   * việc dọn dẹp: rời trang giữa chừng, hay bé bấm "Dừng lại", là bộ đếm tự huỷ, không có
+   * chuyện đang xem video khác thì bị nhảy trang oan.
+   */
+  useEffect(() => {
+    if (autoNextIn === null) return;
+    if (autoNextIn <= 0) {
+      setAutoNextIn(null);
+      if (nextVideo) goToVideo(nextVideo);
+      return;
+    }
+    const timer = setTimeout(() => setAutoNextIn((n) => (n === null ? null : n - 1)), 1000);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoNextIn, nextVideo?.videoId]);
+
+  // Đổi sang video khác thì huỷ bộ đếm cũ (phòng khi bé tự bấm chọn video khác lúc đang đếm).
+  useEffect(() => {
+    setAutoNextIn(null);
+  }, [ytVideoId, directUrl]);
+
+  // Mở bất kỳ video nào — dù từ trong playlist, hay bấm trực tiếp 1 video đơn lẻ ở trang
+  // chủ/kênh — đều tự phát + tự vào toàn màn hình ngay, không cần bấm thêm lần nào nữa.
+  const autoFullscreen = true;
 
   return (
     <main className="main">
@@ -138,6 +182,21 @@ export function PlayerPage() {
         />
       )}
       {!kind && <p style={{ opacity: 0.6 }}>Đang tải video...</p>}
+
+      {/* Thanh đếm ngược tự chuyển video kế tiếp — luôn kèm nút dừng, để bé/bố mẹ chủ động
+          ở lại nếu không muốn xem tiếp. */}
+      {autoNextIn !== null && nextVideo && (
+        <div className="autonext-bar">
+          <span className="autonext-count">{autoNextIn}</span>
+          <div className="autonext-text">
+            <div className="autonext-label">Tự phát video tiếp theo sau {autoNextIn} giây</div>
+            <div className="autonext-title">▶ {nextVideo.title}</div>
+          </div>
+          <button className="add-window-btn" data-region="autonext" tabIndex={0} onClick={() => setAutoNextIn(null)}>
+            ✋ Dừng lại
+          </button>
+        </div>
+      )}
 
       <div className="section-title" style={{ marginBottom: 26 }}>
         ▶ {title}
