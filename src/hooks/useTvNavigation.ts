@@ -66,19 +66,29 @@ export function useTvNavigation(
    * đây mở playlist ra là ô chọn nằm ngay trên nút Quay lại — bấm OK theo phản xạ là thoát
    * ra luôn, rất khó chịu. Giờ ô chọn rơi thẳng vào video/playlist đầu tiên.
    */
-  const findFirstContent = useCallback((focusables: HTMLElement[]): number => {
-    const regionOf = (el: HTMLElement) => el.getAttribute('data-region') ?? '';
+  const regionOf = (el: HTMLElement) => el.getAttribute('data-region') ?? '';
+
+  /** Ô NỘI DUNG THẬT đầu tiên (video/playlist/khung phát...). -1 nếu trang chưa có gì. */
+  const findRealContent = useCallback((focusables: HTMLElement[]): number => {
     const playerIdx = focusables.findIndex((el) => regionOf(el) === 'player');
     if (playerIdx >= 0) return playerIdx;
-
     const skip = ['side', 'topbar', 'detailback'];
-    const contentIdx = focusables.findIndex((el) => !skip.includes(regionOf(el)));
-    if (contentIdx >= 0) return contentIdx;
-
-    // Trang chưa có nội dung nào (đang tải, hoặc playlist rỗng) → tạm đứng ở nút Quay lại,
-    // để ít nhất bé vẫn thoát ra được.
-    return focusables.findIndex((el) => regionOf(el) === 'detailback');
+    return focusables.findIndex((el) => !skip.includes(regionOf(el)));
   }, []);
+
+  /** Nút "← Quay lại" — chỗ đậu tạm khi trang chưa có nội dung nào. -1 nếu không có. */
+  const findFallback = useCallback(
+    (focusables: HTMLElement[]): number => focusables.findIndex((el) => regionOf(el) === 'detailback'),
+    []
+  );
+
+  const findFirstContent = useCallback(
+    (focusables: HTMLElement[]): number => {
+      const real = findRealContent(focusables);
+      return real >= 0 ? real : findFallback(focusables);
+    },
+    [findRealContent, findFallback]
+  );
 
   /**
    * Cuộn màn hình sao cho ô đang chọn hiện ra TRỌN VẸN.
@@ -285,11 +295,19 @@ export function useTvNavigation(
    * Đặt ô đang chọn về NỘI DUNG chính (không phải menu trái / thanh trên cùng). Gọi lại
    * mỗi khi đổi trang, hoặc khi mở/đóng lớp phủ khoá màn hình.
    *
-   * Có cơ chế THỬ LẠI: lúc vừa đổi trang, dữ liệu (playlist, video...) thường chưa tải
-   * xong nên chưa có ô nội dung nào để chọn. Nếu lúc đó cứ chọn đại ô đầu tiên thì sẽ rơi
-   * vào mục đầu của menu bên trái — đúng hiện tượng "bấm Back 2 lần là nhảy lên menu
-   * trái". Nên khi chưa có nội dung, hàm này KHÔNG chọn gì cả mà hẹn thử lại một lát sau,
-   * tối đa khoảng 2 giây.
+   * Có cơ chế CHỜ NỘI DUNG: lúc vừa đổi trang, dữ liệu (playlist của kênh, video trong
+   * playlist...) phải tải qua mạng nên chưa có gì để chọn — riêng trang Kênh còn phải gọi
+   * YouTube 2 lượt (lấy playlist, rồi lọc bỏ Shorts) nên có thể mất vài giây. Cách xử lý:
+   *
+   *  - Chưa có gì cả  → chưa chọn ô nào (tuyệt đối không rơi về ô số 0 = mục đầu menu trái).
+   *  - Mới có mỗi nút "← Quay lại" → ĐẬU TẠM ở đó để bé vẫn thoát ra được, NHƯNG VẪN CHỜ TIẾP.
+   *  - Nội dung thật hiện ra → nhảy vào video/playlist đầu tiên.
+   *
+   * Chỗ "vẫn chờ tiếp" là mấu chốt: bản trước đậu ở nút Quay lại rồi ngừng chờ luôn, nên
+   * mở trang Kênh xong là kẹt mãi ở nút Quay lại.
+   *
+   * Nếu trong lúc chờ mà bé đã tự bấm mũi tên đi chỗ khác thì dừng hẳn, không giành lại ô
+   * chọn nữa (đang dùng dở mà bị giật đi thì rất khó chịu).
    */
   const resetFocus = useCallback(() => {
     clearTimeout(resetTimerRef.current);
@@ -298,17 +316,30 @@ export function useTvNavigation(
 
     const attempt = () => {
       const focusables = getFocusables();
-      const first = findFirstContent(focusables);
-      if (first >= 0) {
-        setFocus(first, focusables);
+      const real = findRealContent(focusables);
+      const current = focusedElRef.current;
+      const userMovedAway =
+        attempts > 0 && current !== null && focusables.includes(current) && regionOf(current) !== 'detailback';
+
+      if (userMovedAway) return;
+
+      if (real >= 0) {
+        setFocus(real, focusables);
         return;
       }
+
+      // Chưa có nội dung thật: đậu tạm ở nút Quay lại (chỉ làm 1 lần, ở lượt đầu).
+      if (attempts === 0) {
+        const fallback = findFallback(focusables);
+        if (fallback >= 0) setFocus(fallback, focusables);
+      }
+
       attempts += 1;
-      if (attempts <= 16) resetTimerRef.current = setTimeout(attempt, 125);
+      if (attempts <= 40) resetTimerRef.current = setTimeout(attempt, 150);
     };
 
     attempt();
-  }, [getFocusables, findFirstContent, setFocus]);
+  }, [getFocusables, findRealContent, findFallback, setFocus]);
 
   useEffect(() => () => clearTimeout(resetTimerRef.current), []);
 
