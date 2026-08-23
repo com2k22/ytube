@@ -727,27 +727,14 @@ body {
   background: rgba(0, 0, 0, 0.75); color: #fff; pointer-events: none;
 }
 
-/* Dòng nhắc cách dùng phím — chỉ hiện khi khung video đang được chọn, cho đỡ rối mắt */
-.player-hint {
-  position: absolute; left: 0; right: 0; bottom: 0; z-index: 4;
-  padding: 10px 14px; text-align: center; font-size: 12.5px; font-weight: 700;
-  color: rgba(255, 255, 255, 0.85);
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0));
-  opacity: 0; transition: opacity 0.15s ease; pointer-events: none;
-}
-.player-wrap:focus .player-hint,
-.player-wrap:focus-within .player-hint { opacity: 1; }
-
 /* Chừa thêm khoảng trống ở mép dưới: nhiều TV cắt mất viền màn hình (overscan), để chữ sát
    mép quá là ngồi xem bị mất chữ. */
 [data-tv] .player-panel { gap: 16px; padding: 26px 22px 54px; }
 [data-tv] .player-panel-btn { font-size: 24px; padding: 16px 30px; border-width: 4px; }
 [data-tv] .player-seek-badge { font-size: 44px; padding: 20px 40px; }
-[data-tv] .player-hint { font-size: 21px; padding: 16px 16px 46px; }
 
 @media (max-width: 760px) {
   .player-panel { gap: 6px; padding: 10px 8px; }
   .player-panel-btn { font-size: 12px; padding: 8px 12px; border-width: 2px; }
   .player-seek-badge { font-size: 18px; padding: 10px 18px; }
-  .player-hint { font-size: 11px; }
 }

@@ -15,6 +15,9 @@ interface Props {
  * thấy được — phần tử nằm ngoài khung toàn màn hình thì trình duyệt không vẽ ra.
  *
  * Mở bằng phím MŨI TÊN LÊN, đóng bằng MŨI TÊN XUỐNG hoặc nút Back (xem useTvPlayerControls).
+ *
+ * Cố ý KHÔNG hiện dòng nhắc cách dùng phím: xem phim thì màn hình phải sạch, dòng chữ nằm
+ * đè lên video gây rối mắt. Ai cần thì bấm ▲ là ra đủ nút.
  */
 export function PlayerControlBar({ open, actions, activeIndex, seekLabel }: Props) {
   return (
@@ -36,11 +39,6 @@ export function PlayerControlBar({ open, actions, activeIndex, seekLabel }: Prop
         </div>
       )}
 
-      {!open && !seekLabel && (
-        <div className="player-hint">
-          ▲ mở bảng điều khiển · ◀ ▶ đổi video (giữ để tua) · OK tạm dừng
-        </div>
-      )}
     </>
   );
 }
