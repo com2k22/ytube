@@ -114,11 +114,6 @@ export function BlockScreen({
           </div>
         )}
 
-        {!isPreview && onUnlockRequest && (
-          <div className="block-hint">
-            "Cho xem ngay" chỉ có hiệu lực đến khi tắt app — mở lại là tự khoá theo cài đặt.
-          </div>
-        )}
       </div>
     </div>
   );

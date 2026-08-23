@@ -685,9 +685,7 @@ body {
 
 /* --- Nút chức năng của bố mẹ trên màn hình chặn --- */
 .block-parent-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
-.block-hint { font-size: 12px; opacity: 0.55; margin-top: 12px; line-height: 1.5; }
 [data-tv] .block-parent-actions { gap: 16px; margin-top: 22px; }
-[data-tv] .block-hint { font-size: 19px; margin-top: 20px; }
 
 /* --- Nút đổi thứ tự video trong playlist tự tạo --- */
 .order-btns { display: flex; gap: 2px; flex-shrink: 0; }
@@ -701,4 +699,55 @@ body {
 [data-tv] .added-group-title { font-size: 20px; margin-bottom: 12px; }
 @media (max-width: 760px) {
   .added-group-title { font-size: 12.5px; }
+}
+
+/* ====================================================================================
+   BẢNG ĐIỀU KHIỂN TRÌNH PHÁT (nổi bên trong khung video)
+   ------------------------------------------------------------------------------------
+   Cố ý nằm BÊN TRONG .player-wrap: lúc xem toàn màn hình, trình duyệt chỉ vẽ phần tử nằm
+   trong khung đang toàn màn hình — để ngoài là không thấy gì.
+   ==================================================================================== */
+.player-panel {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 5;
+  display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;
+  padding: 16px 14px; background: linear-gradient(to top, rgba(0, 0, 0, 0.88), rgba(0, 0, 0, 0));
+}
+.player-panel-btn {
+  border: 3px solid transparent; border-radius: 999px; cursor: pointer;
+  padding: 10px 18px; font-weight: 800; font-size: 14px;
+  background: rgba(255, 255, 255, 0.14); color: #fff;
+}
+.player-panel-btn.active { border-color: var(--focus-color); background: rgba(255, 255, 255, 0.28); }
+.player-panel-btn.is-disabled { opacity: 0.35; cursor: default; }
+
+/* Nhãn hiện giữa video khi đang tua nhanh/tua lùi */
+.player-seek-badge {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 6;
+  padding: 14px 26px; border-radius: 999px; font-weight: 900; font-size: 26px;
+  background: rgba(0, 0, 0, 0.75); color: #fff; pointer-events: none;
+}
+
+/* Dòng nhắc cách dùng phím — chỉ hiện khi khung video đang được chọn, cho đỡ rối mắt */
+.player-hint {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 4;
+  padding: 10px 14px; text-align: center; font-size: 12.5px; font-weight: 700;
+  color: rgba(255, 255, 255, 0.85);
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0));
+  opacity: 0; transition: opacity 0.15s ease; pointer-events: none;
+}
+.player-wrap:focus .player-hint,
+.player-wrap:focus-within .player-hint { opacity: 1; }
+
+/* Chừa thêm khoảng trống ở mép dưới: nhiều TV cắt mất viền màn hình (overscan), để chữ sát
+   mép quá là ngồi xem bị mất chữ. */
+[data-tv] .player-panel { gap: 16px; padding: 26px 22px 54px; }
+[data-tv] .player-panel-btn { font-size: 24px; padding: 16px 30px; border-width: 4px; }
+[data-tv] .player-seek-badge { font-size: 44px; padding: 20px 40px; }
+[data-tv] .player-hint { font-size: 21px; padding: 16px 16px 46px; }
+
+@media (max-width: 760px) {
+  .player-panel { gap: 6px; padding: 10px 8px; }
+  .player-panel-btn { font-size: 12px; padding: 8px 12px; border-width: 2px; }
+  .player-seek-badge { font-size: 18px; padding: 10px 18px; }
+  .player-hint { font-size: 11px; }
 }

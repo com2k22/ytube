@@ -1,4 +1,6 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useTvPlayerControls, type PanelAction } from '@/hooks/useTvPlayerControls';
+import { PlayerControlBar } from './PlayerControlBar';
 
 declare global {
   interface Window {
@@ -35,6 +37,11 @@ interface Props {
   onEnded?: () => void;
   /** true khi video được mở từ trong 1 playlist — tự phát + tự vào chế độ toàn màn hình. */
   autoFullscreen?: boolean;
+  /** Chuyển sang video trước/sau trong playlist (bấm nhả phím ◀ ▶, hoặc nút trong bảng điều khiển). */
+  onPrev?: () => void;
+  onNext?: () => void;
+  hasPrev?: boolean;
+  hasNext?: boolean;
 }
 
 /**
@@ -42,7 +49,17 @@ interface Props {
  * với rel=0 + modestbranding=1 + iv_load_policy=3 để KHÔNG hiện gợi ý video liên quan.
  * Dùng chính thức YouTube IFrame Player API để theo dõi tiến độ xem thật.
  */
-export function SafeYouTubePlayer({ videoId, title, onProgress, onEnded, autoFullscreen }: Props) {
+export function SafeYouTubePlayer({
+  videoId,
+  title,
+  onProgress,
+  onEnded,
+  autoFullscreen,
+  onPrev,
+  onNext,
+  hasPrev,
+  hasNext,
+}: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<any>(null);
@@ -50,6 +67,11 @@ export function SafeYouTubePlayer({ videoId, title, onProgress, onEnded, autoFul
   const onProgressRef = useRef(onProgress);
   const onEndedRef = useRef(onEnded);
   const unmutedRef = useRef(false);
+  const [captionsOn, setCaptionsOn] = useState(false);
+  const [paused, setPaused] = useState(false);
+  /** Bản ref của captionsOn — để callback của YouTube (gắn 1 lần) đọc được giá trị mới nhất. */
+  const captionsOnRef = useRef(false);
+  captionsOnRef.current = captionsOn;
   onProgressRef.current = onProgress;
   onEndedRef.current = onEnded;
 
@@ -89,8 +111,36 @@ export function SafeYouTubePlayer({ videoId, title, onProgress, onEnded, autoFul
     }
   };
 
+  /** Bật lại phụ đề (ngược với hideCaptions) — dùng cho nút bật/tắt phụ đề. */
+  const showCaptions = () => {
+    const p = playerRef.current;
+    if (!p) return;
+    try {
+      p.loadModule?.('captions');
+      p.loadModule?.('cc');
+    } catch {
+      /* bỏ qua */
+    }
+  };
+
+  const toggleCaptions = () => {
+    setCaptionsOn((on) => {
+      if (on) hideCaptions();
+      else showCaptions();
+      return !on;
+    });
+  };
+
   useEffect(() => {
     let cancelled = false;
+    // QUAN TRỌNG — đặt lại cờ "đã bật tiếng" mỗi khi ĐỔI SANG VIDEO KHÁC.
+    // Đây chính là lỗi "video tự chuyển tiếp thì bị mất tiếng": trang phát không dựng lại
+    // từ đầu khi chuyển video (chỉ đổi videoId), nên cờ này vẫn còn = true từ video trước.
+    // Video mới lại được tắt tiếng để tự phát cho chắc, mà cờ đang bật nên không ai bật
+    // tiếng lại nữa → xem tiếp trong im lặng.
+    unmutedRef.current = false;
+    setCaptionsOn(false);
+    setPaused(false);
 
     loadYouTubeApi().then(() => {
       if (cancelled || !containerRef.current) return;
@@ -129,14 +179,17 @@ export function SafeYouTubePlayer({ videoId, title, onProgress, onEnded, autoFul
             }, 5000);
           },
           onStateChange: (e: any) => {
+            const S = window.YT.PlayerState;
+            setPaused(e.data === S.PAUSED);
             // Gỡ phụ đề lần nữa ngay khi video BẮT ĐẦU CHẠY: lúc onReady, bộ phụ đề nhiều
             // khi còn chưa nạp xong nên gỡ chưa ăn — gỡ thêm lần này mới chắc.
-            if (e.data === window.YT.PlayerState.PLAYING) hideCaptions();
-            if (autoFullscreen && !unmutedRef.current && e.data === window.YT.PlayerState.PLAYING) {
+            // (Không gỡ nếu bố mẹ vừa chủ động bật phụ đề lên.)
+            if (e.data === S.PLAYING && !captionsOnRef.current) hideCaptions();
+            if (!unmutedRef.current && e.data === S.PLAYING) {
               unmutedRef.current = true;
               playerRef.current?.unMute?.();
             }
-            if (e.data === window.YT.PlayerState.ENDED) {
+            if (e.data === S.ENDED) {
               onProgressRef.current?.(100);
               onEndedRef.current?.();
             }
@@ -172,9 +225,44 @@ export function SafeYouTubePlayer({ videoId, title, onProgress, onEnded, autoFul
     else p.playVideo?.();
   };
 
+  // Ghi chú: KHÔNG có nút chọn chất lượng video trong bảng điều khiển. Từ 24/10/2019
+  // YouTube đã vô hiệu hoá các hàm đổi chất lượng của thư viện nhúng (setPlaybackQuality
+  // trở thành hàm rỗng), nên nút đó chỉ là nút giả. YouTube tự chọn chất lượng cao nhất
+  // mà đường truyền chịu được — đúng việc cần làm cho TV.
+
+  const adapter = {
+    getCurrentTime: () => playerRef.current?.getCurrentTime?.() ?? 0,
+    getDuration: () => playerRef.current?.getDuration?.() ?? 0,
+    seekTo: (seconds: number, final: boolean) => playerRef.current?.seekTo?.(seconds, final),
+    isPaused: () => {
+      const p = playerRef.current;
+      const YT = window.YT;
+      if (!p?.getPlayerState || !YT?.PlayerState) return false;
+      return p.getPlayerState() !== YT.PlayerState.PLAYING;
+    },
+    play: () => playerRef.current?.playVideo?.(),
+    pause: () => playerRef.current?.pauseVideo?.(),
+  };
+
+  const actions: PanelAction[] = [
+    { key: 'prev', label: '⏮ Video trước', disabled: !hasPrev, onSelect: () => onPrev?.() },
+    { key: 'playpause', label: paused ? '▶ Phát tiếp' : '⏸ Tạm dừng', onSelect: togglePlay },
+    { key: 'next', label: '⏭ Video tiếp', disabled: !hasNext, onSelect: () => onNext?.() },
+    { key: 'cc', label: captionsOn ? '💬 Phụ đề: BẬT' : '💬 Phụ đề: TẮT', keepOpen: true, onSelect: toggleCaptions },
+  ];
+
+  const { panelOpen, panelIndex, seekLabel } = useTvPlayerControls({
+    wrapRef,
+    adapter,
+    actions,
+    onPrev: hasPrev ? onPrev : undefined,
+    onNext: hasNext ? onNext : undefined,
+  });
+
   return (
     <div className="player-wrap" ref={wrapRef} data-region="player" tabIndex={0} onClick={togglePlay}>
       <div ref={containerRef} title={title} />
+      <PlayerControlBar open={panelOpen} actions={actions} activeIndex={panelIndex} seekLabel={seekLabel} />
     </div>
   );
 }

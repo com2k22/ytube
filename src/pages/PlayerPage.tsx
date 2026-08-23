@@ -114,12 +114,23 @@ export function PlayerPage() {
     if (sourceId && ytVideoId) saveProgress(sourceId, ytVideoId, percent);
   };
 
+  /**
+   * Chuyển sang video khác TRONG CÙNG playlist.
+   *
+   * replace: true — cố ý THAY THẾ trang hiện tại trong lịch sử thay vì chồng thêm 1 trang
+   * mới. Không có nó thì xem liên tiếp 5 video xong bấm Back phải bấm 5 lần mới ra khỏi
+   * playlist (lùi lại từng video vừa xem một) — rất khó chịu, nhất là khi video tự chuyển
+   * tiếp. Có nó thì bấm Back 1 lần là về thẳng danh sách playlist.
+   */
   const goToVideo = (v: ResolvedVideo) => {
     const p = new URLSearchParams({ videoId: v.videoId, title: v.title });
     if (playlistId) p.set('playlistId', playlistId);
     if (sourceId) p.set('sourceId', sourceId);
-    navigate(`/player?${p.toString()}`);
+    navigate(`/player?${p.toString()}`, { replace: true });
   };
+
+  /** Video đứng ngay TRƯỚC video đang xem (dùng cho nút ⏮ / bấm nhả phím ◀). */
+  const prevVideo = currentIndex > 0 ? playlistVideos[currentIndex - 1] : null;
 
   const handleEnded = () => {
     // Bố mẹ đã bấm "xem xong video này rồi tắt" từ xa → về trang chủ, không phát tiếp.
@@ -170,6 +181,10 @@ export function PlayerPage() {
           onProgress={handleProgress}
           onEnded={handleEnded}
           autoFullscreen={autoFullscreen}
+          onPrev={() => prevVideo && goToVideo(prevVideo)}
+          onNext={() => nextVideo && goToVideo(nextVideo)}
+          hasPrev={!!prevVideo}
+          hasNext={!!nextVideo}
         />
       )}
       {kind === 'direct' && directUrl && (
@@ -179,6 +194,10 @@ export function PlayerPage() {
           onProgress={handleProgress}
           onEnded={handleEnded}
           autoFullscreen={autoFullscreen}
+          onPrev={() => prevVideo && goToVideo(prevVideo)}
+          onNext={() => nextVideo && goToVideo(nextVideo)}
+          hasPrev={!!prevVideo}
+          hasNext={!!nextVideo}
         />
       )}
       {!kind && <p style={{ opacity: 0.6 }}>Đang tải video...</p>}
