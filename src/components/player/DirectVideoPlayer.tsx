@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import Hls from 'hls.js';
 import { useTvPlayerControls, type PanelAction } from '@/hooks/useTvPlayerControls';
 import { PlayerControlBar } from './PlayerControlBar';
+import { WatchCountdownBadge } from './WatchCountdownBadge';
 
 interface Props {
   url: string;
@@ -158,6 +159,7 @@ export function DirectVideoPlayer({
   return (
     <div className="player-wrap" ref={wrapRef} data-region="player" tabIndex={0} onClick={togglePlay}>
       <video ref={videoRef} title={title} controls playsInline />
+      <WatchCountdownBadge />
       <PlayerControlBar open={panelOpen} actions={actions} activeIndex={panelIndex} seekLabel={seekLabel} />
     </div>
   );

@@ -13,6 +13,18 @@ export const PROFILE_EMOJI: Record<string, string> = {
   [PROFILE_IDS.COM]: '🦄',
 };
 
+// Màu cố định của từng bé trên biểu đồ "Báo cáo tuần". Trỏ sang biến CSS (khai trong
+// src/styles/theme.css) vì mỗi giao diện cần một sắc độ riêng cho dễ nhìn: nền tối cần
+// màu sáng hơn, nền hồng cần màu đậm hơn.
+//
+// QUAN TRỌNG — cặp xanh dương + cam này đã được kiểm tra bằng công cụ mô phỏng mù màu,
+// vẫn phân biệt rõ ở cả 3 kiểu mù màu phổ biến. Đừng đổi sang cặp xanh lá + đỏ.
+// Màu GẮN VỚI TỪNG BÉ chứ không gắn với thứ tự cột — Mina lúc nào cũng là màu xanh.
+export const PROFILE_CHART_COLOR: Record<string, string> = {
+  [PROFILE_IDS.MINA]: 'var(--chart-mina)',
+  [PROFILE_IDS.COM]: 'var(--chart-com)',
+};
+
 export const SOURCE_TYPE_ICON: Record<string, string> = {
   youtube_playlist: '📂',
   youtube_video: '🎬',

@@ -73,7 +73,7 @@ export function TimeRuleGroupEditor() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
             <h4 style={{ margin: 0 }}>📅 Nhóm ngày {gi + 1}</h4>
             {draft.length > 1 && (
-              <button className="icon-btn" title="Xoá nhóm ngày" onClick={() => deleteGroup(g.id)}>
+              <button className="icon-btn" data-region="ptime" tabIndex={0} title="Xoá nhóm ngày" onClick={() => deleteGroup(g.id)}>
                 🗑
               </button>
             )}
@@ -81,7 +81,13 @@ export function TimeRuleGroupEditor() {
 
           <div className="day-pills">
             {DAY_ORDER.map((d) => (
-              <div key={d} className={`day-pill ${g.days.includes(d) ? 'on' : ''}`} onClick={() => toggleDay(gi, d)}>
+              <div
+                key={d}
+                className={`day-pill ${g.days.includes(d) ? 'on' : ''}`}
+                data-region="pdays"
+                tabIndex={0}
+                onClick={() => toggleDay(gi, d)}
+              >
                 {d}
               </div>
             ))}
@@ -93,6 +99,8 @@ export function TimeRuleGroupEditor() {
               type="number"
               min={0}
               step={5}
+              data-region="ptime"
+              tabIndex={0}
               value={g.daily_minutes}
               onChange={(e) => updateGroup(gi, { daily_minutes: +e.target.value })}
             />
@@ -104,6 +112,8 @@ export function TimeRuleGroupEditor() {
               type="number"
               min={0}
               step={5}
+              data-region="ptime"
+              tabIndex={0}
               value={g.session_minutes}
               onChange={(e) => updateGroup(gi, { session_minutes: +e.target.value })}
             />
@@ -119,27 +129,39 @@ export function TimeRuleGroupEditor() {
             )}
             {g.windows.map((w, wi) => (
               <div className="window-row" key={wi}>
-                <input type="time" value={w.start} onChange={(e) => updateWindow(gi, wi, 'start', e.target.value)} />
+                <input
+                  type="time"
+                  data-region="pwin"
+                  tabIndex={0}
+                  value={w.start}
+                  onChange={(e) => updateWindow(gi, wi, 'start', e.target.value)}
+                />
                 <span className="arrow-sep">→</span>
-                <input type="time" value={w.end} onChange={(e) => updateWindow(gi, wi, 'end', e.target.value)} />
-                <button className="icon-btn" title="Xoá khung giờ" onClick={() => removeWindow(gi, wi)}>
+                <input
+                  type="time"
+                  data-region="pwin"
+                  tabIndex={0}
+                  value={w.end}
+                  onChange={(e) => updateWindow(gi, wi, 'end', e.target.value)}
+                />
+                <button className="icon-btn" data-region="pwin" tabIndex={0} title="Xoá khung giờ" onClick={() => removeWindow(gi, wi)}>
                   🗑
                 </button>
               </div>
             ))}
-            <button className="add-window-btn" onClick={() => addWindow(gi)}>
+            <button className="add-window-btn" data-region="ptime" tabIndex={0} onClick={() => addWindow(gi)}>
               + Thêm khung giờ
             </button>
           </div>
         </div>
       ))}
 
-      <button className="add-window-btn" style={{ marginBottom: 24 }} onClick={() => addGroup()}>
+      <button className="add-window-btn" style={{ marginBottom: 24 }} data-region="ptime" tabIndex={0} onClick={() => addGroup()}>
         + Thêm nhóm ngày
       </button>
 
       <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-        <button className="submit-btn" style={{ width: 'auto', padding: '12px 26px' }} onClick={saveAll}>
+        <button className="submit-btn" style={{ width: 'auto', padding: '12px 26px' }} data-region="ptime" tabIndex={0} onClick={saveAll}>
           💾 Lưu cài đặt
         </button>
       </div>

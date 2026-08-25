@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTvPlayerControls, type PanelAction } from '@/hooks/useTvPlayerControls';
 import { PlayerControlBar } from './PlayerControlBar';
+import { WatchCountdownBadge } from './WatchCountdownBadge';
 
 declare global {
   interface Window {
@@ -262,6 +263,7 @@ export function SafeYouTubePlayer({
   return (
     <div className="player-wrap" ref={wrapRef} data-region="player" tabIndex={0} onClick={togglePlay}>
       <div ref={containerRef} title={title} />
+      <WatchCountdownBadge />
       <PlayerControlBar open={panelOpen} actions={actions} activeIndex={panelIndex} seekLabel={seekLabel} />
     </div>
   );

@@ -267,7 +267,12 @@ export function AddSourceForm() {
 
         <div className="form-row">
           <label>Loại nguồn</label>
-          <select value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as SourceType }))}>
+          <select
+            data-region="psrc"
+            tabIndex={0}
+            value={form.type}
+            onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as SourceType }))}
+          >
             {TYPE_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
                 {o.label}
@@ -279,13 +284,21 @@ export function AddSourceForm() {
         {form.type !== 'custom_playlist' && (
           <div className="form-row">
             <label>Đường link</label>
-            <input value={form.url} onChange={(e) => onUrlChange(e.target.value)} placeholder="https://..." />
+            <input
+              data-region="psrc"
+              tabIndex={0}
+              value={form.url}
+              onChange={(e) => onUrlChange(e.target.value)}
+              placeholder="https://..."
+            />
             {urlHint && <div className={`hint ${urlHint.ok ? 'ok-text' : 'bad-text'}`}>{urlHint.text}</div>}
             {(form.type === 'youtube_playlist' || form.type === 'youtube_video' || form.type === 'youtube_channel') && (
               <button
                 type="button"
                 className="add-window-btn"
                 style={{ marginTop: 8 }}
+                data-region="psrc"
+                tabIndex={0}
                 disabled={resolving || !isSafeHttpsUrl(form.url)}
                 onClick={autoFill}
               >
@@ -298,6 +311,8 @@ export function AddSourceForm() {
         <div className="form-row">
           <label>{form.type === 'custom_playlist' ? 'Tên playlist' : 'Tiêu đề hiển thị'}</label>
           <input
+            data-region="psrc"
+            tabIndex={0}
             value={form.title}
             onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
             placeholder={form.type === 'custom_playlist' ? 'VD: Playlist yêu thích của Cốm' : 'VD: Nhạc thiếu nhi vui nhộn'}
@@ -327,6 +342,8 @@ export function AddSourceForm() {
                         </div>
                         <button
                           className="icon-btn"
+                          data-region="pvid"
+                          tabIndex={0}
                           title={already ? 'Đã có trong playlist' : 'Thêm vào playlist'}
                           disabled={already}
                           onClick={() => addExistingVideo(v)}
@@ -345,6 +362,8 @@ export function AddSourceForm() {
 
             <div style={{ display: 'flex', gap: 8 }}>
               <input
+                data-region="pnewvid"
+                tabIndex={0}
                 value={draftVideoUrl}
                 onChange={(e) => setDraftVideoUrl(e.target.value)}
                 placeholder="Dán link YouTube video đơn lẻ..."
@@ -354,6 +373,8 @@ export function AddSourceForm() {
                 type="button"
                 className="add-window-btn"
                 style={{ flexShrink: 0 }}
+                data-region="pnewvid"
+                tabIndex={0}
                 disabled={addingVideo || !draftVideoUrl.trim()}
                 onClick={addDraftVideo}
               >
@@ -383,6 +404,8 @@ export function AddSourceForm() {
                   <div className="order-btns">
                     <button
                       className="icon-btn"
+                      data-region="pdraft"
+                      tabIndex={0}
                       title="Chuyển lên trên"
                       disabled={i === 0}
                       onClick={() => moveDraftVideo(i, -1)}
@@ -391,13 +414,15 @@ export function AddSourceForm() {
                     </button>
                     <button
                       className="icon-btn"
+                      data-region="pdraft"
+                      tabIndex={0}
                       title="Chuyển xuống dưới"
                       disabled={i === draftItems.length - 1}
                       onClick={() => moveDraftVideo(i, 1)}
                     >
                       ▼
                     </button>
-                    <button className="icon-btn" title="Bỏ video này" onClick={() => removeDraftVideo(it.videoId)}>
+                    <button className="icon-btn" data-region="pdraft" tabIndex={0} title="Bỏ video này" onClick={() => removeDraftVideo(it.videoId)}>
                       ✕
                     </button>
                   </div>
@@ -411,7 +436,13 @@ export function AddSourceForm() {
           <label>Dành cho bé</label>
           <div className="day-pills">
             {KIDS.map((k) => (
-              <div key={k.id} className={`day-pill ${selectedKids.includes(k.id) ? 'on' : ''}`} onClick={() => toggleKid(k.id)}>
+              <div
+                key={k.id}
+                className={`day-pill ${selectedKids.includes(k.id) ? 'on' : ''}`}
+                data-region="pkidpick"
+                tabIndex={0}
+                onClick={() => toggleKid(k.id)}
+              >
                 {PROFILE_EMOJI[k.id]} {k.name}
               </div>
             ))}
@@ -422,11 +453,11 @@ export function AddSourceForm() {
         </div>
 
         <div style={{ display: 'flex', gap: 10 }}>
-          <button className="submit-btn" onClick={submit}>
+          <button className="submit-btn" data-region="psubmit" tabIndex={0} onClick={submit}>
             {isEditing ? '💾 Lưu thay đổi' : 'Thêm vào danh sách'}
           </button>
           {isEditing && (
-            <button className="add-window-btn" onClick={resetForm} style={{ flexShrink: 0 }}>
+            <button className="add-window-btn" data-region="psubmit" tabIndex={0} onClick={resetForm} style={{ flexShrink: 0 }}>
               Huỷ
             </button>
           )}
@@ -466,10 +497,10 @@ export function AddSourceForm() {
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-                      <button className="icon-btn" title="Sửa" onClick={() => startEdit(s)}>
+                      <button className="icon-btn" data-region="padded" tabIndex={0} title="Sửa" onClick={() => startEdit(s)}>
                         ✏️
                       </button>
-                      <button className="icon-btn" title="Xoá" onClick={() => onDelete(s)}>
+                      <button className="icon-btn" data-region="padded" tabIndex={0} title="Xoá" onClick={() => onDelete(s)}>
                         🗑
                       </button>
                     </div>

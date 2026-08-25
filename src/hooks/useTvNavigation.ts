@@ -180,8 +180,31 @@ export function useTvNavigation(
     if (!enabled) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      const active = document.activeElement;
-      if (active && ['INPUT', 'SELECT', 'TEXTAREA'].includes(active.tagName)) return; // gõ liệu bình thường
+      // --- Đang đứng trong 1 ô NHẬP LIỆU (khu Bố mẹ có rất nhiều ô như vậy) ---
+      //
+      // Trước đây gặp ô nhập là nhả hết phím cho ô đó xử lý, thành ra vào rồi KHÔNG CÓ
+      // ĐƯỜNG RA: bấm mũi tên mãi vẫn quanh quẩn trong ô, phải có chuột mới thoát được.
+      //
+      // Giờ mỗi ô có đúng 1 "cửa thoát", chọn theo trục di chuyển của chỗ ô đó đứng:
+      //   • Ô giờ (type="time") nằm trong hàng ngang "giờ bắt đầu · giờ kết thúc · nút xoá"
+      //     → thoát bằng TRÁI/PHẢI. Lên/xuống vẫn để tăng giảm giờ như bình thường.
+      //   • Mọi ô còn lại đều xếp DỌC → thoát bằng LÊN/XUỐNG.
+      //
+      // Nói thẳng cái mất: với ô số và ô chọn, lên/xuống vốn là cách tăng/giảm hoặc đổi
+      // lựa chọn — nay bị dùng làm cửa thoát. Bù lại: ô số thì bấm thẳng phím số trên điều
+      // khiển, ô chọn thì bấm OK để mở danh sách rồi chọn trong đó. Nếu không đổi thì tệ
+      // hơn nhiều: vào ô là kẹt luôn, không có chuột thì không ra được.
+      const active = document.activeElement as HTMLElement | null;
+      const tag = active?.tagName ?? '';
+      if (['INPUT', 'SELECT', 'TEXTAREA'].includes(tag)) {
+        const type = tag === 'INPUT' ? (active as HTMLInputElement).type : '';
+        const exitKeys = type === 'time' ? ['ArrowLeft', 'ArrowRight'] : ['ArrowUp', 'ArrowDown'];
+        if (!exitKeys.includes(e.key) && e.key !== 'Escape') return; // gõ liệu bình thường
+        // Bỏ tiêu điểm khỏi ô TRƯỚC, rồi để phần bên dưới di chuyển ô chọn như thường —
+        // nhờ vậy phím vừa bấm không còn tác dụng lên ô nhập nữa (vd không làm ô số tự
+        // tăng/giảm giá trị khi mình chỉ muốn đi sang ô khác).
+        active?.blur();
+      }
 
       // Đang xem video TOÀN MÀN HÌNH: khoá hẳn việc di chuyển ô chọn bằng phím mũi tên.
       // Lúc này bé chẳng nhìn thấy ô nào cả (video che kín màn hình), để mũi tên vẫn chạy
@@ -212,6 +235,16 @@ export function useTvNavigation(
 
       const sideSecIdx = sections.findIndex((s) => s.region === 'side');
       const inSide = sec.region === 'side';
+      /**
+       * Khi nhảy sang khối khác thì đứng ở CỘT nào.
+       *
+       * Khối 1 cột (danh sách xếp dọc: ô nhập, nút bấm...) thì luôn về ô đầu — giữ số cột
+       * cũ ở đây là vô nghĩa và gây khó hiểu: đang ở nút "CN" (cột thứ 7) bấm xuống mà rơi
+       * vào ô thứ 7 của danh sách dọc thì không ai đoán được.
+       */
+      const enterCol = (target: { count: number; cols: number }) =>
+        target.cols === 1 ? 0 : Math.min(Math.min(colInRow, target.cols - 1), target.count - 1);
+
       /** Vùng liền trước/sau, nhưng bỏ qua menu trái. */
       const stepSection = (dir: 1 | -1) => {
         let k = secIdx + dir;
@@ -257,7 +290,7 @@ export function useTvNavigation(
             setFocus(idx + sec.cols, focusables);
           } else {
             const next = stepSection(1);
-            if (next) setFocus(next.start + Math.min(colInRow, next.count - 1), focusables);
+            if (next) setFocus(next.start + enterCol(next), focusables);
           }
           break;
         case 'ArrowUp':
@@ -268,7 +301,13 @@ export function useTvNavigation(
             setFocus(idx - sec.cols, focusables);
           } else {
             const prev = stepSection(-1);
-            if (prev) setFocus(prev.start + Math.min(colInRow, prev.count - 1), focusables);
+            // Đi LÊN thì phải rơi vào HÀNG CUỐI của khối phía trên (hàng nằm sát ngay bên
+            // trên mình), chứ không phải hàng đầu của khối đó — nếu không, khối 2 hàng bấm
+            // lên là nhảy vọt qua cả 1 hàng.
+            if (prev) {
+              const lastRowStart = Math.floor((prev.count - 1) / prev.cols) * prev.cols;
+              setFocus(prev.start + Math.min(lastRowStart + enterCol(prev), prev.count - 1), focusables);
+            }
           }
           break;
         case 'Enter':

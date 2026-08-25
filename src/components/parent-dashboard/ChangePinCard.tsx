@@ -54,6 +54,8 @@ export function ChangePinCard() {
           type="password"
           inputMode="numeric"
           maxLength={4}
+          data-region="ppin"
+          tabIndex={0}
           value={oldPin}
           onChange={(e) => setOldPin(e.target.value.replace(/\D/g, ''))}
           placeholder="••••"
@@ -65,6 +67,8 @@ export function ChangePinCard() {
           type="password"
           inputMode="numeric"
           maxLength={4}
+          data-region="ppin"
+          tabIndex={0}
           value={newPin}
           onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))}
           placeholder="••••"
@@ -76,6 +80,8 @@ export function ChangePinCard() {
           type="password"
           inputMode="numeric"
           maxLength={4}
+          data-region="ppin"
+          tabIndex={0}
           value={confirmPin}
           onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))}
           placeholder="••••"
@@ -84,7 +90,14 @@ export function ChangePinCard() {
 
       {error && <div className="hint bad-text" style={{ height: 'auto', marginBottom: 8 }}>✕ {error}</div>}
 
-      <button className="submit-btn" style={{ width: 'auto', padding: '12px 26px' }} disabled={saving} onClick={submit}>
+      <button
+        className="submit-btn"
+        style={{ width: 'auto', padding: '12px 26px' }}
+        data-region="ppin"
+        tabIndex={0}
+        disabled={saving}
+        onClick={submit}
+      >
         {saving ? 'Đang lưu...' : '💾 Đổi mã PIN'}
       </button>
     </div>

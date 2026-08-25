@@ -20,6 +20,15 @@ import { isSupabaseConfigured } from '@/lib/supabaseClient';
 // 'pin' = 3 cột: bàn phím số của bảng nhập PIN xếp 4 hàng × 3 cột.
 // 'block' / 'pinclose' = 1 cột: các nút xếp dọc trong lớp phủ khoá màn hình.
 // 'profmenu' = 1 cột: danh sách chọn hồ sơ xổ xuống từ thanh trên cùng, xếp dọc.
+// Các vùng trong KHU BỐ MẸ (tiền tố "p"): khai báo số cột để đi bằng phím mũi tên đúng
+// với những gì mắt nhìn thấy trên màn hình.
+//   ptime / ppin / psrc / pvid = 1 cột  → các ô xếp DỌC, đi bằng lên/xuống.
+//   pdays = 7 cột                       → hàng 7 nút T2..CN.
+//   pwin  = 3 cột                       → 1 khung giờ: giờ bắt đầu · giờ kết thúc · nút xoá.
+//   pdraft = 3 cột                      → 1 video trong playlist nháp: ▲ · ▼ · xoá.
+//   padded = 2 cột                      → 1 nội dung đã thêm: nút sửa · nút xoá.
+// Các vùng không có tên ở đây (ptabs, pkids, psession, pkidpick, psubmit, pnewvid,
+// preport, preportbtn) cố ý để mặc định = NẰM TRÊN 1 HÀNG NGANG, đúng như trên màn hình.
 const SECTION_COLS = {
   side: 1,
   playlist: 3,
@@ -29,6 +38,14 @@ const SECTION_COLS = {
   block: 1,
   pinclose: 1,
   profmenu: 1,
+  ptime: 1,
+  pdays: 7,
+  pwin: 3,
+  ppin: 1,
+  psrc: 1,
+  pvid: 1,
+  pdraft: 3,
+  padded: 2,
 };
 
 /**

@@ -7,8 +7,9 @@ import { TimeRuleGroupEditor } from '@/components/parent-dashboard/TimeRuleGroup
 import { BlockScreen } from '@/components/parent-dashboard/BlockScreen';
 import { ChangePinCard } from '@/components/parent-dashboard/ChangePinCard';
 import { AddSourceForm } from '@/components/parental/AddSourceForm';
+import { WeeklyReportTab } from '@/components/parent-dashboard/WeeklyReportTab';
 
-type Tab = 'time' | 'content' | 'pin';
+type Tab = 'time' | 'content' | 'report' | 'pin';
 
 /** Trang "Bố mẹ" — quản lý thời gian xem từ xa + thêm nội dung whitelist. Yêu cầu PIN (xem PinModal). */
 export function ParentDashboardPage() {
@@ -51,6 +52,14 @@ export function ParentDashboardPage() {
           ➕ Thêm nội dung
         </button>
         <button
+          className={`tab-btn ${tab === 'report' ? 'active' : ''}`}
+          data-region="ptabs"
+          tabIndex={0}
+          onClick={() => setTab('report')}
+        >
+          📊 Báo cáo tuần
+        </button>
+        <button
           className={`tab-btn ${tab === 'pin' ? 'active' : ''}`}
           data-region="ptabs"
           tabIndex={0}
@@ -70,6 +79,8 @@ export function ParentDashboardPage() {
               <div
                 key={p.id}
                 className={`mini-profile-btn ${configProfileId === p.id ? 'active' : ''}`}
+                data-region="pkids"
+                tabIndex={0}
                 onClick={() => setConfigProfileId(p.id)}
               >
                 {p.name}
@@ -80,13 +91,21 @@ export function ParentDashboardPage() {
           <SessionLiveCard profileId={configProfile.id} profileLabel={configProfile.name} />
           <TimeRuleGroupEditor />
 
-          <button className="add-window-btn" style={{ marginTop: 4 }} onClick={() => setPreviewBlock(true)}>
+          <button
+            className="add-window-btn"
+            style={{ marginTop: 4 }}
+            data-region="ptime"
+            tabIndex={0}
+            onClick={() => setPreviewBlock(true)}
+          >
             🔔 Xem thử màn hình chặn
           </button>
         </div>
       )}
 
       {tab === 'content' && <AddSourceForm />}
+
+      {tab === 'report' && <WeeklyReportTab />}
 
       {tab === 'pin' && <ChangePinCard />}
 

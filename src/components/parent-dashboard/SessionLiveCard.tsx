@@ -42,6 +42,8 @@ export function SessionLiveCard({ profileId, profileLabel }: Props) {
           )}
           <div style={{ display: 'flex', gap: 10, marginTop: 12, flexWrap: 'wrap' }}>
             <button
+              data-region="psession"
+              tabIndex={0}
               className="stop-btn"
               onClick={async () => {
                 await stopNow(session);
@@ -51,6 +53,8 @@ export function SessionLiveCard({ profileId, profileLabel }: Props) {
               ⏹ Kết thúc phiên xem ngay
             </button>
             <button
+              data-region="psession"
+              tabIndex={0}
               className="add-window-btn"
               onClick={async () => {
                 await toggleStopAfterCurrent(session);
