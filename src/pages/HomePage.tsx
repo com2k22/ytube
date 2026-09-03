@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { ListVideo, Clapperboard, Tv } from 'lucide-react';
+import { ListVideo, Clapperboard, Tv, PlayCircle } from 'lucide-react';
 import { useProfileContext } from '@/context/ProfileContext';
 import { useAllowedSources } from '@/hooks/useAllowedSources';
 import { useWatchProgress } from '@/hooks/useWatchProgress';
@@ -80,7 +80,9 @@ export function HomePage() {
 
       {continuing.length > 0 && (
         <>
-          <div className="section-title">▶️ Tiếp tục xem</div>
+          <div className="section-title">
+            <PlayCircle className="section-icon" aria-hidden="true" /> Tiếp tục xem
+          </div>
           <div className="shelf shelf-cap3" style={{ marginBottom: 32 }}>
             {continuing.map(({ source, progress }) => (
               <PlaylistCard

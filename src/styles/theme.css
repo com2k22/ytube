@@ -186,7 +186,11 @@ body {
 
 .layout { display: flex; min-height: 100vh; }
 
-.brand { font-size: 23px; font-weight: 900; padding: 16px 16px 0; display: flex; align-items: center; gap: 8px; }
+/* Logo — giờ sống trong .topbar (trước đây ở đầu .sidebar, đã đổi chỗ với nút chọn hồ sơ,
+   xem TopBar.tsx/Sidebar.tsx). Bỏ hết padding cũ vốn tính cho vị trí cũ trong sidebar —
+   .topbar đã tự căn giữa theo chiều dọc rồi (align-items: center), thêm padding vào đây
+   chỉ làm nó lệch không cần thiết. */
+.brand { font-size: 23px; font-weight: 900; display: flex; align-items: center; gap: 8px; }
 .logo-badge {
   display: inline-flex; align-items: center; justify-content: center;
   width: 38px; height: 27px; background: #ff0000; color: #fff; border-radius: 9px;
@@ -208,7 +212,14 @@ body {
 }
 .profiles { display: flex; gap: 12px; align-items: center; }
 
-/* --- Nút chọn hồ sơ + danh sách xổ xuống --- */
+/* --- Nút chọn hồ sơ + danh sách xổ xuống ---
+   Dùng chung cho 2 chỗ đặt (component ProfileSwitcher.tsx): .sidebar-profile (đầu dải menu
+   bên trái — TV/máy tính/iPad, hiện MẶC ĐỊNH) và .topbar-profile (góc phải thanh trên cùng
+   — CHỈ điện thoại, ẩn mặc định). Mỗi bề ngang màn hình chỉ hiện đúng 1 cái — đảo lại ở
+   khối "THANH MENU DƯỚI ĐÁY" cuối file (≤700px, xem theme.css). */
+.sidebar-profile { display: block; margin-bottom: 10px; }
+.topbar-profile { display: none; }
+
 .profile-switch { position: relative; }
 .profile-caret { margin-left: 4px; font-size: 0.8em; opacity: 0.7; transition: transform 0.15s ease; }
 .profile-caret.up { transform: rotate(180deg); }
@@ -218,6 +229,10 @@ body {
   display: flex; flex-direction: column; gap: 6px;
   box-shadow: 0 18px 44px rgba(0, 0, 0, 0.45);
 }
+/* Bản trong Sidebar: dải menu quá hẹp để xổ danh sách XUỐNG DƯỚI như bản thanh ngang cũ —
+   chữ tên hồ sơ sẽ bị cắt cụt vì min-width chỉ bằng đúng bề ngang cái nút hẹp đó. Xổ SANG
+   PHẢI, tràn ra ngoài dải menu, vào đúng khoảng trống của cột nội dung. */
+.sidebar-profile .profile-menu { top: 0; left: 100%; right: auto; margin-left: 12px; }
 .profile-menu-item {
   display: flex; align-items: center; gap: 10px; white-space: nowrap;
   padding: 10px 18px 10px 10px; border-radius: 999px; cursor: pointer;
@@ -276,7 +291,15 @@ body {
 /* Icon SVG cạnh tiêu đề khu (Danh sách / Video đề xuất / Kênh yêu thích) — cùng kiểu icon
    recolor-được như menu bên trái, thay cho emoji cũ (📂🎬📺) không tô màu lại được. Cỡ
    theo "em" nên tự to/nhỏ đúng theo section-title ở từng chế độ (TV/điện thoại) bên dưới. */
-.section-icon { width: 0.85em; height: 0.85em; vertical-align: -0.1em; margin-right: 8px; stroke-width: 2.4; }
+/* display: inline-block — BẮT BUỘC phải khai rõ. Tailwind (base/Preflight, xem index.css)
+   đặt sẵn "svg { display: block; }" cho MỌI thẻ svg trong toàn app; icon SVG này lọt vào
+   giữa dòng chữ tiêu đề mà bị "block" thì nó tự nhảy xuống MỘT DÒNG RIÊNG, đẩy chữ xuống
+   dòng dưới — đúng lỗi "icon và tên không nằm cùng hàng". inline-block thì vẫn giữ được
+   width/height/vertical-align đã khai như bình thường, mà lại nằm chung dòng với chữ. */
+.section-icon {
+  display: inline-block;
+  width: 0.85em; height: 0.85em; vertical-align: -0.1em; margin-right: 8px; stroke-width: 2.4;
+}
 
 .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
 
@@ -437,17 +460,36 @@ body {
   width: var(--rail-w);
   z-index: 40;
   padding: 26px 12px;
-  overflow: hidden;
+  /* Trước là "hidden" (thời còn kiểu tự bung rộng, giờ đã bỏ — xem chú thích bên dưới).
+     Đổi sang "visible": bảng chọn hồ sơ giờ xổ SANG PHẢI, tràn ra khỏi bề ngang 132px của
+     dải này — để "hidden" thì bảng đó bị cắt cụt/biến mất hoàn toàn. */
+  overflow: visible;
   transition: width 0.18s ease;
 }
-[data-tv] .brand { font-size: 34px; padding: 0 0 24px; justify-content: center; gap: 12px; }
-[data-tv] .brand-text { display: none; }
-[data-tv] .logo-badge { width: 56px; height: 40px; font-size: 20px; border-radius: 14px; padding-left: 4px; }
+/* Nút chọn hồ sơ (ProfileSwitcher đặt trong Sidebar) giờ là mục ĐẦU TIÊN của dải icon, nên
+   phải có kích thước giống hệt các nút menu bên dưới (.side-item: 88×88, cách nhau 16px) —
+   xổ hàng thẳng cột mới trông cân đối, không phải "1 nút to kỳ lạ rồi mới tới dải icon". */
+[data-tv] .sidebar-profile .profile-btn {
+  width: 88px; height: 88px; padding: 0; margin: 0 auto 16px;
+  justify-content: center; gap: 0; border-radius: 26px; border-width: 4px;
+}
+[data-tv] .sidebar-profile .avatar { width: 56px; height: 56px; font-size: 30px; }
+/* Tên hồ sơ + mũi tên xổ xuống: ẩn trên dải icon hẹp, giống mọi chữ khác trong menu này
+   (xem [data-tv] .side-text ngay dưới) — chỉ còn đúng avatar, bấm vào vẫn mở được bảng. */
+[data-tv] .sidebar-profile .profile-name-text,
+[data-tv] .sidebar-profile .profile-caret { display: none; }
+/* Bảng chọn hồ sơ xổ SANG PHẢI dải icon (không xổ xuống dưới): [data-tv] .profile-menu ở
+   dưới có khai riêng "top", phải viết CỤ THỂ HƠN (3 lớp chọn thay vì 2) ở đây mới thắng. */
+[data-tv] .sidebar-profile .profile-menu { top: 0; left: 100%; right: auto; margin-left: 14px; }
+
+/* Logo — giờ nằm trong .topbar, không còn trong .sidebar nữa (xem TopBar.tsx). Chỉ còn
+   icon ▶ (đã bỏ chữ "Ytube" khỏi JSX — TopBar.tsx không còn render .brand-text nữa). */
+[data-tv] .brand { font-size: 34px; }
+[data-tv] .logo-badge { width: 48px; height: 34px; font-size: 17px; border-radius: 12px; padding-left: 4px; }
 
 /* Menu trái LUÔN thu gọn thành dải icon — không bung ra nữa, kể cả khi đang chọn vào nó.
    (Bản trước có kiểu tự bung rộng khi chọn; bỏ đi cho màn hình đứng yên, không xê dịch.)
-   Vì vậy icon phải tự nói lên được mục đó là gì — xem NAV_ITEMS trong Sidebar.tsx: mục
-   của Mina/Cốm dùng đúng con 🐻/🦊 như nút chọn hồ sơ ở thanh trên cùng. */
+   Vì vậy icon phải tự nói lên được mục đó là gì — xem NAV_ITEMS trong Sidebar.tsx. */
 [data-tv] .side-item {
   width: 88px;
   height: 88px;
@@ -469,14 +511,27 @@ body {
 /* --- Cột nội dung bên phải ---
    min-width: 0 là bắt buộc: thiếu nó thì hàng thẻ dài sẽ ĐẨY PHÌNH cả trang ra ngang
    thay vì cuộn ngang gọn bên trong hàng đó. */
+/* Menu bên trái + thanh trên cùng: TRONG SUỐT, cùng màu nền với trang — đúng như ảnh app
+   YouTube TV thật bạn gửi (không có dải màu/viền tách riêng, icon trôi thẳng trên nền tối).
+   Viết SAU 2 dòng khai nền+viền gốc (đầu file, theo [data-theme='dark']) và có 2 lớp chọn
+   thay vì 1 ([data-tv][data-theme='dark']) nên chắc chắn thắng — không cần !important.
+   Cố tình CHỈ áp dụng cho chế độ TV: điện thoại/máy tính vẫn giữ dải màu riêng như cũ. */
+[data-tv][data-theme='dark'] .sidebar,
+[data-tv][data-theme='dark'] .topbar {
+  background: transparent;
+  border: none;
+}
+
 [data-tv] .content-col { min-width: 0; }
 [data-tv] .main { min-width: 0; padding: 30px 44px 90px; }
 [data-tv] .greet { font-size: 40px; font-weight: 900; margin: 4px 0 30px; }
 [data-tv] .section-title { font-size: 34px; font-weight: 900; margin: 0 0 20px; opacity: 1; }
 [data-tv] .back-btn { font-size: 26px; font-weight: 800; padding: 20px 32px; border-radius: 20px; }
 
-/* --- Thanh trên cùng --- */
-[data-tv] .topbar { height: 118px; padding: 0 44px 0 32px; }
+/* --- Thanh trên cùng ---
+   Giờ chỉ còn logo, căn PHẢI (nút chọn hồ sơ đã dời sang Sidebar) — padding-trái 32px
+   trước đây không còn ý nghĩa gì (chẳng còn nội dung căn trái nữa), bỏ luôn cho gọn. */
+[data-tv] .topbar { height: 118px; padding: 0 44px; }
 [data-tv] .profiles { gap: 18px; }
 [data-tv] .profile-btn { font-size: 28px; font-weight: 800; padding: 12px 30px 12px 12px; border-width: 4px; }
 [data-tv] .profile-menu { border-radius: 24px; padding: 12px; gap: 10px; top: calc(100% + 10px); }
@@ -626,12 +681,26 @@ body {
   .side-text { display: none; }
   .sidebar-deco { display: none; }
 
+  /* Nút chọn hồ sơ ở đầu dải menu: cũng thu về đúng cỡ ô icon 48×48 như .side-item ngay
+     trên, cho thẳng hàng — chữ tên + mũi tên xổ ẩn đi, chỉ còn avatar (giống [data-tv]). */
+  .sidebar-profile .profile-btn {
+    width: 48px; height: 48px; padding: 0; margin: 0 auto 8px;
+    justify-content: center; gap: 0; border-radius: 14px; border-width: 2px;
+  }
+  .sidebar-profile .avatar { width: 32px; height: 32px; font-size: 17px; }
+  .sidebar-profile .profile-name-text,
+  .sidebar-profile .profile-caret { display: none; }
+  .sidebar-profile .profile-menu { left: 100%; right: auto; top: 0; margin-left: 8px; }
+
   /* --- Thanh trên cùng + khung nội dung --- */
   .topbar { height: 58px; padding: 0 12px; }
-  .profile-btn { font-size: 14px; padding: 5px 14px 5px 5px; border-width: 2px; }
-  .avatar { width: 32px; height: 32px; font-size: 17px; }
   .profile-menu-item { font-size: 14px; padding: 7px 14px 7px 5px; border-width: 2px; }
   .profile-menu-item .avatar { width: 32px; height: 32px; font-size: 17px; }
+  /* .profile-btn / .avatar chung (không có tiền tố .sidebar-profile/.topbar-profile) chỉ
+     còn áp dụng cho bản .topbar-profile ở điện thoại thật (≤700px) — bản .sidebar-profile
+     đã có kích thước riêng ngay trên. */
+  .profile-btn { font-size: 14px; padding: 5px 14px 5px 5px; border-width: 2px; }
+  .avatar { width: 32px; height: 32px; font-size: 17px; }
   .main { padding: 14px 12px 48px; min-width: 0; }
   .content-col { min-width: 0; }
   .greet { font-size: 18px; margin: 2px 0 16px; }
@@ -1033,6 +1102,12 @@ body {
   /* Logo và hoa lá bỏ đi: thanh dưới đáy chỉ nên có đúng thứ bấm được. */
   .brand { display: none; }
   .sidebar-deco { display: none; }
+
+  /* Nút chọn hồ sơ: ẩn khỏi thanh dưới đáy (không phải chỗ hợp lý — bàn tay bấm nhầm sang
+     mục khác ngay cạnh), quay lại góc phải thanh trên cùng — chỗ quen thuộc trên điện
+     thoại từ trước tới giờ. */
+  .sidebar-profile { display: none; }
+  .topbar-profile { display: flex; }
 
   .side-item {
     flex: 1; min-width: 0;
