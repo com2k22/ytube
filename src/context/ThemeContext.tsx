@@ -1,43 +1,30 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { supabase } from '@/lib/supabaseClient';
-import { useProfileContext } from './ProfileContext';
+import { createContext, useContext, useEffect, type ReactNode } from 'react';
 import type { ThemeName } from '@/types';
+
+/**
+ * ĐÃ BỎ tuỳ chọn đổi giao diện: app giờ LUÔN dùng "Dark TV" — giống nền tối của app
+ * YouTube trên TV. Trước đây còn theme "Chibi Cute" (hồng, đổi qua nút 🎨 ở Sidebar); nút
+ * đó đã bị gỡ khỏi Sidebar.tsx.
+ *
+ * Cố tình KHÔNG đọc `activeProfile.theme_preference` nữa (dù cột đó vẫn còn trong bảng
+ * profiles của Supabase, không cần xoá) — nếu vẫn đọc thì hồ sơ nào lỡ lưu 'chibi_cute' từ
+ * trước khi gỡ nút sẽ mở lên vẫn thấy giao diện hồng, coi như gỡ nút mà không dứt điểm.
+ * Ép cứng về 'dark_tv' ngay ở đây mới chắc chắn 100% hồ sơ nào cũng chỉ thấy Dark TV.
+ */
+const FIXED_THEME: ThemeName = 'dark_tv';
 
 interface ThemeContextValue {
   theme: ThemeName;
-  setTheme: (t: ThemeName) => void;
-  toggleTheme: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const { activeProfile } = useProfileContext();
-  const [theme, setThemeState] = useState<ThemeName>('dark_tv');
-
-  // Mỗi khi đổi hồ sơ, nạp theme đã lưu riêng cho hồ sơ đó.
   useEffect(() => {
-    if (activeProfile) setThemeState(activeProfile.theme_preference);
-  }, [activeProfile?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+    document.documentElement.setAttribute('data-theme', 'dark');
+  }, []);
 
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme === 'chibi_cute' ? 'chibi' : 'dark');
-  }, [theme]);
-
-  const setTheme = async (t: ThemeName) => {
-    setThemeState(t);
-    if (activeProfile) {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ theme_preference: t, updated_at: new Date().toISOString() })
-        .eq('id', activeProfile.id);
-      if (error) console.error('[Ytube] Không lưu được theme cho hồ sơ:', error.message);
-    }
-  };
-
-  const toggleTheme = () => setTheme(theme === 'dark_tv' ? 'chibi_cute' : 'dark_tv');
-
-  return <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>{children}</ThemeContext.Provider>;
+  return <ThemeContext.Provider value={{ theme: FIXED_THEME }}>{children}</ThemeContext.Provider>;
 }
 
 export function useThemeContext() {

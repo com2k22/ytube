@@ -27,15 +27,12 @@ export function BreakScreen({ secondsLeft, onSkipRequest }: Props) {
     <div className="overlay show" data-nav-scope>
       <div className="block-card">
         <div className="block-emoji">🌿</div>
-        <h2>Nghỉ một chút cho đỡ mỏi mắt nhé!</h2>
-        <p>
-          Mình xem lâu rồi đó. Con đứng dậy vươn vai, nhìn ra xa một lát — hết {formatClock(secondsLeft)} nữa là
-          xem tiếp được ngay thôi 💛
-        </p>
+        <h2>Nghỉ một chút nhé!</h2>
+        <p>Đứng dậy vươn vai, nhìn ra xa một lát nào 💛</p>
 
         <div className="break-count">{formatClock(secondsLeft)}</div>
 
-        <div className="break-tips">Thử nhìn ra cửa sổ, hoặc chớp mắt thật chậm 10 lần xem nào!</div>
+        <div className="break-tips">Xem tiếp sau khi hết giờ nghỉ</div>
 
         <div className="block-parent-actions">
           <button className="add-window-btn" data-region="block" tabIndex={0} onClick={onSkipRequest}>

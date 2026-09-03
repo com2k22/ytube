@@ -72,8 +72,7 @@ export function PinModal({ open, onClose, onSuccess }: Props) {
     // BlockScreen) — nhờ vậy trên TV không lỡ tay chọn trúng video phía sau.
     <div className="overlay show" data-nav-scope onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className={`modal ${shake ? 'shake' : ''}`}>
-        <h3>🔒 Nhập mã PIN phụ huynh</h3>
-        <p className="sub">Mã mặc định demo: 1234</p>
+        <h3>🔒 Nhập mã PIN</h3>
         <div className="pin-dots">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className={`pin-dot ${i < pin.length ? 'filled' : ''}`} />

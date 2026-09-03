@@ -28,6 +28,15 @@ body {
   margin: 0;
 }
 
+/* Trên TV: ưu tiên Roboto trước — đúng font chữ app YouTube trên TV dùng. webOS có sẵn
+   Roboto ở máy (không cần tải font ngoài), nên xếp lên đầu là trình duyệt TV dùng ngay,
+   không phải chờ mạng hay tải font web nào cả. Không đổi font ở bản điện thoại/máy tính,
+   giữ nguyên ui-rounded mềm mại như trước — đây là thay đổi CHỈ RIÊNG cho chế độ TV. */
+[data-tv] body,
+[data-tv] {
+  font-family: Roboto, 'Segoe UI', ui-rounded, system-ui, sans-serif;
+}
+
 /* ============ THEME 1: DARK TV ============ */
 /* --focus-color: màu viền sáng đánh dấu ô đang được chọn bằng điều khiển TV. Khai báo
    thành biến để chế độ TV vẽ được viền đó quanh riêng phần ẢNH của thẻ (giống app
@@ -184,10 +193,18 @@ body {
   font-size: 13px; padding-left: 3px; flex-shrink: 0;
 }
 
-/* justify-content: flex-end — thanh trên cùng giờ chỉ còn nút chọn hồ sơ, đặt ở GÓC PHẢI. */
+/* justify-content: flex-end — thanh trên cùng giờ chỉ còn nút chọn hồ sơ, đặt ở GÓC PHẢI.
+   padding-top: env(safe-area-inset-top) — trên iPhone có "tai thỏ"/viên thuốc đục lỗ,
+   thanh trạng thái (giờ, pin, sóng) của iOS đè lên ngay phần trên màn hình. Khai báo an
+   toàn này cộng thêm khoảng đệm đúng bằng chiều cao vùng đó (0px trên máy không có, tự
+   webkit tính) để nút chọn hồ sơ không bao giờ bị che nữa. Cộng luôn vào height để chiều
+   cao thanh không bị bóp lại. */
 .topbar {
   position: sticky; top: 0; z-index: 20;
-  height: 86px; display: flex; align-items: center; justify-content: flex-end; padding: 0 20px;
+  height: calc(86px + env(safe-area-inset-top, 0px));
+  padding: env(safe-area-inset-top, 0px) 20px 0;
+  display: flex; align-items: center; justify-content: flex-end;
+  box-sizing: border-box;
 }
 .profiles { display: flex; gap: 12px; align-items: center; }
 
@@ -247,6 +264,11 @@ body {
   padding: 16px 18px; margin-bottom: 8px; border-radius: 14px;
   cursor: pointer; font-size: 17.5px; font-weight: 700; border: 3px solid transparent;
 }
+/* Icon menu giờ là SVG (lucide-react), không còn emoji — nhờ vậy mới tô màu được theo
+   trạng thái .side-item / .side-item.active (xem 2 dòng đó ở khối theme dark phía trên).
+   Cỡ tính theo "em" (tương đối với font-size chữ bên cạnh) để tự động to/nhỏ đúng theo
+   từng khối TV/điện thoại bên dưới mà không cần khai riêng từng nơi. */
+.side-icon-svg { width: 1.35em; height: 1.35em; flex-shrink: 0; stroke-width: 2.2; }
 
 .main { flex: 1; padding: 24px 30px 60px; }
 .greet { font-size: 22px; font-weight: 800; margin: 4px 0 22px; }
@@ -366,7 +388,6 @@ body {
 .block-emoji { font-size: 104px; margin-bottom: 16px; }
 .block-card h2 { font-size: 30px; margin: 0 0 16px; }
 .block-card p { font-size: 19px; line-height: 1.7; opacity: 0.88; margin: 0 0 20px; }
-.block-sound-note { font-size: 15px; opacity: 0.6; margin-bottom: 22px; }
 .block-card .submit-btn { font-size: 18px; padding: 16px; }
 
 
@@ -571,9 +592,10 @@ body {
 /* --- Màn hình chặn ngoài giờ xem (bé nhìn từ xa, cần to rõ nhất) --- */
 [data-tv] .block-card { width: 820px; padding: 64px 56px; border-radius: 40px; }
 [data-tv] .block-emoji { font-size: 140px; }
-[data-tv] .block-card h2 { font-size: 44px; margin: 0 0 22px; }
-[data-tv] .block-card p { font-size: 27px; margin: 0 0 28px; }
-[data-tv] .block-sound-note { font-size: 21px; margin-bottom: 30px; }
+/* Chữ to hơn hẳn bản trước (44px → 52px, 27px → 32px): chữ trong khung này giờ đã rút gọn
+   (xem BlockScreen.tsx), nên to thêm vẫn không bị tràn khung, dễ đọc từ xa hơn nhiều. */
+[data-tv] .block-card h2 { font-size: 52px; margin: 0 0 22px; font-weight: 900; }
+[data-tv] .block-card p { font-size: 32px; margin: 0 0 28px; }
 [data-tv] .block-card .submit-btn { font-size: 26px; padding: 22px; }
 
 /* ====================================================================================

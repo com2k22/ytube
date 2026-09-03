@@ -52,9 +52,9 @@ function playGentleChime() {
  *  - 'daily_limit'   : đúng khung giờ nhưng đã xem hết tổng thời gian của hôm nay.
  *
  * Quan trọng: bé KHÔNG có cách nào tự đóng màn hình này — nút "VÂNG, con hiểu rồi" chỉ là
- * xác nhận đã đọc. Chỉ bố mẹ mới thoát được, bằng 1 trong 2 nút ở dưới (đều cần mã PIN):
- *  - "Cho xem ngay": mở khoá tạm, hết hiệu lực khi tắt app.
- *  - "Bố mẹ vào đây": vào khu vực Bố mẹ để sửa cấu hình giờ.
+ * xác nhận đã đọc. Chỉ bố mẹ mới thoát được, bằng nút "Cho xem ngay" (nhập PIN, mở khoá
+ * tạm tới khi tắt app). Vào hẳn khu vực Bố mẹ để sửa giờ thì đi từ menu bên/nút "Bố mẹ"
+ * ở Sidebar — không còn lối tắt riêng trên màn hình chặn này nữa (đỡ rối cho bé).
  */
 export function BlockScreen({
   mode = 'outside_window',
@@ -93,15 +93,12 @@ export function BlockScreen({
           </>
         ) : (
           <>
-            <h2>Chưa đến giờ xem TV rồi!</h2>
+            <h2>Chưa đến giờ xem TV!</h2>
             <p>
-              Bây giờ chưa trong khung giờ được xem. Con hãy hoàn thành nhiệm vụ bố mẹ giao nhé, mình sẽ được xem lại
-              vào lúc <b>{nextWindowStart ?? 'khung giờ được phép tiếp theo'}</b> nay 💛
+              Con xem lại vào lúc <b>{nextWindowStart ?? 'khung giờ tiếp theo'}</b> nhé 💛
             </p>
           </>
         )}
-
-        <div className="block-sound-note">🔈 đang phát một giai điệu nhẹ nhàng...</div>
 
         {/* Nút của BÉ: xin thêm giờ mà không cần ai chạy ra TV nhập mã. Lời xin hiện ngay
             trên điện thoại bố mẹ (xem useTimeRequests + TimeRequestCard). */}
@@ -132,15 +129,10 @@ export function BlockScreen({
           {isPreview ? 'Đóng xem thử' : acknowledged ? '💛 Con đã hiểu rồi' : 'VÂNG, con hiểu rồi'}
         </button>
 
-        {!isPreview && (
+        {!isPreview && onUnlockRequest && (
           <div className="block-parent-actions">
-            {onUnlockRequest && (
-              <button className="add-window-btn" data-region="block" tabIndex={0} onClick={onUnlockRequest}>
-                🔓 Bố mẹ cho xem ngay (nhập PIN)
-              </button>
-            )}
-            <button className="add-window-btn" data-region="block" tabIndex={0} onClick={onOpenParentGate}>
-              🔒 Bố mẹ vào đây
+            <button className="add-window-btn" data-region="block" tabIndex={0} onClick={onUnlockRequest}>
+              🔓 Bố mẹ cho xem ngay (nhập PIN)
             </button>
           </div>
         )}
