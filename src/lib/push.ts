@@ -16,14 +16,23 @@ import { supabase } from './supabaseClient';
 
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined;
 
-/** Chuyển khoá dạng chữ (base64url) sang dạng byte mà trình duyệt đòi hỏi. */
-function urlBase64ToUint8Array(base64: string): Uint8Array {
+/**
+ * Chuyển khoá dạng chữ (base64url) sang dạng byte mà trình duyệt đòi hỏi.
+ *
+ * Cố ý trả về ArrayBuffer chứ KHÔNG phải Uint8Array. Lý do rất cụ thể: từ TypeScript 5.7,
+ * Uint8Array được khai báo kèm tham số kiểu (Uint8Array<ArrayBufferLike>), mà chỗ nhận nó
+ * — applicationServerKey — chỉ chấp nhận vùng nhớ KHÔNG chia sẻ. Trả Uint8Array thẳng thì
+ * lúc build sẽ đứt với lỗi khó hiểu "SharedArrayBuffer is not assignable to ArrayBuffer".
+ * ArrayBuffer thì bản TypeScript nào cũng nhận, nên viết thế này là an toàn về lâu dài.
+ */
+function urlBase64ToBuffer(base64: string): ArrayBuffer {
   const padding = '='.repeat((4 - (base64.length % 4)) % 4);
   const normalized = (base64 + padding).replace(/-/g, '+').replace(/_/g, '/');
   const raw = atob(normalized);
-  const output = new Uint8Array(raw.length);
-  for (let i = 0; i < raw.length; i += 1) output[i] = raw.charCodeAt(i);
-  return output;
+  const buffer = new ArrayBuffer(raw.length);
+  const view = new Uint8Array(buffer);
+  for (let i = 0; i < raw.length; i += 1) view[i] = raw.charCodeAt(i);
+  return buffer;
 }
 
 /** Máy này có đủ khả năng nhận thông báo đẩy không. */
@@ -114,7 +123,7 @@ export async function enablePush(label: string): Promise<EnableResult> {
         // Bắt buộc phải true: trình duyệt chỉ cho đăng ký nếu cam kết mọi thông báo gửi
         // xuống đều HIỆN RA cho người dùng thấy (không được dùng để chạy ngầm lén lút).
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+        applicationServerKey: urlBase64ToBuffer(VAPID_PUBLIC_KEY),
       });
     } catch (err) {
       console.error('[Ytube] Không đăng ký nhận thông báo được:', err);
