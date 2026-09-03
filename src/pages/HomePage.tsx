@@ -79,7 +79,10 @@ export function HomePage() {
       )}
 
       {continuing.length > 0 && (
-        <>
+        // .section-block: bọc chung tiêu đề + hàng thẻ, để CSS ":focus-within" biết lúc nào
+        // ô chọn đang nằm trong ĐÚNG khối này mà phóng to riêng dòng tiêu đề của khối đó —
+        // xem .section-block:focus-within .section-title trong theme.css.
+        <div className="section-block">
           <div className="section-title">
             <PlayCircle className="section-icon" aria-hidden="true" /> Tiếp tục xem
           </div>
@@ -97,11 +100,11 @@ export function HomePage() {
               />
             ))}
           </div>
-        </>
+        </div>
       )}
 
       {recommendedPlaylists.length > 0 && (
-        <>
+        <div className="section-block">
           <div className="section-title">
             <ListVideo className="section-icon" aria-hidden="true" /> Danh sách
           </div>
@@ -122,11 +125,11 @@ export function HomePage() {
               />
             ))}
           </div>
-        </>
+        </div>
       )}
 
       {recommendedVideos.length > 0 && (
-        <>
+        <div className="section-block">
           <div className="section-title">
             <Clapperboard className="section-icon" aria-hidden="true" /> Video đề xuất
           </div>
@@ -142,11 +145,11 @@ export function HomePage() {
               />
             ))}
           </div>
-        </>
+        </div>
       )}
 
       {channels.length > 0 && (
-        <>
+        <div className="section-block">
           <div className="section-title">
             <Tv className="section-icon" aria-hidden="true" /> Kênh yêu thích
           </div>
@@ -169,7 +172,7 @@ export function HomePage() {
               </div>
             ))}
           </div>
-        </>
+        </div>
       )}
     </main>
   );

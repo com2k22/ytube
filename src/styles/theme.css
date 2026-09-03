@@ -190,11 +190,11 @@ body {
    xem TopBar.tsx/Sidebar.tsx). Bỏ hết padding cũ vốn tính cho vị trí cũ trong sidebar —
    .topbar đã tự căn giữa theo chiều dọc rồi (align-items: center), thêm padding vào đây
    chỉ làm nó lệch không cần thiết. */
-.brand { font-size: 23px; font-weight: 900; display: flex; align-items: center; gap: 8px; }
+.brand { font-size: 26px; font-weight: 900; display: flex; align-items: center; gap: 9px; }
 .logo-badge {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 38px; height: 27px; background: #ff0000; color: #fff; border-radius: 9px;
-  font-size: 13px; padding-left: 3px; flex-shrink: 0;
+  width: 44px; height: 31px; background: #ff0000; color: #fff; border-radius: 10px;
+  font-size: 15px; padding-left: 3px; flex-shrink: 0;
 }
 
 /* justify-content: flex-end — thanh trên cùng giờ chỉ còn nút chọn hồ sơ, đặt ở GÓC PHẢI.
@@ -287,7 +287,20 @@ body {
 
 .main { flex: 1; padding: 24px 30px 60px; }
 .greet { font-size: 22px; font-weight: 800; margin: 4px 0 22px; }
-.section-title { font-size: 20px; font-weight: 800; margin: 0 0 16px; }
+.section-title {
+  font-size: 20px; font-weight: 800; margin: 0 0 16px;
+  /* transform-origin: left — phóng to thì "mọc" từ mép trái ra, đúng chỗ chữ bắt đầu, thay
+     vì phình đều ra cả 2 bên trông lệch. transition: mượt khi bật/tắt hiệu ứng bên dưới. */
+  display: inline-block; transform-origin: left center;
+  transition: transform 0.18s ease, color 0.18s ease;
+}
+/* Nổi bật khu đang được chọn — giống app YouTube Kids trên TV: đưa phím mũi tên vào 1 khối
+   (Tiếp tục xem / Danh sách / Video đề xuất / Kênh yêu thích) thì đúng dòng icon+tên của
+   khối ĐÓ phóng to lên, các khối khác giữ nguyên. .section-block bọc quanh mỗi khối (xem
+   HomePage.tsx); ":focus-within" tự nhận ra khi có 1 thẻ BÊN TRONG nó đang thật sự được
+   chọn — nút điều khiển TV gọi el.focus() thật (xem setFocus trong useTvNavigation.ts),
+   không phải chỉ đổi màu bằng mắt, nên CSS này ăn khớp chính xác với ô đang chọn. */
+.section-block:focus-within .section-title { transform: scale(1.14); color: var(--focus-color); }
 /* Icon SVG cạnh tiêu đề khu (Danh sách / Video đề xuất / Kênh yêu thích) — cùng kiểu icon
    recolor-được như menu bên trái, thay cho emoji cũ (📂🎬📺) không tô màu lại được. Cỡ
    theo "em" nên tự to/nhỏ đúng theo section-title ở từng chế độ (TV/điện thoại) bên dưới. */
@@ -467,13 +480,13 @@ body {
   transition: width 0.18s ease;
 }
 /* Nút chọn hồ sơ (ProfileSwitcher đặt trong Sidebar) giờ là mục ĐẦU TIÊN của dải icon, nên
-   phải có kích thước giống hệt các nút menu bên dưới (.side-item: 88×88, cách nhau 16px) —
-   xổ hàng thẳng cột mới trông cân đối, không phải "1 nút to kỳ lạ rồi mới tới dải icon". */
+   phải có kích thước giống hệt các nút menu bên dưới (.side-item, xem bên dưới) — xổ hàng
+   thẳng cột mới trông cân đối, không phải "1 nút to kỳ lạ rồi mới tới dải icon". */
 [data-tv] .sidebar-profile .profile-btn {
-  width: 88px; height: 88px; padding: 0; margin: 0 auto 16px;
-  justify-content: center; gap: 0; border-radius: 26px; border-width: 4px;
+  width: 72px; height: 72px; padding: 0; margin: 0 auto 14px;
+  justify-content: center; gap: 0; border-radius: 22px; border-width: 4px;
 }
-[data-tv] .sidebar-profile .avatar { width: 56px; height: 56px; font-size: 30px; }
+[data-tv] .sidebar-profile .avatar { width: 46px; height: 46px; font-size: 24px; }
 /* Tên hồ sơ + mũi tên xổ xuống: ẩn trên dải icon hẹp, giống mọi chữ khác trong menu này
    (xem [data-tv] .side-text ngay dưới) — chỉ còn đúng avatar, bấm vào vẫn mở được bảng. */
 [data-tv] .sidebar-profile .profile-name-text,
@@ -482,26 +495,26 @@ body {
    dưới có khai riêng "top", phải viết CỤ THỂ HƠN (3 lớp chọn thay vì 2) ở đây mới thắng. */
 [data-tv] .sidebar-profile .profile-menu { top: 0; left: 100%; right: auto; margin-left: 14px; }
 
-/* Logo — giờ nằm trong .topbar, không còn trong .sidebar nữa (xem TopBar.tsx). Chỉ còn
-   icon ▶ (đã bỏ chữ "Ytube" khỏi JSX — TopBar.tsx không còn render .brand-text nữa). */
-[data-tv] .brand { font-size: 34px; }
-[data-tv] .logo-badge { width: 48px; height: 34px; font-size: 17px; border-radius: 12px; padding-left: 4px; }
+/* Logo — giờ nằm trong .topbar, không còn trong .sidebar nữa (xem TopBar.tsx). To hơn hẳn
+   bản trước (badge 48×34 → 70×50) theo yêu cầu, kèm lại chữ "Ytube" đứng sau icon. */
+[data-tv] .brand { font-size: 40px; }
+[data-tv] .logo-badge { width: 70px; height: 50px; font-size: 25px; border-radius: 16px; padding-left: 6px; }
 
 /* Menu trái LUÔN thu gọn thành dải icon — không bung ra nữa, kể cả khi đang chọn vào nó.
    (Bản trước có kiểu tự bung rộng khi chọn; bỏ đi cho màn hình đứng yên, không xê dịch.)
    Vì vậy icon phải tự nói lên được mục đó là gì — xem NAV_ITEMS trong Sidebar.tsx. */
 [data-tv] .side-item {
-  width: 88px;
-  height: 88px;
+  width: 72px;
+  height: 72px;
   padding: 0;
-  margin: 0 auto 16px;
+  margin: 0 auto 14px;
   justify-content: center;
   gap: 0;
-  border-radius: 26px;
+  border-radius: 22px;
   white-space: nowrap;
   border-width: 4px;
 }
-[data-tv] .side-icon { font-size: 42px; line-height: 1; }
+[data-tv] .side-icon { font-size: 32px; line-height: 1; }
 [data-tv] .side-text { display: none; }
 /* Dải icon hẹp thì mấy hình trang trí trông rối mắt — ẩn hẳn đi cho sạch. Dùng visibility
    chứ không phải display: none, để khối này vẫn giữ vai trò "lò xo" đẩy 2 nút Giao diện /
@@ -511,14 +524,21 @@ body {
 /* --- Cột nội dung bên phải ---
    min-width: 0 là bắt buộc: thiếu nó thì hàng thẻ dài sẽ ĐẨY PHÌNH cả trang ra ngang
    thay vì cuộn ngang gọn bên trong hàng đó. */
-/* Menu bên trái + thanh trên cùng: TRONG SUỐT, cùng màu nền với trang — đúng như ảnh app
-   YouTube TV thật bạn gửi (không có dải màu/viền tách riêng, icon trôi thẳng trên nền tối).
-   Viết SAU 2 dòng khai nền+viền gốc (đầu file, theo [data-theme='dark']) và có 2 lớp chọn
-   thay vì 1 ([data-tv][data-theme='dark']) nên chắc chắn thắng — không cần !important.
-   Cố tình CHỈ áp dụng cho chế độ TV: điện thoại/máy tính vẫn giữ dải màu riêng như cũ. */
+/* Menu bên trái + thanh trên cùng: CÙNG MÀU NỀN với trang (không có dải màu/viền tách
+   riêng) — đúng như ảnh app YouTube TV thật bạn gửi.
+   ⚠️ SỬA LỖI "kéo lên trên thì thanh trên cùng bị đè vào nội dung": bản trước dùng đúng
+   nghĩa đen "background: transparent" (trong suốt thật sự) — nghe có vẻ đúng ý "cùng màu
+   nền" nhưng KHÔNG PHẢI. .topbar dùng position: sticky, luôn dính ở mép trên màn hình
+   trong lúc trang cuộn; nó chỉ CHE ĐƯỢC chữ/thẻ cuộn ngang qua bên dưới nếu có nền ĐẶC. Để
+   trong suốt thật thì nội dung cuộn lên vẫn hiện xuyên qua, chồng lên đúng chỗ logo/tên hồ
+   sơ — đúng như ảnh bạn chụp. Sửa đúng gốc: dùng màu ĐẶC #0e0f13 (y hệt màu nền body ở đầu
+   file) — nhìn vẫn "vô hình" như trong suốt (vì trùng màu tuyệt đối với nền trang), nhưng
+   giờ là 1 lớp ĐẶC thật sự nên che đúng nội dung cuộn qua bên dưới, không còn đè/lộ chữ.
+   Áp dụng cho cả .sidebar (fixed, đứng yên khi cuộn) cho nhất quán, dù ít khi lộ lỗi tương
+   tự vì cột nội dung không cuộn NGANG vào phần diện tích của nó. */
 [data-tv][data-theme='dark'] .sidebar,
 [data-tv][data-theme='dark'] .topbar {
-  background: transparent;
+  background: #0e0f13;
   border: none;
 }
 
