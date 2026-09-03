@@ -23,6 +23,7 @@ import './index.css';
 // cũ, để URL trên web vẫn gọn đẹp (không có dấu "#"), không đổi hành vi bản web.
 const Router = window.location.protocol === 'file:' ? HashRouter : BrowserRouter;
 
+
 /**
  * Bật "chế độ TV" — bộ giao diện phóng to (chữ to, thẻ video to, vùng chọn rõ) để ngồi
  * xem từ 3-4m vẫn đọc được. Chỉ cần gắn thuộc tính data-tv lên thẻ <html>, phần còn lại
@@ -45,6 +46,25 @@ function isTvScreen(): boolean {
 
 if (isTvScreen()) {
   document.documentElement.setAttribute('data-tv', '1');
+}
+
+/*
+  Đăng ký phần chạy ngầm (service worker) — bắt buộc phải có thì ĐIỆN THOẠI mới nhận được
+  thông báo đẩy lúc app đã đóng.
+
+  Cố ý BỎ QUA trên TV: TV không bao giờ nhận thông báo đẩy, nên đăng ký ở đó chỉ tổ tải
+  thêm 1 file và tốn thêm bộ nhớ của một cái máy vốn đã yếu — không đổi lại được gì.
+  Cũng bỏ qua khi chạy bằng file:// (bản đóng gói cũ cho TV), vì trình duyệt không cho.
+
+  File public/sw.js CỐ Ý không lưu đệm trang nào cả, nên không có chuyện deploy bản mới mà
+  vẫn hiện bản cũ — xem ghi chú trong chính file đó.
+*/
+if ('serviceWorker' in navigator && window.location.protocol === 'https:' && !isTvScreen()) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch((err) => {
+      console.error('[Ytube] Không đăng ký được service worker:', err);
+    });
+  });
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

@@ -9,6 +9,7 @@ import { ChangePinCard } from '@/components/parent-dashboard/ChangePinCard';
 import { AddSourceForm } from '@/components/parental/AddSourceForm';
 import { WeeklyReportTab } from '@/components/parent-dashboard/WeeklyReportTab';
 import { TimeRequestCard } from '@/components/parent-dashboard/TimeRequestCard';
+import { PushSetupCard } from '@/components/parent-dashboard/PushSetupCard';
 
 type Tab = 'time' | 'content' | 'report' | 'pin';
 
@@ -95,6 +96,7 @@ export function ParentDashboardPage() {
           </div>
 
           <SessionLiveCard profileId={configProfile.id} profileLabel={configProfile.name} />
+          <PushSetupCard />
           <TimeRuleGroupEditor />
 
           <button

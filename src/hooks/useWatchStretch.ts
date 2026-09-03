@@ -79,23 +79,41 @@ export function useWatchStretchTicker(active: boolean) {
   useEffect(() => {
     if (!active || sessionMinutes <= 0) return;
 
+    // Đếm trong BỘ NHỚ TẠM, chỉ thỉnh thoảng mới ghi xuống bộ nhớ máy.
+    //
+    // Vì sao: ghi vào localStorage là thao tác ĐỒNG BỘ — máy phải dừng lại chờ ghi xong
+    // mới chạy tiếp. Ghi mỗi giây, liên tục suốt lúc bé xem phim, trên TV cấu hình yếu là
+    // đủ để thỉnh thoảng thấy khựng hình. Ghi 10 giây một lần thì nhẹ hơn 10 lần, mà xấu
+    // nhất cũng chỉ sai lệch 10 giây trong mạch xem — hoàn toàn không đáng kể.
+    let pending = read();
+
+    const flush = () => write(pending);
+
     const timer = setInterval(() => {
-      // Đang trong giờ nghỉ thì không đếm tiếp (bé có mở trang phát cũng không tính).
       const now = Date.now();
-      const s = read();
-      if (s.breakUntil > now) return;
+      // Đang trong giờ nghỉ thì không đếm tiếp (bé có mở trang phát cũng không tính).
+      if (pending.breakUntil > now) return;
 
       // Nghỉ đủ lâu giữa 2 lần xem → coi như mạch mới.
-      const seconds = now - s.lastTickAt > IDLE_RESET_MS ? 1 : s.seconds + 1;
+      const seconds = now - pending.lastTickAt > IDLE_RESET_MS ? 1 : pending.seconds + 1;
 
       if (seconds >= sessionMinutes * 60) {
-        write({ seconds: 0, lastTickAt: now, breakUntil: now + BREAK_MINUTES * 60_000 });
-      } else {
-        write({ seconds, lastTickAt: now, breakUntil: 0 });
+        // Bắt đầu giờ nghỉ là việc HỆ TRỌNG — ghi xuống ngay lập tức, không chờ gom nhóm,
+        // vì màn hình nghỉ (useBreakGate) đọc từ chính chỗ lưu đó ra.
+        pending = { seconds: 0, lastTickAt: now, breakUntil: now + BREAK_MINUTES * 60_000 };
+        flush();
+        return;
       }
+
+      pending = { seconds, lastTickAt: now, breakUntil: 0 };
+      if (seconds % 10 === 0) flush();
     }, 1000);
 
-    return () => clearInterval(timer);
+    return () => {
+      clearInterval(timer);
+      // Rời trang phát thì ghi nốt phần đang đếm dở, đừng để mất mấy giây cuối.
+      flush();
+    };
   }, [active, sessionMinutes]);
 }
 
@@ -113,13 +131,26 @@ export interface BreakState {
  * Đọc chung một chỗ lưu với useWatchStretchTicker ở trên.
  */
 export function useBreakGate(): BreakState {
-  const [breakUntil, setBreakUntil] = useState<number>(() => read().breakUntil);
-  const [now, setNow] = useState(() => Date.now());
+  /**
+   * Gộp cả 2 giá trị vào 1 state, và mỗi giây chỉ ĐỔI STATE KHI THẬT SỰ CÓ GÌ KHÁC.
+   *
+   * ⚠️ Đây là chỗ rất dễ làm chậm cả app mà không ai để ý. Hook này chạy trong Layout —
+   * khung sườn bọc ngoài MỌI trang. Nếu cứ mỗi giây lại đổi state (kiểu setNow(Date.now()))
+   * thì React vẽ lại toàn bộ trang mỗi giây, suốt cả ngày, kể cả khi chẳng có gì xảy ra.
+   * Trên máy tính không cảm nhận được, nhưng TV yếu hơn nhiều nên rất phí.
+   *
+   * Cách tránh: trong hàm cập nhật, nếu giá trị mới y hệt giá trị cũ thì TRẢ VỀ CHÍNH
+   * object cũ — React thấy không đổi sẽ bỏ qua, không vẽ lại gì cả. Nhờ vậy lúc bình
+   * thường (không trong giờ nghỉ) app đứng yên hoàn toàn.
+   */
+  const [state, setState] = useState<{ onBreak: boolean; secondsLeft: number }>(() => compute());
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setNow(Date.now());
-      setBreakUntil(read().breakUntil);
+      setState((prev) => {
+        const next = compute();
+        return next.onBreak === prev.onBreak && next.secondsLeft === prev.secondsLeft ? prev : next;
+      });
     }, 1000);
     return () => clearInterval(timer);
   }, []);
@@ -128,9 +159,16 @@ export function useBreakGate(): BreakState {
     // Xoá luôn mạch xem đang đếm: bố mẹ đã cho xem tiếp thì đừng để 30 giây sau lại bắt
     // nghỉ lần nữa.
     write({ seconds: 0, lastTickAt: Date.now(), breakUntil: 0 });
-    setBreakUntil(0);
+    setState({ onBreak: false, secondsLeft: 0 });
   }, []);
 
+  return { ...state, endBreak };
+}
+
+/** Đọc chỗ lưu và tính ra trạng thái nghỉ hiện tại. */
+function compute(): { onBreak: boolean; secondsLeft: number } {
+  const { breakUntil } = read();
+  const now = Date.now();
   const onBreak = breakUntil > now;
-  return { onBreak, secondsLeft: onBreak ? Math.ceil((breakUntil - now) / 1000) : 0, endBreak };
+  return { onBreak, secondsLeft: onBreak ? Math.ceil((breakUntil - now) / 1000) : 0 };
 }

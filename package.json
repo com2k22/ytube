@@ -13,10 +13,11 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
     "hls.js": "^1.5.15",
+    "lucide-react": "^0.445.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.2",
-    "lucide-react": "^0.445.0"
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",

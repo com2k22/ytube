@@ -11,6 +11,7 @@ import { useTempUnlock } from '@/hooks/useTempUnlock';
 import { useBreakGate } from '@/hooks/useWatchStretch';
 import { useTimeRequests, DEFAULT_REQUEST_MINUTES } from '@/hooks/useTimeRequests';
 import { useProfileContext } from '@/context/ProfileContext';
+import { notifyParentAboutRequest } from '@/lib/push';
 import { isSupabaseConfigured } from '@/lib/supabaseClient';
 
 // Lưu ý: cố tình KHÔNG khai báo 'continue' và 'topbar' ở đây — vùng không khai báo sẽ mặc
@@ -47,6 +48,7 @@ const SECTION_COLS = {
   pwin: 3,
   ppin: 1,
   prequest: 1,
+  ppush: 1,
   psrc: 1,
   pvid: 1,
   pdraft: 3,
@@ -96,6 +98,22 @@ export function Layout() {
   // Màn hình nghỉ giải lao nhường chỗ cho màn hình hết giờ: hết giờ hẳn thì nghỉ hay không
   // cũng chẳng còn ý nghĩa, hiện 2 lớp phủ chồng nhau chỉ tổ rối.
   const showBreakScreen = !isParentRoute && !showBlockScreen && onBreak && !pinOpen;
+
+  /*
+    Tới giờ nghỉ giải lao mà bé đang ở trang phát → RỜI HẲN về trang chủ.
+
+    Vì sao phải rời trang chứ không chỉ phủ lớp thông báo lên: lúc xem toàn màn hình,
+    video che kín mọi thứ — lớp phủ vẽ ra cũng không ai thấy, mà tiếng thì vẫn chạy tiếp.
+    Rời trang thì trình phát bị gỡ bỏ hẳn: hình tắt, tiếng tắt, tự thoát toàn màn hình.
+    Chỗ đang xem dở vẫn được nhớ (khối "Tiếp tục xem" ở trang chủ).
+
+    Cố ý đặt ở ĐÂY chứ không phải trong PlayerPage: Layout vốn đã phải theo dõi giờ nghỉ
+    để bật màn hình nghỉ rồi. Để cả 2 nơi cùng theo dõi thì thành 2 bộ đếm chạy song song
+    mỗi giây, ngay trên trang nặng nhất (đang phát video) và trên cái máy yếu nhất (TV).
+  */
+  useEffect(() => {
+    if (onBreak && location.pathname === '/player') navigate('/');
+  }, [onBreak, location.pathname, navigate]);
 
   // Bố mẹ vừa duyệt lời xin từ điện thoại → TV tự mở khoá đúng số phút được cho.
   // useRef để chỉ ăn 1 lần cho mỗi lời xin, không mở lại mỗi lần vẽ lại màn hình.
@@ -168,7 +186,13 @@ export function Layout() {
           dailyLimitMinutes={gate.dailyLimitMinutes}
           onOpenParentGate={() => setPinPurpose('parent')}
           onUnlockRequest={() => setPinPurpose('unlock')}
-          onAskForMore={() => createRequest(gate.reason)}
+          onAskForMore={async () => {
+            const requestId = await createRequest(gate.reason);
+            // Gửi lời xin xong mới bắn thông báo. Thứ tự này quan trọng: lời xin nằm trong
+            // Supabase là phần KHÔNG ĐƯỢC HỎNG (bố mẹ mở khu Bố mẹ ra là thấy); thông báo
+            // đẩy chỉ là để nhanh hơn, hỏng cũng không mất gì.
+            if (requestId) notifyParentAboutRequest(requestId);
+          }}
           requestState={requestState}
           requestMinutes={DEFAULT_REQUEST_MINUTES}
         />

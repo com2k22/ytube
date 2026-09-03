@@ -67,10 +67,10 @@ export function useTimeRequests(profileId: string | null) {
     };
   }, [refresh]);
 
-  /** Bé bấm xin. Trả về true nếu gửi được. */
+  /** Bé bấm xin. Trả về MÃ SỐ của lời xin vừa tạo, hoặc null nếu gửi hỏng. */
   const createRequest = useCallback(
     async (reason: string | null, minutes = DEFAULT_REQUEST_MINUTES) => {
-      if (!profileId) return false;
+      if (!profileId) return null;
       const { data, error } = await supabase
         .from('time_requests')
         .insert({ profile_id: profileId, requested_minutes: minutes, reason, status: 'pending' })
@@ -78,11 +78,12 @@ export function useTimeRequests(profileId: string | null) {
         .single();
       if (error) {
         console.error('[Ytube] Không gửi được lời xin thêm giờ:', error.message);
-        return false;
+        return null;
       }
-      setMyRequestId((data as TimeRequest).id);
+      const id = (data as TimeRequest).id;
+      setMyRequestId(id);
       await refresh();
-      return true;
+      return id;
     },
     [profileId, refresh]
   );

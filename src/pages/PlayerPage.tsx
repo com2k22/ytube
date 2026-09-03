@@ -4,7 +4,7 @@ import { useProfileContext } from '@/context/ProfileContext';
 import { useSourceById } from '@/hooks/useSourceById';
 import { useWatchProgress } from '@/hooks/useWatchProgress';
 import { useWatchSession } from '@/hooks/useWatchSession';
-import { useWatchStretchTicker, useBreakGate } from '@/hooks/useWatchStretch';
+import { useWatchStretchTicker } from '@/hooks/useWatchStretch';
 import { SafeYouTubePlayer } from '@/components/player/SafeYouTubePlayer';
 import { DirectVideoPlayer } from '@/components/player/DirectVideoPlayer';
 import { VideoCard } from '@/components/common/VideoCard';
@@ -120,18 +120,6 @@ export function PlayerPage() {
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, []);
   useWatchStretchTicker(windowVisible);
-
-  // Tới giờ nghỉ giải lao thì RỜI HẲN trang phát về trang chủ.
-  //
-  // Vì sao phải rời trang chứ không chỉ phủ lớp thông báo lên: lúc xem toàn màn hình,
-  // video che kín mọi thứ — lớp phủ vẽ ra cũng không ai thấy, mà tiếng thì vẫn chạy tiếp.
-  // Rời trang thì trình phát bị gỡ bỏ hẳn: hình tắt, tiếng tắt, tự thoát toàn màn hình.
-  // Chỗ đang xem dở vẫn được nhớ (khối "Tiếp tục xem" ở trang chủ), nghỉ xong mở lại là
-  // xem tiếp đúng chỗ.
-  const { onBreak } = useBreakGate();
-  useEffect(() => {
-    if (onBreak) navigate('/');
-  }, [onBreak, navigate]);
 
   const handleProgress = (percent: number) => {
     heartbeat(Math.round(percent * 6)); // ước lượng thô — xem README mục "Giới hạn đã biết"
