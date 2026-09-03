@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 
 export type BlockMode = 'outside_window' | 'daily_limit';
 
+export type RequestState = 'idle' | 'pending' | 'approved' | 'denied';
+
 interface Props {
   /** 'outside_window' = chưa đến giờ xem; 'daily_limit' = đã dùng hết thời gian của hôm nay. */
   mode?: BlockMode;
@@ -13,6 +15,12 @@ interface Props {
   onOpenParentGate: () => void;
   /** Mở cổng PIN để CHO XEM NGAY (mở khoá tạm tới khi tắt app). */
   onUnlockRequest?: () => void;
+  /** Bé bấm "con xin thêm giờ" — gửi lời xin sang điện thoại bố mẹ. */
+  onAskForMore?: () => void;
+  /** Trạng thái lời xin vừa gửi, để hiện "đang chờ..." / "bố mẹ chưa đồng ý". */
+  requestState?: RequestState;
+  /** Số phút bé xin mỗi lần bấm — chỉ để hiện lên nút cho rõ ràng. */
+  requestMinutes?: number;
   /** true khi đây là màn hình "xem thử" mở từ trang Bố mẹ — nút chính sẽ đóng bản xem thử. */
   isPreview?: boolean;
 }
@@ -55,6 +63,9 @@ export function BlockScreen({
   dailyLimitMinutes = 0,
   onOpenParentGate,
   onUnlockRequest,
+  onAskForMore,
+  requestState = 'idle',
+  requestMinutes = 15,
   isPreview,
 }: Props) {
   const [acknowledged, setAcknowledged] = useState(false);
@@ -91,6 +102,26 @@ export function BlockScreen({
         )}
 
         <div className="block-sound-note">🔈 đang phát một giai điệu nhẹ nhàng...</div>
+
+        {/* Nút của BÉ: xin thêm giờ mà không cần ai chạy ra TV nhập mã. Lời xin hiện ngay
+            trên điện thoại bố mẹ (xem useTimeRequests + TimeRequestCard). */}
+        {!isPreview && onAskForMore && (
+          <div className="block-ask">
+            {requestState === 'idle' && (
+              <button className="submit-btn block-ask-btn" data-region="block" tabIndex={0} onClick={onAskForMore}>
+                🙋 Con xin thêm {requestMinutes} phút
+              </button>
+            )}
+            {requestState === 'pending' && (
+              <div className="block-ask-status is-waiting">⏳ Đã gửi rồi, mình chờ bố mẹ trả lời nhé...</div>
+            )}
+            {requestState === 'denied' && (
+              <div className="block-ask-status is-denied">
+                Bố mẹ chưa đồng ý lần này. Mai mình xem tiếp nhé 💛
+              </div>
+            )}
+          </div>
+        )}
 
         <button
           className="submit-btn"

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTimeGate } from './useTimeGate';
+import { useTempUnlock } from './useTempUnlock';
 import { useProfileContext } from '@/context/ProfileContext';
 import {
   COUNTDOWN_VISIBLE_SECONDS,
@@ -44,6 +45,7 @@ export interface WatchCountdown {
  */
 export function useWatchCountdown(): WatchCountdown {
   const { dailyLimitMinutes, usedMinutes, allowed } = useTimeGate();
+  const { expiresAt } = useTempUnlock();
   const { activeProfile } = useProfileContext();
 
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
@@ -81,8 +83,24 @@ export function useWatchCountdown(): WatchCountdown {
     return () => clearInterval(timer);
   }, [dailyLimitMinutes]);
 
+  /**
+   * Số giây còn lại của SUẤT BỐ MẸ CHO THÊM (bé xin thêm giờ và được duyệt), nếu đang có.
+   * null = không có suất nào đang chạy.
+   *
+   * useTempUnlock tự vẽ lại mỗi giây khi suất này còn hiệu lực, nên đọc thẳng Date.now()
+   * ở đây là đủ, không cần thêm bộ đếm riêng.
+   */
+  const grantSecondsLeft = expiresAt === null ? null : Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
+
+  /**
+   * Con số THỰC SỰ đem ra đếm ngược. Suất bố mẹ cho thêm được ưu tiên: lúc đó hạn mức
+   * ngày đã hết sạch (còn 0 giây), hiện số đó lên thì sai — cái sắp hết là suất được cho.
+   */
+  const effectiveLeft = grantSecondsLeft ?? secondsLeft;
+
   // --- Chạm mốc 1 phút: nhắc bằng giọng nói, đúng 1 lần ---
   useEffect(() => {
+    const secondsLeft = effectiveLeft;
     if (secondsLeft === null) return;
 
     // Còn nhiều thời gian trở lại (sang ngày mới, hoặc bố mẹ vừa nới giờ) → dọn sạch để
@@ -110,7 +128,7 @@ export function useWatchCountdown(): WatchCountdown {
         speakWithBrowser(reminder.text || fallbackText(name, scenario));
       });
     });
-  }, [secondsLeft, activeProfile?.name]);
+  }, [effectiveLeft, activeProfile?.name]);
 
   // Rời trang phát thì tắt ngay câu đang đọc dở (cả 2 đường: file tiếng và giọng thiết bị).
   useEffect(
@@ -122,13 +140,17 @@ export function useWatchCountdown(): WatchCountdown {
     []
   );
 
+  // Hiện đồng hồ khi: đang được phép xem bình thường và sắp hết hạn mức ngày, HOẶC đang
+  // dùng suất bố mẹ cho thêm và suất đó sắp hết.
   const visible =
-    allowed && secondsLeft !== null && secondsLeft <= COUNTDOWN_VISIBLE_SECONDS;
+    effectiveLeft !== null &&
+    effectiveLeft <= COUNTDOWN_VISIBLE_SECONDS &&
+    (grantSecondsLeft !== null || allowed);
 
   return {
-    secondsLeft,
+    secondsLeft: effectiveLeft,
     visible,
-    level: secondsLeft !== null && secondsLeft <= VOICE_REMINDER_SECONDS ? 'critical' : 'warn',
-    progress: secondsLeft === null ? 0 : Math.max(0, Math.min(1, secondsLeft / COUNTDOWN_VISIBLE_SECONDS)),
+    level: effectiveLeft !== null && effectiveLeft <= VOICE_REMINDER_SECONDS ? 'critical' : 'warn',
+    progress: effectiveLeft === null ? 0 : Math.max(0, Math.min(1, effectiveLeft / COUNTDOWN_VISIBLE_SECONDS)),
   };
 }

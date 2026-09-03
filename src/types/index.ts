@@ -87,3 +87,20 @@ export interface WatchProgress {
   progress_percent: number;
   updated_at: string;
 }
+
+/** Trạng thái 1 lời xin thêm giờ (xem supabase/007_time_requests.sql). */
+export type TimeRequestStatus = 'pending' | 'approved' | 'denied' | 'cancelled';
+
+/** Một lần bé bấm "Con xin thêm giờ" ở màn hình chặn. */
+export interface TimeRequest {
+  id: string;
+  profile_id: string;
+  status: TimeRequestStatus;
+  requested_minutes: number;
+  /** Số phút bố mẹ thực sự cho — có thể khác số bé xin. null khi chưa duyệt. */
+  granted_minutes: number | null;
+  /** Lúc xin thì đang bị chặn vì lý do gì: 'daily_limit' hay 'outside_window'. */
+  reason: string | null;
+  created_at: string;
+  resolved_at: string | null;
+}

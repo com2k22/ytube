@@ -3,10 +3,14 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { PinModal } from '@/components/parental/PinModal';
-import { BlockScreen } from '@/components/parent-dashboard/BlockScreen';
+import { BlockScreen, type RequestState } from '@/components/parent-dashboard/BlockScreen';
+import { BreakScreen } from '@/components/parent-dashboard/BreakScreen';
 import { useTvNavigation } from '@/hooks/useTvNavigation';
 import { useTimeGate } from '@/hooks/useTimeGate';
 import { useTempUnlock } from '@/hooks/useTempUnlock';
+import { useBreakGate } from '@/hooks/useWatchStretch';
+import { useTimeRequests, DEFAULT_REQUEST_MINUTES } from '@/hooks/useTimeRequests';
+import { useProfileContext } from '@/context/ProfileContext';
 import { isSupabaseConfigured } from '@/lib/supabaseClient';
 
 // Lưu ý: cố tình KHÔNG khai báo 'continue' và 'topbar' ở đây — vùng không khai báo sẽ mặc
@@ -42,6 +46,7 @@ const SECTION_COLS = {
   pdays: 7,
   pwin: 3,
   ppin: 1,
+  prequest: 1,
   psrc: 1,
   pvid: 1,
   pdraft: 3,
@@ -61,8 +66,13 @@ const SECTION_COLS = {
  */
 export function Layout() {
   const layoutRef = useRef<HTMLDivElement>(null);
-  /** Mở bảng PIN để làm gì: vào khu Bố mẹ, hay cho bé xem ngay. null = đang đóng. */
-  const [pinPurpose, setPinPurpose] = useState<'parent' | 'unlock' | null>(null);
+  /**
+   * Mở bảng PIN để làm gì. null = đang đóng.
+   *  'parent'    → vào khu Bố mẹ
+   *  'unlock'    → cho bé xem ngay (bỏ qua giới hạn giờ, tới khi tắt app)
+   *  'skipbreak' → cho xem tiếp ngay, không phải chờ hết giờ nghỉ giải lao
+   */
+  const [pinPurpose, setPinPurpose] = useState<'parent' | 'unlock' | 'skipbreak' | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -74,18 +84,39 @@ export function Layout() {
 
   const gate = useTimeGate();
   const { unlocked, grant } = useTempUnlock();
+  const { onBreak, secondsLeft: breakSecondsLeft, endBreak } = useBreakGate();
+  const { activeProfile } = useProfileContext();
+  const { myRequest, createRequest, clearMyRequest } = useTimeRequests(activeProfile?.id ?? null);
 
   const pinOpen = pinPurpose !== null;
   const isParentRoute = location.pathname.startsWith('/parent');
-  // unlocked = bố mẹ đã nhập PIN cho xem ngay trong phiên này → bỏ qua mọi giới hạn giờ.
+  // unlocked = bố mẹ đã cho xem ngay (nhập PIN tại chỗ, hoặc duyệt lời xin từ xa) → bỏ
+  // qua mọi giới hạn giờ cho tới khi hết suất.
   const showBlockScreen = !isParentRoute && !gate.allowed && !unlocked && !pinOpen;
+  // Màn hình nghỉ giải lao nhường chỗ cho màn hình hết giờ: hết giờ hẳn thì nghỉ hay không
+  // cũng chẳng còn ý nghĩa, hiện 2 lớp phủ chồng nhau chỉ tổ rối.
+  const showBreakScreen = !isParentRoute && !showBlockScreen && onBreak && !pinOpen;
+
+  // Bố mẹ vừa duyệt lời xin từ điện thoại → TV tự mở khoá đúng số phút được cho.
+  // useRef để chỉ ăn 1 lần cho mỗi lời xin, không mở lại mỗi lần vẽ lại màn hình.
+  const grantedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!myRequest || myRequest.status !== 'approved') return;
+    if (grantedRef.current === myRequest.id) return;
+    grantedRef.current = myRequest.id;
+    grant(myRequest.granted_minutes ?? DEFAULT_REQUEST_MINUTES);
+    clearMyRequest();
+  }, [myRequest, grant, clearMyRequest]);
+
+  const requestState: RequestState =
+    myRequest?.status === 'pending' ? 'pending' : myRequest?.status === 'denied' ? 'denied' : 'idle';
 
   // Đặt lại ô đang chọn mỗi khi: đổi trang, HOẶC mở/đóng 1 lớp phủ khoá màn hình (bảng
   // PIN, màn hình Chưa đến giờ xem). Lớp phủ mở ra thì ô chọn phải nhảy vào bên trong nó;
   // đóng lại thì quay về nội dung chính.
   useEffect(() => {
     resetFocus();
-  }, [location.pathname, pinOpen, showBlockScreen, resetFocus]);
+  }, [location.pathname, pinOpen, showBlockScreen, showBreakScreen, resetFocus]);
 
   return (
     <div className="layout" ref={layoutRef}>
@@ -123,6 +154,7 @@ export function Layout() {
         onSuccess={() => {
           // Cùng 1 bảng PIN, nhưng nhập đúng rồi thì làm gì lại tuỳ nút nào vừa mở nó ra.
           if (pinPurpose === 'unlock') grant();
+          else if (pinPurpose === 'skipbreak') endBreak();
           else navigate('/parent');
           setPinPurpose(null);
         }}
@@ -136,7 +168,14 @@ export function Layout() {
           dailyLimitMinutes={gate.dailyLimitMinutes}
           onOpenParentGate={() => setPinPurpose('parent')}
           onUnlockRequest={() => setPinPurpose('unlock')}
+          onAskForMore={() => createRequest(gate.reason)}
+          requestState={requestState}
+          requestMinutes={DEFAULT_REQUEST_MINUTES}
         />
+      )}
+
+      {showBreakScreen && (
+        <BreakScreen secondsLeft={breakSecondsLeft} onSkipRequest={() => setPinPurpose('skipbreak')} />
       )}
     </div>
   );

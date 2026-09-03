@@ -8,6 +8,7 @@ import { BlockScreen } from '@/components/parent-dashboard/BlockScreen';
 import { ChangePinCard } from '@/components/parent-dashboard/ChangePinCard';
 import { AddSourceForm } from '@/components/parental/AddSourceForm';
 import { WeeklyReportTab } from '@/components/parent-dashboard/WeeklyReportTab';
+import { TimeRequestCard } from '@/components/parent-dashboard/TimeRequestCard';
 
 type Tab = 'time' | 'content' | 'report' | 'pin';
 
@@ -68,6 +69,11 @@ export function ParentDashboardPage() {
           🔑 Đổi PIN
         </button>
       </div>
+
+      {/* Lời xin thêm giờ của bé — cố ý đặt NGOÀI các tab và ở trên cùng: bé đang ngồi chờ
+          trước TV, bố mẹ mở khu Bố mẹ ra là phải thấy ngay, không phải đi tìm đúng tab.
+          Không có ai đang xin thì thẻ này tự ẩn hoàn toàn. */}
+      <TimeRequestCard />
 
       {tab === 'time' && (
         <div>

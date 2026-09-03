@@ -1,4 +1,4 @@
-https://ytube-umber.vercel.app/
+https://ytube-umber.vercel.app
 
 # ↑ DÒNG ĐẦU TIÊN Ở TRÊN là link Vercel thật của app — sửa đúng 1 dòng đó thôi.
 #
