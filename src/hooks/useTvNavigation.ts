@@ -121,12 +121,37 @@ export function useTvNavigation(
     const topLimit = barHeight + 24;
     const bottomLimit = window.innerHeight - 32;
     const r = el.getBoundingClientRect();
-    if (r.top < topLimit) {
-      window.scrollBy(0, r.top - topLimit);
+
+    // Lỗi "kéo lên bị mất icon+tên khối": ô thẻ (card) đang chọn nằm NGAY DƯỚI dòng tiêu đề
+    // icon+tên của khối (vd "Tiếp tục xem"), nhưng dòng tiêu đề đó KHÔNG PHẢI là ô điều
+    // hướng — hàm này trước đây chỉ tính sao cho THẺ hiện đủ, không biết gì tới dòng tiêu đề
+    // nằm phía trên thẻ, nên cuộn vừa đủ lọt thẻ là dòng tiêu đề bị chui lên trên, khuất sau
+    // thanh trên cùng đang dính. Cách sửa: nếu thẻ đang chọn nằm trong 1 ".section-block"
+    // (bọc chung tiêu đề + hàng thẻ, xem HomePage.tsx), lấy luôn mép TRÊN của CẢ KHỐI đó
+    // (gồm tiêu đề) làm mốc để so/cuộn, thay vì chỉ mép trên của riêng cái thẻ.
+    const block = el.closest<HTMLElement>('.section-block');
+    const topRef = block ? block.getBoundingClientRect().top : r.top;
+
+    if (topRef < topLimit) {
+      // Lỗi "kéo lên hết thì bị kẹt": ô đang chọn nằm ở HÀNG ĐẦU TIÊN của trang (vd "Tiếp
+      // tục xem"), nhưng phía trên nó còn dòng chào "Xin chào, ..." không phải là ô điều
+      // hướng được nên hàm này không biết mà chừa chỗ. Cuộn tối thiểu (vừa đủ lọt ô) khi đó
+      // vẫn để dòng chào bị khuất phía trên thanh dính — trông như "kẹt", phải vòng qua menu
+      // trái mới thấy hết.
+      //
+      // Cách sửa: tính xem cuộn tối thiểu xong thì trang còn cách đỉnh (scrollY) bao xa. Nếu
+      // khoảng đó đã nhỏ hơn topLimit — nghĩa là chẳng còn gì đáng kể phía trên để che nữa —
+      // thì cuộn thẳng về ĐỈNH TRANG (scrollY = 0) luôn, lộ hết phần đầu trang.
+      const targetScrollY = window.scrollY + (topRef - topLimit);
+      if (targetScrollY < topLimit) {
+        window.scrollTo({ top: 0 });
+      } else {
+        window.scrollBy(0, topRef - topLimit);
+      }
     } else if (r.bottom > bottomLimit) {
-      // Math.min: với ô cao hơn cả màn hình thì ưu tiên giữ phần ĐẦU của ô, đừng cuộn quá
-      // tay làm phần đầu chui lên trên khuất mất.
-      window.scrollBy(0, Math.min(r.bottom - bottomLimit, r.top - topLimit));
+      // Math.min: với ô cao hơn cả màn hình thì ưu tiên giữ phần ĐẦU của khối (kể cả tiêu
+      // đề), đừng cuộn quá tay làm phần đầu chui lên trên khuất mất.
+      window.scrollBy(0, Math.min(r.bottom - bottomLimit, topRef - topLimit));
     }
   }, []);
 

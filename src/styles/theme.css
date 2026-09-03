@@ -20,6 +20,13 @@ body,
   height: 100%;
 }
 
+/* Cuộn DỌC mượt mà (giống hệt cuộn NGANG của .shelf bên dưới) — chỉ cần khai báo CSS này,
+   mọi lệnh window.scrollBy/scrollTo (kể cả trong useTvNavigation.ts) tự động chạy có hiệu
+   ứng trượt thay vì nhảy giật cục. */
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   font-family: ui-rounded, 'Segoe UI', Roboto, system-ui, sans-serif;
   transition: background 0.35s ease, color 0.35s ease;
@@ -289,18 +296,16 @@ body {
 .greet { font-size: 22px; font-weight: 800; margin: 4px 0 22px; }
 .section-title {
   font-size: 20px; font-weight: 800; margin: 0 0 16px;
-  /* transform-origin: left — phóng to thì "mọc" từ mép trái ra, đúng chỗ chữ bắt đầu, thay
-     vì phình đều ra cả 2 bên trông lệch. transition: mượt khi bật/tắt hiệu ứng bên dưới. */
-  display: inline-block; transform-origin: left center;
-  transition: transform 0.18s ease, color 0.18s ease;
+  display: inline-block;
 }
-/* Nổi bật khu đang được chọn — giống app YouTube Kids trên TV: đưa phím mũi tên vào 1 khối
-   (Tiếp tục xem / Danh sách / Video đề xuất / Kênh yêu thích) thì đúng dòng icon+tên của
-   khối ĐÓ phóng to lên, các khối khác giữ nguyên. .section-block bọc quanh mỗi khối (xem
-   HomePage.tsx); ":focus-within" tự nhận ra khi có 1 thẻ BÊN TRONG nó đang thật sự được
-   chọn — nút điều khiển TV gọi el.focus() thật (xem setFocus trong useTvNavigation.ts),
-   không phải chỉ đổi màu bằng mắt, nên CSS này ăn khớp chính xác với ô đang chọn. */
-.section-block:focus-within .section-title { transform: scale(1.14); color: var(--focus-color); }
+/* Nổi bật icon+tên của 4 khối Trang chủ (Tiếp tục xem / Danh sách / Video đề xuất / Kênh
+   yêu thích) — BAN ĐẦU làm hiệu ứng phóng to khi đưa mũi tên vào khối (":focus-within"),
+   nhưng bị phản hồi là "mỏi mắt" (hiệu ứng động cứ phóng to/nhỏ liên tục khi dò từng khối).
+   Đổi sang tăng size + đậm chữ CỐ ĐỊNH (không phụ thuộc focus) cho riêng 4 khối này — dùng
+   ".section-block .section-title" (không phải ".section-title" trơn) để KHÔNG ảnh hưởng tới
+   các trang khác đang dùng chung class "section-title" mà không bọc trong .section-block
+   (vd trang Kênh/Playlist). */
+.section-block .section-title { font-size: 24px; font-weight: 900; }
 /* Icon SVG cạnh tiêu đề khu (Danh sách / Video đề xuất / Kênh yêu thích) — cùng kiểu icon
    recolor-được như menu bên trái, thay cho emoji cũ (📂🎬📺) không tô màu lại được. Cỡ
    theo "em" nên tự to/nhỏ đúng theo section-title ở từng chế độ (TV/điện thoại) bên dưới. */
@@ -451,7 +456,10 @@ body {
   --radius: 18px;
   --card-w: 700px;
   --shelf-gap: 34px;
-  --rail-w: 132px;
+  /* Giảm từ 132px xuống 104px (yêu cầu "giảm độ rộng menu trái") — icon/nút bên trong
+     cũng thu nhỏ theo (72px → 60px, xem [data-tv] .side-item và .sidebar-profile bên
+     dưới) để vẫn nằm cân đối, không bị chật/đụng mép dải. */
+  --rail-w: 104px;
 }
 
 /* --- Menu trái: dải icon, bung ra đè lên nội dung khi được chọn --- */
@@ -472,7 +480,7 @@ body {
   align-self: auto;
   width: var(--rail-w);
   z-index: 40;
-  padding: 26px 12px;
+  padding: 26px 8px;
   /* Trước là "hidden" (thời còn kiểu tự bung rộng, giờ đã bỏ — xem chú thích bên dưới).
      Đổi sang "visible": bảng chọn hồ sơ giờ xổ SANG PHẢI, tràn ra khỏi bề ngang 132px của
      dải này — để "hidden" thì bảng đó bị cắt cụt/biến mất hoàn toàn. */
@@ -483,10 +491,10 @@ body {
    phải có kích thước giống hệt các nút menu bên dưới (.side-item, xem bên dưới) — xổ hàng
    thẳng cột mới trông cân đối, không phải "1 nút to kỳ lạ rồi mới tới dải icon". */
 [data-tv] .sidebar-profile .profile-btn {
-  width: 72px; height: 72px; padding: 0; margin: 0 auto 14px;
-  justify-content: center; gap: 0; border-radius: 22px; border-width: 4px;
+  width: 60px; height: 60px; padding: 0; margin: 0 auto 12px;
+  justify-content: center; gap: 0; border-radius: 18px; border-width: 3px;
 }
-[data-tv] .sidebar-profile .avatar { width: 46px; height: 46px; font-size: 24px; }
+[data-tv] .sidebar-profile .avatar { width: 38px; height: 38px; font-size: 20px; }
 /* Tên hồ sơ + mũi tên xổ xuống: ẩn trên dải icon hẹp, giống mọi chữ khác trong menu này
    (xem [data-tv] .side-text ngay dưới) — chỉ còn đúng avatar, bấm vào vẫn mở được bảng. */
 [data-tv] .sidebar-profile .profile-name-text,
@@ -504,17 +512,17 @@ body {
    (Bản trước có kiểu tự bung rộng khi chọn; bỏ đi cho màn hình đứng yên, không xê dịch.)
    Vì vậy icon phải tự nói lên được mục đó là gì — xem NAV_ITEMS trong Sidebar.tsx. */
 [data-tv] .side-item {
-  width: 72px;
-  height: 72px;
+  width: 60px;
+  height: 60px;
   padding: 0;
-  margin: 0 auto 14px;
+  margin: 0 auto 12px;
   justify-content: center;
   gap: 0;
-  border-radius: 22px;
+  border-radius: 18px;
   white-space: nowrap;
-  border-width: 4px;
+  border-width: 3px;
 }
-[data-tv] .side-icon { font-size: 32px; line-height: 1; }
+[data-tv] .side-icon { font-size: 26px; line-height: 1; }
 [data-tv] .side-text { display: none; }
 /* Dải icon hẹp thì mấy hình trang trí trông rối mắt — ẩn hẳn đi cho sạch. Dùng visibility
    chứ không phải display: none, để khối này vẫn giữ vai trò "lò xo" đẩy 2 nút Giao diện /
@@ -546,6 +554,10 @@ body {
 [data-tv] .main { min-width: 0; padding: 30px 44px 90px; }
 [data-tv] .greet { font-size: 40px; font-weight: 900; margin: 4px 0 30px; }
 [data-tv] .section-title { font-size: 34px; font-weight: 900; margin: 0 0 20px; opacity: 1; }
+/* Trên TV, 4 khối Trang chủ tăng thêm size nữa (to hơn cả .section-title thường ở trên) —
+   thay cho hiệu ứng phóng to khi focus đã bỏ, xem giải thích ở ".section-block .section-title"
+   phía đầu file. */
+[data-tv] .section-block .section-title { font-size: 40px; }
 [data-tv] .back-btn { font-size: 26px; font-weight: 800; padding: 20px 32px; border-radius: 20px; }
 
 /* --- Thanh trên cùng ---
