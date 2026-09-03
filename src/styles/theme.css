@@ -960,3 +960,63 @@ body {
   .request-actions { width: 100%; }
   .request-actions .add-window-btn { flex: 1; padding: 10px 8px; font-size: 13px; }
 }
+
+/* ====================================================================================
+   THANH MENU DƯỚI ĐÁY — chỉ dành cho ĐIỆN THOẠI
+   ------------------------------------------------------------------------------------
+   Trên điện thoại, menu dọc bên trái vừa chiếm mất bề ngang vốn đã hẹp, vừa nằm ở chỗ
+   ngón cái khó với tới. Ở đây lật nó thành thanh ngang dưới đáy — đúng kiểu mọi app điện
+   thoại vẫn làm. Vẫn dùng CHUNG một đoạn mã Sidebar, chỉ đổi cách bày ra bằng CSS.
+
+   ⚠️ VÌ SAO LÀ 700px CHỨ KHÔNG PHẢI 760px như các khối khác:
+   iPad mini để dọc rộng 744px. Lấy mốc 760 thì iPad mini cũng bị kéo menu xuống đáy —
+   trong khi yêu cầu là iPad GIỮ NGUYÊN bố cục cột dọc. iPhone bản to nhất để dọc cũng chỉ
+   440px, nên mốc 700 tách bạch được: iPhone dính, mọi iPad đều không.
+
+   iPhone XOAY NGANG (~950px) cũng cố ý không dính: lúc đó màn hình thấp mà rộng, chiếm
+   thêm một dải ngang dưới đáy là mất chỗ xem, để menu bên trái hợp lý hơn.
+
+   Khối này phải nằm SAU khối @media 760px ở trên, vì nó bật lại phần chữ mà khối kia ẩn đi.
+   ==================================================================================== */
+@media (max-width: 700px) {
+  /* Bỏ xếp ngang: menu không còn là 1 cột trong hàng nữa mà nổi hẳn lên trên nội dung. */
+  .layout { display: block; }
+
+  .sidebar {
+    position: fixed; left: 0; right: 0; bottom: 0; top: auto;
+    width: auto; height: auto; align-self: auto;
+    flex-direction: row; justify-content: space-around; align-items: stretch;
+    /* env(safe-area-inset-bottom): chừa chỗ cho vạch Home của iPhone không viền, nếu
+       không thì mục cuối bị vạch đó che mất một phần. */
+    padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+    z-index: 40;
+    box-sizing: border-box;
+  }
+  /* Viền chuyển từ cạnh phải sang cạnh trên. Phải viết riêng cho từng giao diện vì 2 chỗ
+     khai báo viền gốc đều gắn với [data-theme], "đè" bằng .sidebar không thì không thắng. */
+  [data-theme='dark'] .sidebar { border-right: none; border-top: 1px solid #23242c; }
+  [data-theme='chibi'] .sidebar { border-right: none; border-top: 3px dashed #ffb6d5; }
+
+  /* Logo và hoa lá bỏ đi: thanh dưới đáy chỉ nên có đúng thứ bấm được. */
+  .brand { display: none; }
+  .sidebar-deco { display: none; }
+
+  .side-item {
+    flex: 1; min-width: 0;
+    flex-direction: column; gap: 3px;
+    width: auto; height: auto; margin: 0;
+    padding: 7px 2px; border-radius: 14px;
+    justify-content: center; border-width: 2px;
+  }
+  .side-icon { font-size: 21px; line-height: 1; }
+  /* Bật lại chữ (khối 760px ở trên đã ẩn) — thanh dưới đáy còn chỗ, có chữ thì rõ nghĩa
+     hơn hẳn, nhất là icon 🎨 và 🔒 vốn không tự nói lên được là gì. */
+  .side-text {
+    display: block; font-size: 10.5px; font-weight: 800; line-height: 1.15;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+  }
+  .side-action { opacity: 1; }
+
+  /* Chừa chỗ cho thanh dưới đáy, không thì phần cuối trang bị nó che mất. */
+  .main { padding-bottom: 96px; }
+}

@@ -1,29 +1,29 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useProfileContext } from '@/context/ProfileContext';
 import { useThemeContext } from '@/context/ThemeContext';
-import { PROFILE_IDS, PROFILE_EMOJI } from '@/constants';
 
-// Tách riêng icon và chữ (thay vì gộp chung 1 chuỗi như trước) để chế độ TV giấu được
-// phần chữ đi, chỉ chừa dải icon gọn bên trái giống app YouTube trên TV. Bản web/điện
-// thoại vẫn hiện đủ icon + chữ như cũ.
+// Tách riêng icon và chữ (thay vì gộp chung 1 chuỗi) để chế độ TV giấu được phần chữ đi,
+// chỉ chừa dải icon gọn bên trái giống app YouTube trên TV.
 //
-// Icon của Mina/Cốm lấy THẲNG từ PROFILE_EMOJI (constants.ts) — cùng con vật với nút chọn
-// hồ sơ ở thanh trên cùng, đổi 1 chỗ là đổi cả 2 nơi, không sợ lệch nhau. Trên TV menu luôn
-// thu gọn chỉ còn icon, nên icon phải tự nói lên được mục đó của bé nào.
-const NAV_ITEMS: { icon: string; text: string; profileId?: string }[] = [
-  { icon: '🏠', text: 'Trang chủ' },
-  { icon: PROFILE_EMOJI[PROFILE_IDS.MINA], text: 'Cho Mina', profileId: PROFILE_IDS.MINA },
-  { icon: PROFILE_EMOJI[PROFILE_IDS.COM], text: 'Cho Cốm', profileId: PROFILE_IDS.COM },
-];
+// ĐÃ BỎ 2 mục "Cho Mina" / "Cho Cốm" khỏi menu này. Lý do: chúng chỉ làm đúng 1 việc là
+// đổi hồ sơ đang dùng — mà việc đó nút chọn hồ sơ ở GÓC PHẢI THANH TRÊN CÙNG đã làm rồi
+// (xem TopBar). Hai chỗ cùng một chức năng khiến người dùng phân vân "hai cái này khác
+// nhau chỗ nào", và trên điện thoại thì chiếm mất chỗ của thanh menu dưới đáy.
+const NAV_ITEMS: { icon: string; text: string }[] = [{ icon: '🏠', text: 'Trang chủ' }];
 
 interface Props {
   onOpenParentGate: () => void;
 }
 
 /**
- * Sidebar cố định bên trái — logo, menu điều hướng, trang trí, và 2 nút chức năng
- * (đổi giao diện + khu vực Bố mẹ) nằm dưới cùng.
+ * Sidebar — logo, menu điều hướng, trang trí, và 2 nút chức năng (đổi giao diện + khu vực
+ * Bố mẹ) nằm dưới cùng.
+ *
+ * Cùng một đoạn mã này hiện ra 2 kiểu khác nhau, hoàn toàn do CSS quyết định:
+ *  • TV / máy tính / iPad → CỘT DỌC bên trái như cũ.
+ *  • Điện thoại (bề ngang ≤ 700px) → THANH NGANG DƯỚI ĐÁY màn hình, kiểu app điện thoại,
+ *    để ngón cái với tới được. Xem khối "THANH MENU DƯỚI ĐÁY" ở cuối theme.css.
+ * Cố ý không viết 2 component riêng: 1 chỗ sửa là cả 2 nơi cùng đổi, không sợ lệch nhau.
  *
  * 2 nút chức năng trước đây nằm ở thanh trên cùng bên phải, nay dời hẳn vào đây cho
  * giống bố cục app TV chuẩn: mọi thứ điều hướng gom về 1 cột bên trái, thanh trên cùng
@@ -32,14 +32,11 @@ interface Props {
  */
 export function Sidebar({ onOpenParentGate }: Props) {
   const [activeIndex, setActiveIndex] = useState(0);
-  const { switchProfile } = useProfileContext();
   const { toggleTheme } = useThemeContext();
   const navigate = useNavigate();
 
   const onSelect = (i: number) => {
     setActiveIndex(i);
-    const item = NAV_ITEMS[i];
-    if (item.profileId) switchProfile(item.profileId);
     navigate('/');
   };
 
