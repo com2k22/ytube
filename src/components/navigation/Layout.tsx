@@ -64,7 +64,17 @@ const SECTION_COLS = {
  *   Bé không tự đóng được — bấm "VÂNG" chỉ là xác nhận đã đọc. Chỉ bố mẹ thoát được, và
  *   đều phải nhập mã PIN, theo 1 trong 2 đường:
  *     • "🔓 Cho xem ngay" → mở khoá TẠM, hết hiệu lực khi tắt app (xem useTempUnlock).
- *     • "🔒 Bố mẹ vào đây" → vào khu Bố mẹ để sửa hẳn cấu hình giờ.
+ *     • "🔒 Bố mẹ bấm vào đây" (chỉ có trên điện thoại) → vào khu Bố mẹ để sửa hẳn cấu
+ *       hình giờ.
+ * - Cổng PIN cho chính trang /parent (parentGateOk bên dưới). QUAN TRỌNG: trước đây trang
+ *   /parent hoàn toàn KHÔNG có lớp bảo vệ nào ở mức vào thẳng URL — chỉ được che chắn
+ *   "gián tiếp" vì lối duy nhất TỚI được /parent trong lúc dùng app là bấm nút Bố mẹ rồi
+ *   nhập đúng PIN. Bấm thông báo đẩy "Con xin thêm giờ" trên điện thoại (xem sw.js,
+ *   notificationclick mở thẳng URL '/parent') lại KHÔNG đi qua lối đó — mở app là vào
+ *   thẳng khu Bố mẹ, không ai hỏi mã PIN gì cả. Nay vá tận gốc: bất kể vào /parent bằng
+ *   đường nào (thông báo, gõ thẳng URL, bookmark, mở lại tab...), nếu phiên này CHƯA từng
+ *   qua PIN thì bảng PIN tự bật lên ngay, nội dung trang không hiện ra cho tới khi nhập
+ *   đúng mã.
  */
 export function Layout() {
   const layoutRef = useRef<HTMLDivElement>(null);
@@ -75,6 +85,12 @@ export function Layout() {
    *  'skipbreak' → cho xem tiếp ngay, không phải chờ hết giờ nghỉ giải lao
    */
   const [pinPurpose, setPinPurpose] = useState<'parent' | 'unlock' | 'skipbreak' | null>(null);
+  /**
+   * Đã nhập ĐÚNG PIN để vào /parent trong PHIÊN NÀY chưa (reset khi tắt/mở lại app, và
+   * reset ngay khi rời khỏi /parent — quay lại lần sau lại phải nhập PIN lần nữa, giữ
+   * đúng thói quen bấm nút Bố mẹ trước đây: mỗi lần vào đều hỏi PIN).
+   */
+  const [parentGateOk, setParentGateOk] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -136,6 +152,19 @@ export function Layout() {
     resetFocus();
   }, [location.pathname, pinOpen, showBlockScreen, showBreakScreen, resetFocus]);
 
+  // Cổng PIN cho /parent — xem giải thích đầy đủ ở khối chú thích trên đầu component.
+  // Rời khỏi /parent thì quên ngay việc đã qua PIN, để lần sau vào lại (kể cả bằng cách
+  // bấm nút Bố mẹ) vẫn phải nhập lại — đúng thói quen cũ. Đang ở /parent mà chưa qua PIN
+  // (vào thẳng bằng URL, ví dụ từ thông báo đẩy) thì tự bật bảng PIN lên ngay.
+  useEffect(() => {
+    if (!isParentRoute) {
+      setParentGateOk(false);
+      return;
+    }
+    if (!parentGateOk && pinPurpose !== 'parent') setPinPurpose('parent');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isParentRoute, parentGateOk]);
+
   return (
     <div className="layout" ref={layoutRef}>
       {!isSupabaseConfigured && (
@@ -163,17 +192,28 @@ export function Layout() {
           cả trang ra ngang) */}
       <div className="content-col" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <TopBar />
-        <Outlet />
+        {/* Đang ở /parent mà CHƯA qua PIN thì không vẽ trang ra — tránh vào thẳng URL (vd
+            bấm thông báo đẩy) mà thấy được nội dung khu Bố mẹ trong khoảnh khắc trước khi
+            bảng PIN kịp bật lên. Bảng PIN (bên dưới) đã tự mở nhờ effect ở trên rồi. */}
+        {isParentRoute && !parentGateOk ? null : <Outlet />}
       </div>
 
       <PinModal
         open={pinOpen}
-        onClose={() => setPinPurpose(null)}
+        onClose={() => {
+          setPinPurpose(null);
+          // Bấm ✕ đóng bảng PIN mà đang đứng ở /parent và chưa nhập đúng mã lần nào →
+          // không được đứng lại đó với trang trắng, đưa về Trang chủ cho gọn.
+          if (isParentRoute && !parentGateOk) navigate('/');
+        }}
         onSuccess={() => {
           // Cùng 1 bảng PIN, nhưng nhập đúng rồi thì làm gì lại tuỳ nút nào vừa mở nó ra.
           if (pinPurpose === 'unlock') grant();
           else if (pinPurpose === 'skipbreak') endBreak();
-          else navigate('/parent');
+          else {
+            setParentGateOk(true);
+            navigate('/parent');
+          }
           setPinPurpose(null);
         }}
       />

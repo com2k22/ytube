@@ -273,6 +273,10 @@ body {
 .main { flex: 1; padding: 24px 30px 60px; }
 .greet { font-size: 22px; font-weight: 800; margin: 4px 0 22px; }
 .section-title { font-size: 20px; font-weight: 800; margin: 0 0 16px; }
+/* Icon SVG cạnh tiêu đề khu (Danh sách / Video đề xuất / Kênh yêu thích) — cùng kiểu icon
+   recolor-được như menu bên trái, thay cho emoji cũ (📂🎬📺) không tô màu lại được. Cỡ
+   theo "em" nên tự to/nhỏ đúng theo section-title ở từng chế độ (TV/điện thoại) bên dưới. */
+.section-icon { width: 0.85em; height: 0.85em; vertical-align: -0.1em; margin-right: 8px; stroke-width: 2.4; }
 
 .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
 
@@ -716,6 +720,13 @@ body {
 /* --- Nút chức năng của bố mẹ trên màn hình chặn --- */
 .block-parent-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
 [data-tv] .block-parent-actions { gap: 16px; margin-top: 22px; }
+/* Nút "Bố mẹ bấm vào đây" trong màn hình chặn: chỉ hiện trên ĐIỆN THOẠI. Mặc định ẩn
+   (TV/máy tính/iPad không thấy nữa — đã bỏ theo yêu cầu trước), tới đúng bề ngang điện
+   thoại (≤700px, cùng mốc với thanh menu dưới đáy) mới hiện lại. */
+.block-parent-gate-mobile { display: none; }
+@media (max-width: 700px) {
+  .block-parent-gate-mobile { display: block; }
+}
 
 /* --- Nút đổi thứ tự video trong playlist tự tạo --- */
 .order-btns { display: flex; gap: 2px; flex-shrink: 0; }

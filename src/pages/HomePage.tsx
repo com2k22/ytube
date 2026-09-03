@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { ListVideo, Clapperboard, Tv } from 'lucide-react';
 import { useProfileContext } from '@/context/ProfileContext';
 import { useAllowedSources } from '@/hooks/useAllowedSources';
 import { useWatchProgress } from '@/hooks/useWatchProgress';
@@ -6,7 +7,7 @@ import { PlaylistCard } from '@/components/common/PlaylistCard';
 import { extractVideoId } from '@/utils/youtubeParser';
 import type { AllowedSource } from '@/types';
 
-/** Trang chủ — 4 khu: Tiếp tục xem / Playlist đề xuất / Video đề xuất / Kênh yêu thích. */
+/** Trang chủ — 4 khu: Tiếp tục xem / Danh sách / Video đề xuất / Kênh yêu thích. */
 export function HomePage() {
   const { activeProfile } = useProfileContext();
   const { sources, loading } = useAllowedSources(activeProfile?.id ?? null);
@@ -99,7 +100,9 @@ export function HomePage() {
 
       {recommendedPlaylists.length > 0 && (
         <>
-          <div className="section-title">📂 Playlist đề xuất</div>
+          <div className="section-title">
+            <ListVideo className="section-icon" aria-hidden="true" /> Danh sách
+          </div>
           {/* Cùng kiểu hàng ngang cuộn được như khối "Tiếp tục xem" (trước đây khối này là
               lưới nhiều hàng). Vùng điều hướng đặt tên riêng "playlistrec" — KHÔNG dùng
               chung tên "playlist" với trang Kênh, vì bên đó playlist xếp lưới 3 cột, còn ở
@@ -122,7 +125,9 @@ export function HomePage() {
 
       {recommendedVideos.length > 0 && (
         <>
-          <div className="section-title">🎬 Video đề xuất</div>
+          <div className="section-title">
+            <Clapperboard className="section-icon" aria-hidden="true" /> Video đề xuất
+          </div>
           <div className="shelf shelf-cap3" style={{ marginBottom: 32 }}>
             {recommendedVideos.map((source) => (
               <PlaylistCard
@@ -140,7 +145,9 @@ export function HomePage() {
 
       {channels.length > 0 && (
         <>
-          <div className="section-title">📺 Kênh yêu thích</div>
+          <div className="section-title">
+            <Tv className="section-icon" aria-hidden="true" /> Kênh yêu thích
+          </div>
           <div className="shelf channel-shelf" style={{ marginBottom: 32 }}>
             {channels.map((ch) => (
               <div

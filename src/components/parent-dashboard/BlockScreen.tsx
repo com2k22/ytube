@@ -52,9 +52,11 @@ function playGentleChime() {
  *  - 'daily_limit'   : đúng khung giờ nhưng đã xem hết tổng thời gian của hôm nay.
  *
  * Quan trọng: bé KHÔNG có cách nào tự đóng màn hình này — nút "VÂNG, con hiểu rồi" chỉ là
- * xác nhận đã đọc. Chỉ bố mẹ mới thoát được, bằng nút "Cho xem ngay" (nhập PIN, mở khoá
- * tạm tới khi tắt app). Vào hẳn khu vực Bố mẹ để sửa giờ thì đi từ menu bên/nút "Bố mẹ"
- * ở Sidebar — không còn lối tắt riêng trên màn hình chặn này nữa (đỡ rối cho bé).
+ * xác nhận đã đọc. Chỉ bố mẹ mới thoát được, đều cần mã PIN:
+ *  - "Cho xem ngay": mở khoá TẠM, hết hiệu lực khi tắt app.
+ *  - "Bố mẹ bấm vào đây": vào hẳn khu Bố mẹ — nút này CHỈ hiện trên ĐIỆN THOẠI (ẩn trên
+ *    TV bằng CSS .block-parent-gate-mobile). Trên TV, muốn vào khu Bố mẹ thì đi qua nút
+ *    "Bố mẹ" ở Sidebar (lớp phủ này che luôn cả Sidebar, nên phải mở khoá tạm trước).
  */
 export function BlockScreen({
   mode = 'outside_window',
@@ -129,10 +131,24 @@ export function BlockScreen({
           {isPreview ? 'Đóng xem thử' : acknowledged ? '💛 Con đã hiểu rồi' : 'VÂNG, con hiểu rồi'}
         </button>
 
-        {!isPreview && onUnlockRequest && (
+        {!isPreview && (
           <div className="block-parent-actions">
-            <button className="add-window-btn" data-region="block" tabIndex={0} onClick={onUnlockRequest}>
-              🔓 Bố mẹ cho xem ngay (nhập PIN)
+            {onUnlockRequest && (
+              <button className="add-window-btn" data-region="block" tabIndex={0} onClick={onUnlockRequest}>
+                🔓 Bố mẹ cho xem ngay (nhập PIN)
+              </button>
+            )}
+            {/* Chỉ hiện trên ĐIỆN THOẠI (xem .block-parent-gate-mobile trong theme.css) —
+                trên TV không hiện nữa (đã bỏ theo yêu cầu, đi qua Sidebar thay thế). Trên
+                điện thoại thì bố mẹ hay mở thẳng khu Bố mẹ để xem/chỉnh từ xa hơn là chờ mở
+                khoá tạm, nên vẫn giữ lối tắt này riêng cho điện thoại. */}
+            <button
+              className="add-window-btn block-parent-gate-mobile"
+              data-region="block"
+              tabIndex={0}
+              onClick={onOpenParentGate}
+            >
+              🔒 Bố mẹ bấm vào đây
             </button>
           </div>
         )}
