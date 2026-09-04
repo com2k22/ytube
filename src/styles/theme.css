@@ -348,6 +348,14 @@ body {
   padding: 14px 16px 0; font-size: 17px; font-weight: 800; line-height: 1.3;
   /* Tên quá dài chỉ hiện tối đa 2 dòng, thừa thì cắt bớt + hiện dấu "..." */
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  /* min-height = ĐÚNG 2 dòng (line-height 1.3 × 2 dòng = 2.6em, tính theo font-size của
+     chính ô này nên tự đúng ở mọi cỡ chữ, không cần khai riêng cho từng breakpoint) — LUÔN
+     chừa sẵn chỗ cho đủ 2 dòng dù tên chỉ dài 1 dòng. Trước đây không có dòng này: tên 1
+     dòng thì khối card-title thấp hơn hẳn tên 2 dòng, kéo theo khung bọc nền trắng
+     (.card-highlight) cũng thấp/cao khác nhau giữa các thẻ cùng hàng → dòng "Playlist.."
+     bên dưới mỗi thẻ bị lệch, không thẳng hàng với nhau (đúng lỗi bạn thấy ở mục Danh sách
+     khi 1 playlist tên ngắn đứng cạnh 2 playlist tên dài). */
+  min-height: 2.6em;
 }
 /* Nhãn (Học tập/Giải trí/Ưu tiên...) nối thẳng vào CUỐI chữ "Đã xem.."/"Playlist".. bằng
    dấu phẩy, CÙNG kiểu chữ, không tô màu/làm nổi bật riêng (xem PlaylistCard.tsx — ghép hết
@@ -614,7 +622,8 @@ body {
 [data-tv] .card-highlight { padding: 10px; border-radius: 22px; background: transparent; }
 /* Chữ to & đậm hẳn: ngồi cách TV 3-4m thì nét chữ mảnh rất khó đọc, tăng độ đậm giúp
    dễ đọc hơn cả tăng cỡ chữ. Dòng phụ cũng bớt mờ đi (0.6 → 0.75) cho rõ. */
-[data-tv] .card-title { padding: 16px 6px 0; font-size: 36px; font-weight: 900; line-height: 1.26; }
+/* min-height cũng đổi theo line-height riêng bản TV (1.26 thay vì 1.3) — 2 dòng = 2.52em. */
+[data-tv] .card-title { padding: 16px 6px 0; font-size: 36px; font-weight: 900; line-height: 1.26; min-height: 2.52em; }
 [data-tv] .card-sub { font-size: 26px; font-weight: 700; padding: 8px 16px 0; opacity: 0.75; }
 /* Thời lượng nằm GÓC DƯỚI PHẢI của ảnh (đúng như YouTube), thay vì góc trên phải —
    vừa quen mắt hơn, vừa tránh đè lên chiếc nơ 🎀 của theme Chibi ở góc trên phải. */

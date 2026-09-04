@@ -99,16 +99,6 @@ export function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // GHI CHÚ TẠM THỜI ĐỂ DÒ LỖI (xem useTvNavigation.ts) — hiện dòng chữ nhỏ góc trên-phải
-  // mỗi lần bấm mũi tên Trái ở đầu 1 vùng, để biết vì sao menu mở/không mở được. Sẽ gỡ bỏ
-  // ở bản sau khi tìm ra nguyên nhân thật.
-  const [navDebug, setNavDebug] = useState('');
-  useEffect(() => {
-    const onDebug = (e: Event) => setNavDebug((e as CustomEvent<string>).detail);
-    window.addEventListener('tvnav-debug', onDebug);
-    return () => window.removeEventListener('tvnav-debug', onDebug);
-  }, []);
-
   const { resetFocus } = useTvNavigation(layoutRef, SECTION_COLS, {
     onEscape: () => {
       if (location.pathname !== '/') navigate(-1);
@@ -182,27 +172,6 @@ export function Layout() {
 
   return (
     <div className="layout" ref={layoutRef}>
-      {/* GHI CHÚ TẠM THỜI ĐỂ DÒ LỖI — xem useTvNavigation.ts. Sẽ gỡ bỏ sau. */}
-      {navDebug && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 8,
-            right: 8,
-            zIndex: 99999,
-            background: 'rgba(0,0,0,0.85)',
-            color: '#0f0',
-            fontSize: 13,
-            fontFamily: 'monospace',
-            padding: '6px 10px',
-            borderRadius: 8,
-            maxWidth: '70vw',
-            pointerEvents: 'none',
-          }}
-        >
-          {navDebug}
-        </div>
-      )}
       {!isSupabaseConfigured && (
         <div
           style={{

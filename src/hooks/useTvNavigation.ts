@@ -327,17 +327,7 @@ export function useTvNavigation(
             // rất dễ bấm nhầm lúc đang duyệt dở các hàng bên dưới — giờ những chỗ đó đứng yên,
             // muốn vào menu phải cuộn hẳn lên đúng video đầu tiên trước.
             const firstContentSecIdx = sections.findIndex((s) => !['side', 'topbar', 'detailback'].includes(s.region));
-            const willOpen = sideSecIdx >= 0 && secIdx === firstContentSecIdx;
-            // GHI CHÚ TẠM THỜI ĐỂ DÒ LỖI — sẽ gỡ ở bản sau khi tìm ra nguyên nhân thật.
-            // Hiện 1 dòng chữ nhỏ góc trên-phải màn hình mỗi lần bấm Trái ở đầu 1 vùng, cho
-            // biết vì sao có/không mở được menu — xem ô đó rồi đọc lại đúng nguyên văn cho
-            // mình biết.
-            window.dispatchEvent(
-              new CustomEvent('tvnav-debug', {
-                detail: `region=${sec.region} count=${sec.count} secIdx=${secIdx} firstIdx=${firstContentSecIdx} sideIdx=${sideSecIdx} → ${willOpen ? 'MỞ MENU' : 'KHÔNG MỞ'}`,
-              })
-            );
-            if (willOpen) {
+            if (sideSecIdx >= 0 && secIdx === firstContentSecIdx) {
               returnIdxRef.current = idx;
               const side = sections[sideSecIdx];
               setFocus(side.start + Math.min(sideFocusRef.current, side.count - 1), focusables);
