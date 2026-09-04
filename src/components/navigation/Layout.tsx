@@ -14,6 +14,7 @@ import { useBreakGate } from '@/hooks/useWatchStretch';
 import { useTimeRequests, DEFAULT_REQUEST_MINUTES } from '@/hooks/useTimeRequests';
 import { useFamilyAuth } from '@/hooks/useFamilyAuth';
 import { useFamilyDevices } from '@/hooks/useFamilyDevices';
+import { useFamilyContentDevices } from '@/hooks/useFamilyContentDevices';
 import { useProfileContext } from '@/context/ProfileContext';
 import { notifyParentAboutRequest } from '@/lib/push';
 import { isSupabaseConfigured } from '@/lib/supabaseClient';
@@ -66,6 +67,9 @@ const SECTION_COLS = {
   // 'pinemail' = 1 cột: khối "đăng nhập bằng mã gửi qua email" trong GoogleSignInGate (ô
   // email, nút gửi mã, ô nhập mã 6 số, nút xác nhận) — xếp dọc, đi bằng lên/xuống.
   pinemail: 1,
+  // 'ppaircode' = 3 cột: bàn phím số "Ghép bằng mã từ điện thoại" trong GoogleSignInGate,
+  // xếp giống hệt bàn phím PIN cũ (4 hàng × 3 cột — xem PinModal.tsx).
+  ppaircode: 3,
   // 'pkidform' = 1 cột: form thêm/sửa hồ sơ bé (ô tên, nút lưu, nút huỷ) trong
   // ProfilesManagerCard — xếp dọc, đi bằng lên/xuống.
   pkidform: 1,
@@ -73,8 +77,13 @@ const SECTION_COLS = {
   pkidemoji: 6,
   // 'pdevice' = 1 cột: danh sách thiết bị đã đăng nhập (mỗi dòng 1 nút "đăng xuất").
   pdevice: 1,
+  // 'pcontentdevice' = 1 cột: danh sách thiết bị đã ghép xem nội dung (mỗi dòng 1 nút
+  // "ngắt ghép") — ContentDeviceManagerCard.tsx.
+  pcontentdevice: 1,
   // 'pbackup' = 1 cột: nút "Xuất file sao lưu".
   pbackup: 1,
+  // 'ppair' = 1 cột: nút "Tạo mã ghép" trong PairingCodeCard.
+  ppair: 1,
 };
 
 /**
@@ -118,6 +127,14 @@ export function Layout() {
   // useFamilyDevices.ts + tab "Tài khoản" > "Thiết bị đã đăng nhập"). Đặt ở đây (Layout,
   // mount đúng 1 lần cho toàn app) để hoạt động trên MỌI trang, không riêng gì /parent.
   useFamilyDevices(familySession);
+  // Ghi nhận thiết bị này vào family_content_devices khi có familyId — CHẠY TRÊN MỌI THIẾT
+  // BỊ, kể cả TV ghép bằng mã chưa từng đăng nhập gì (xem GoogleSignInGate.tsx phần "Ghép
+  // bằng mã" + supabase/015_content_devices.sql). Khác với useFamilyDevices ở trên (chỉ
+  // chạy khi có phiên đăng nhập) — đây là bảng riêng theo dõi "xem được nội dung hay không",
+  // không phải "đăng nhập Khu Bố mẹ hay không". Bị "Ngắt ghép" từ xa → tự xoá familyId khỏi
+  // máy (clearFamilyId bên trong hook) → cập nhật lại state ở đây để Layout tự bật lại màn
+  // "Thiết lập lần đầu" ngay, không xem được nội dung nữa.
+  useFamilyContentDevices(familyId, () => setFamilyIdState(null));
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -237,7 +254,20 @@ export function Layout() {
           đầu file + supabase/013_multi_family.sql. 2 bước:
             1) Chưa đăng nhập → GoogleSignInGate (đăng nhập Google, hoặc mã qua email).
             2) Đã đăng nhập → FamilyBindingScreen (nhận diện/tạo gia đình, lưu vào thiết bị). */}
-      {needsFamilySetup && !familySession && <GoogleSignInGate dismissable={false} onClose={() => {}} />}
+      {needsFamilySetup && !familySession && (
+        <GoogleSignInGate
+          dismissable={false}
+          onClose={() => {}}
+          allowPairing
+          onPaired={() => {
+            setFamilyIdState(getFamilyId());
+            // Giống hệt lý do refreshProfiles() ở onBound bên dưới: ProfileProvider đã tải
+            // 1 lần lúc app khởi động, lúc đó familyId còn rỗng — tải lại đúng lúc vừa ghép
+            // xong để Trang chủ hiện hồ sơ ngay.
+            refreshProfiles();
+          }}
+        />
+      )}
       {needsFamilySetup && familySession && (
         <FamilyBindingScreen
           session={familySession}

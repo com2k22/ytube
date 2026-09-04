@@ -12,7 +12,9 @@ import { TimeRequestCard } from '@/components/parent-dashboard/TimeRequestCard';
 import { PushSetupCard } from '@/components/parent-dashboard/PushSetupCard';
 import { ProfilesManagerCard } from '@/components/parent-dashboard/ProfilesManagerCard';
 import { DeviceManagerCard } from '@/components/parent-dashboard/DeviceManagerCard';
+import { ContentDeviceManagerCard } from '@/components/parent-dashboard/ContentDeviceManagerCard';
 import { BackupExportCard } from '@/components/parent-dashboard/BackupExportCard';
+import { PairingCodeCard } from '@/components/parent-dashboard/PairingCodeCard';
 import { useFamilyAuth } from '@/hooks/useFamilyAuth';
 
 type Tab = 'time' | 'content' | 'kids' | 'report' | 'account';
@@ -157,6 +159,8 @@ export function ParentDashboardPage() {
           </button>
 
           <DeviceManagerCard />
+          <ContentDeviceManagerCard />
+          <PairingCodeCard />
           <BackupExportCard />
 
           <div className="section-title" style={{ marginTop: 28 }}>

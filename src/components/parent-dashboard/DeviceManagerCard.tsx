@@ -16,9 +16,13 @@ function lastSeenLabel(iso: string): string {
 }
 
 /**
- * DeviceManagerCard — "Thiết bị đã đăng nhập" trong khu Bố mẹ (tab Tài khoản). Xem toàn bộ
- * thiết bị/TV đã đăng nhập tài khoản Google gia đình, đăng xuất từ xa 1 thiết bị nếu cần
- * (vd lỡ đăng nhập nhầm chỗ nào đó, hoặc đổi TV không dùng cái cũ nữa).
+ * DeviceManagerCard — "Thiết bị đã đăng nhập Khu Bố mẹ" trong khu Bố mẹ (tab Tài khoản).
+ * Xem toàn bộ thiết bị/TV đã đăng nhập tài khoản Google gia đình, đăng xuất từ xa 1 thiết bị
+ * nếu cần (vd lỡ đăng nhập nhầm chỗ nào đó, hoặc đổi TV không dùng cái cũ nữa).
+ *
+ * KHÁC với ContentDeviceManagerCard.tsx ("Thiết bị đã ghép xem nội dung") — đăng xuất ở đây
+ * chỉ chặn thiết bị đó vào Khu vực Bố mẹ, KHÔNG chặn xem phim (TV ghép bằng mã thậm chí
+ * không hề xuất hiện ở danh sách này, vì nó chưa từng đăng nhập gì cả).
  */
 export function DeviceManagerCard() {
   const { session } = useFamilyAuth();
@@ -42,10 +46,11 @@ export function DeviceManagerCard() {
 
   return (
     <div className="settings-card" style={{ marginTop: 20 }}>
-      <h4>📺 Thiết bị đã đăng nhập</h4>
+      <h4>🔑 Thiết bị đã đăng nhập Khu Bố mẹ</h4>
       <p style={{ opacity: 0.65, margin: '-6px 0 16px', fontSize: 12.5, lineHeight: 1.5 }}>
         Mọi TV/thiết bị đã từng đăng nhập tài khoản Google gia đình. Đăng xuất 1 thiết bị ở
-        đây thì thiết bị đó tự thoát khỏi khu Bố mẹ ngay, không cần đụng vào thiết bị đó.
+        đây thì thiết bị đó tự thoát khỏi khu Bố mẹ ngay (nhưng vẫn xem phim bình thường —
+        muốn chặn xem phim thì dùng mục "📺 Thiết bị đã ghép xem nội dung" bên dưới).
       </p>
 
       {loading ? (

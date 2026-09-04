@@ -25,3 +25,16 @@ export function setFamilyId(id: string): void {
     // mở app, không nhớ được qua lần sau. Không có cách khắc phục nào tốt hơn ở phía app.
   }
 }
+
+/** Xoá "trí nhớ gia đình" của thiết bị này — dùng khi bố mẹ "Ngắt ghép" TV từ xa (xem
+    useFamilyContentDevices.ts). Sau khi gọi hàm này, thiết bị quay lại y hệt trạng thái
+    "chưa từng mở app" — Layout.tsx tự bật lại màn "Thiết lập lần đầu", không xem được nội
+    dung nữa cho tới khi ghép lại (đăng nhập, hoặc nhập mã ghép mới). */
+export function clearFamilyId(): void {
+  try {
+    localStorage.removeItem(FAMILY_ID_STORAGE_KEY);
+  } catch {
+    // localStorage bị chặn — không xoá được, nhưng cũng đồng nghĩa lần trước set cũng đã
+    // không lưu được gì, nên thiết bị này vốn dĩ đã không "nhớ" nổi qua lần mở lại.
+  }
+}

@@ -1,43 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { getOrCreateDeviceId, guessDeviceLabel } from '@/lib/deviceId';
 import type { Session } from '@supabase/supabase-js';
-
-const DEVICE_ID_STORAGE_KEY = 'ytube.deviceId';
-
-/** Sinh 1 mã ngẫu nhiên nhận diện thiết bị này — KHÔNG dùng crypto.randomUUID() vì trình
-    duyệt cũ trên 1 số TV (webOS đời trước) chưa có hàm này, dễ vỡ im lặng. */
-function randomId(): string {
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-}
-
-/** Đọc (hoặc tạo mới nếu chưa có) mã nhận diện RIÊNG của thiết bị này, lưu vào localStorage
-    nên sống sót qua việc tắt/mở lại app — chỉ mất khi xoá dữ liệu trình duyệt/cài lại app. */
-function getOrCreateDeviceId(): string {
-  try {
-    const existing = localStorage.getItem(DEVICE_ID_STORAGE_KEY);
-    if (existing) return existing;
-    const created = randomId();
-    localStorage.setItem(DEVICE_ID_STORAGE_KEY, created);
-    return created;
-  } catch {
-    // localStorage bị chặn (hiếm) → vẫn trả về 1 mã dùng tạm cho phiên này, chỉ là sẽ
-    // không nhớ được qua lần mở app sau.
-    return randomId();
-  }
-}
-
-/** Đoán tên gợi nhớ cho thiết bị dựa vào user agent — chỉ để phụ huynh dễ nhận ra "thiết bị
-    nào là thiết bị nào" trong danh sách, không cần chính xác tuyệt đối. */
-function guessDeviceLabel(): string {
-  const ua = navigator.userAgent || '';
-  if (/Web0S|webOS/i.test(ua)) return '📺 TV LG webOS';
-  if (/SmartTV|SMART-TV|TV;/i.test(ua)) return '📺 Smart TV';
-  if (/Android/i.test(ua) && /TV/i.test(ua)) return '📺 TV Android';
-  if (/iPhone|iPad|iPod/i.test(ua)) return '📱 iPhone/iPad';
-  if (/Android/i.test(ua)) return '📱 Điện thoại Android';
-  if (/Mobile/i.test(ua)) return '📱 Điện thoại';
-  return '💻 Máy tính';
-}
 
 export interface FamilyDevice {
   id: string;
@@ -48,14 +12,16 @@ export interface FamilyDevice {
 }
 
 /**
- * useFamilyDevices — danh sách thiết bị đã đăng nhập tài khoản Google gia đình + khả năng
- * "đăng xuất từ xa" 1 thiết bị (xem supabase/012_...sql).
+ * useFamilyDevices — danh sách thiết bị đã đăng nhập tài khoản Google gia đình VÀO KHU BỐ
+ * MẸ + khả năng "đăng xuất từ xa" 1 thiết bị (xem supabase/012_...sql). Đây là DANH SÁCH
+ * KHÁC với "đã ghép xem nội dung" (xem useFamilyContentDevices.ts) — 1 TV ghép bằng mã (xem
+ * GoogleSignInGate.tsx) sẽ KHÔNG xuất hiện ở đây, vì nó không hề đăng nhập gì cả.
  *
- * Cách hoạt động: mỗi thiết bị tự nhớ 1 mã riêng (localStorage). Khi đăng nhập xong, thiết
- * bị tự ghi/refresh 1 dòng trong bảng family_devices. Phụ huynh mở danh sách này TỪ BẤT KỲ
- * thiết bị nào đã đăng nhập, thấy hết các thiết bị khác, bấm "Đăng xuất" là XOÁ dòng của
- * thiết bị đó — thiết bị bị xoá đang lắng nghe Realtime nên phát hiện ngay và tự đăng xuất
- * (không cần đợi thiết bị đó tự làm mới trang).
+ * Cách hoạt động: mỗi thiết bị tự nhớ 1 mã riêng (localStorage, xem src/lib/deviceId.ts).
+ * Khi đăng nhập xong, thiết bị tự ghi/refresh 1 dòng trong bảng family_devices. Phụ huynh mở
+ * danh sách này TỪ BẤT KỲ thiết bị nào đã đăng nhập, thấy hết các thiết bị khác, bấm "Đăng
+ * xuất" là XOÁ dòng của thiết bị đó — thiết bị bị xoá đang lắng nghe Realtime nên phát hiện
+ * ngay và tự đăng xuất (không cần đợi thiết bị đó tự làm mới trang).
  */
 export function useFamilyDevices(session: Session | null) {
   const [devices, setDevices] = useState<FamilyDevice[]>([]);
