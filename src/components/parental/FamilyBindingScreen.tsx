@@ -118,10 +118,7 @@ export function FamilyBindingScreen({ session, onBound }: Props) {
           <p className="gate-desc">Đang kiểm tra tài khoản...</p>
         ) : needsCreate ? (
           <>
-            <p className="gate-desc">
-              Email này chưa thuộc gia đình nào trên app — đặt tên cho gia đình bạn để bắt
-              đầu (sẽ tạo sẵn 1 hồ sơ bé, thêm/sửa/xoá sau đều được).
-            </p>
+            <p className="gate-desc">Đặt tên gia đình để bắt đầu (thêm/sửa hồ sơ bé sau đều được).</p>
             <div className="form-row">
               <label>Tên gia đình</label>
               <input

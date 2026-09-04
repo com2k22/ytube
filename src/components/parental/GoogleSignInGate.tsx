@@ -26,28 +26,24 @@ const PAIR_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'xóa', '0', 'nh
 
 /**
  * GoogleSignInGate — thay cho PinModal khi vào khu Bố mẹ (xem supabase/011_family_auth.sql
- * + useFamilyAuth.ts). Đăng nhập đúng tài khoản Google của gia đình 1 lần là xong — thiết
- * bị này nhớ luôn, lần sau vào khu Bố mẹ không hỏi lại nữa.
- *
- * Có 3 CÁCH để 1 thiết bị "vào" được app:
- *   1) Nút "Đăng nhập bằng Google" — thử trước, đơn giản nhất nếu trình duyệt TV cho phép.
- *   2) "Hoặc dùng mã gửi qua email" — DỰ PHÒNG cho trường hợp Google chặn trình duyệt TV
- *      (lỗi "disallowed_useragent"). Bấm "Gửi mã" → Supabase gửi 1 email chứa mã số tới
- *      Gmail gia đình → mở email đó bằng điện thoại → gõ mã đó vào ô bên dưới bằng điều
- *      khiển TV → xong, không cần Google gì cả. (Số chữ số của mã tuỳ cấu hình Supabase —
- *      không cố định 6 số, nên ô nhập và kiểm tra đều để linh hoạt 4-10 chữ số.)
- *   3) "Ghép bằng mã từ điện thoại" (allowPairing) — dành riêng cho TV: KHÔNG đăng nhập gì
- *      cả trên TV, chỉ gõ 1 mã 6 số đã tạo sẵn từ điện thoại/máy tính (xem
- *      PairingCodeCard.tsx). Gõ bằng bàn phím số trên màn hình — dễ bấm bằng điều khiển TV
- *      hơn nhiều so với gõ email bằng bàn phím chữ. Vì TV không có phiên đăng nhập nào sau
- *      khi ghép, bé bấm "🔒 Bố mẹ" trên TV đó vẫn phải đăng nhập lại từ đầu — tách biệt hẳn
- *      "xem được nội dung" khỏi "được sửa cấu hình".
+ * + useFamilyAuth.ts). Màn "Thiết lập lần đầu" (allowPairing=true) làm nổi bật 2 lựa chọn
+ * RÕ RÀNG, tách biệt hẳn (xem .gate-option--login / .gate-option--pair trong theme.css):
+ *   A) 🔑 ĐĂNG NHẬP — TV đầu tiên của gia đình, hoặc đã có tài khoản Google gia đình.
+ *      Nút Google to, nổi bật nhất. "Dùng mã gửi qua email" thu gọn phía dưới dạng 1 nút
+ *      chữ nhỏ (bấm mới hiện form) — DỰ PHÒNG khi Google chặn trình duyệt TV (lỗi
+ *      "disallowed_useragent"), đỡ rối mắt lúc mới mở màn hình.
+ *   B) 🔗 GHÉP MÃ TV — đã có tài khoản gia đình rồi, chỉ cần ghép thêm 1 TV mới, không muốn
+ *      bé tự vào được Khu vực Bố mẹ trên TV đó. Bấm mở bàn phím số, gõ mã lấy từ điện thoại
+ *      (xem PairingCodeCard.tsx).
+ * Khi mở từ nút 🔒 Bố mẹ bình thường (allowPairing=false, đã có gia đình rồi) thì CHỈ còn
+ * lựa chọn A — ghép mã lúc này không còn ý nghĩa gì nữa.
  */
 export function GoogleSignInGate({ onClose, dismissable = true, allowPairing = false, onPaired }: Props) {
   const { signInWithGoogle, sendEmailCode, confirmEmailCode } = useFamilyAuth();
   const { redeemPairingCode, redeeming } = useFamilyPairing();
   const { showToast } = useToast();
   const [mode, setMode] = useState<'login' | 'pairing'>('login');
+  const [showEmailFallback, setShowEmailFallback] = useState(false);
   // Không tự điền sẵn email nữa (trước đây điền sẵn Gmail chủ nhà — giờ app dùng chung cho
   // nhiều gia đình khác nhau nên không còn 1 email cố định đúng cho tất cả).
   const [email, setEmail] = useState('');
@@ -133,86 +129,106 @@ export function GoogleSignInGate({ onClose, dismissable = true, allowPairing = f
       <div className="modal gate-modal">
         {mode === 'login' ? (
           <>
-            <h3>🔒 Khu vực Bố mẹ</h3>
-            <p className="gate-desc">
-              Đăng nhập bằng tài khoản Google của gia đình để vào chỉnh whitelist, giờ
-              giấc... Đăng nhập 1 lần, thiết bị này sẽ nhớ luôn cho lần sau.
-            </p>
-            <button className="gate-google-btn" data-region="pin" tabIndex={0} onClick={() => signInWithGoogle()}>
-              Đăng nhập bằng Google
-            </button>
+            <h3>👋 Vào Ytube</h3>
 
-            <div className="gate-divider">— hoặc dùng mã gửi qua email (nếu TV không cho đăng nhập Google) —</div>
+            <div className="gate-option gate-option--login">
+              <div className="gate-option-head">
+                <span className="gate-option-icon">🔑</span>
+                <span className="gate-option-title">Đăng nhập</span>
+              </div>
+              <p className="gate-option-sub">Tài khoản Google của gia đình (tạo mới nếu chưa có).</p>
+              <button className="gate-google-btn" data-region="pin" tabIndex={0} onClick={() => signInWithGoogle()}>
+                Đăng nhập bằng Google
+              </button>
 
-            <div className="form-row">
-              <label>Email nhận mã</label>
-              <input
-                type="email"
-                data-region="pinemail"
-                tabIndex={0}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={sent}
-              />
+              {!showEmailFallback ? (
+                <button
+                  className="gate-link-btn"
+                  data-region="pinemail"
+                  tabIndex={0}
+                  onClick={() => setShowEmailFallback(true)}
+                >
+                  TV không đăng nhập Google được? Dùng mã email
+                </button>
+              ) : (
+                <>
+                  <div className="form-row" style={{ marginTop: 14 }}>
+                    <label>Email nhận mã</label>
+                    <input
+                      type="email"
+                      data-region="pinemail"
+                      tabIndex={0}
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      disabled={sent}
+                    />
+                  </div>
+
+                  {!sent ? (
+                    <button
+                      className="add-window-btn"
+                      style={{ width: '100%' }}
+                      data-region="pinemail"
+                      tabIndex={0}
+                      disabled={sending || !email.trim()}
+                      onClick={handleSendCode}
+                    >
+                      {sending ? 'Đang gửi...' : '📩 Gửi mã'}
+                    </button>
+                  ) : (
+                    <>
+                      <div className="form-row">
+                        <label>Mã nhận được qua email</label>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={10}
+                          data-region="pinemail"
+                          tabIndex={0}
+                          value={code}
+                          onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+                          placeholder="Nhập mã trong email"
+                        />
+                      </div>
+                      <button
+                        className="submit-btn"
+                        style={{ width: '100%' }}
+                        data-region="pinemail"
+                        tabIndex={0}
+                        disabled={confirming}
+                        onClick={handleConfirmCode}
+                      >
+                        {confirming ? 'Đang kiểm tra...' : '✅ Xác nhận mã'}
+                      </button>
+                      <button
+                        className="add-window-btn"
+                        style={{ width: '100%', marginTop: 8 }}
+                        data-region="pinemail"
+                        tabIndex={0}
+                        disabled={sending}
+                        onClick={handleSendCode}
+                      >
+                        Gửi lại mã
+                      </button>
+                    </>
+                  )}
+
+                  {error && (
+                    <div className="hint bad-text" style={{ height: 'auto', margin: '10px 0 0' }}>✕ {error}</div>
+                  )}
+                </>
+              )}
             </div>
 
-            {!sent ? (
-              <button
-                className="add-window-btn"
-                style={{ width: '100%' }}
-                data-region="pinemail"
-                tabIndex={0}
-                disabled={sending || !email.trim()}
-                onClick={handleSendCode}
-              >
-                {sending ? 'Đang gửi...' : '📩 Gửi mã'}
-              </button>
-            ) : (
-              <>
-                <div className="form-row">
-                  <label>Mã nhận được qua email</label>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={10}
-                    data-region="pinemail"
-                    tabIndex={0}
-                    value={code}
-                    onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-                    placeholder="Nhập mã trong email"
-                  />
-                </div>
-                <button
-                  className="submit-btn"
-                  style={{ width: '100%' }}
-                  data-region="pinemail"
-                  tabIndex={0}
-                  disabled={confirming}
-                  onClick={handleConfirmCode}
-                >
-                  {confirming ? 'Đang kiểm tra...' : '✅ Xác nhận mã'}
-                </button>
-                <button
-                  className="add-window-btn"
-                  style={{ width: '100%', marginTop: 8 }}
-                  data-region="pinemail"
-                  tabIndex={0}
-                  disabled={sending}
-                  onClick={handleSendCode}
-                >
-                  Gửi lại mã
-                </button>
-              </>
-            )}
-
-            {error && <div className="hint bad-text" style={{ height: 'auto', margin: '10px 0 0' }}>✕ {error}</div>}
-
             {allowPairing && (
-              <>
-                <div className="gate-divider">— hoặc —</div>
+              <div className="gate-option gate-option--pair">
+                <div className="gate-option-head">
+                  <span className="gate-option-icon">🔗</span>
+                  <span className="gate-option-title">Ghép mã TV</span>
+                </div>
+                <p className="gate-option-sub">Đã có tài khoản gia đình — chỉ ghép thêm TV này.</p>
                 <button
-                  className="add-window-btn"
-                  style={{ width: '100%' }}
+                  className="gate-pair-btn"
                   data-region="pinemail"
                   tabIndex={0}
                   onClick={() => {
@@ -221,18 +237,15 @@ export function GoogleSignInGate({ onClose, dismissable = true, allowPairing = f
                     setPairError('');
                   }}
                 >
-                  🔗 Ghép bằng mã từ điện thoại
+                  Nhập mã ghép
                 </button>
-              </>
+              </div>
             )}
           </>
         ) : (
           <>
-            <h3>🔗 Ghép bằng mã từ điện thoại</h3>
-            <p className="gate-desc">
-              Mở Khu vực Bố mẹ trên điện thoại/máy tính đã đăng nhập sẵn → tab Tài khoản →
-              "Ghép TV mới" để lấy mã, rồi gõ đúng mã 6 số đó vào đây bằng điều khiển TV.
-            </p>
+            <h3>🔗 Ghép mã TV</h3>
+            <p className="gate-desc">Mở khu Bố mẹ trên điện thoại → Tài khoản → "Ghép TV mới" để lấy mã.</p>
             <div className="pin-dots">
               {Array.from({ length: PAIR_CODE_LENGTH }).map((_, i) => (
                 <div key={i} className={`pin-dot ${i < pairCode.length ? 'filled' : ''}`} />
@@ -265,7 +278,7 @@ export function GoogleSignInGate({ onClose, dismissable = true, allowPairing = f
               tabIndex={0}
               onClick={() => setMode('login')}
             >
-              ← Quay lại đăng nhập Google/email
+              ← Quay lại
             </button>
           </>
         )}
