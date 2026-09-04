@@ -317,11 +317,21 @@ export function useTvNavigation(
             // Lùi lại trong cùng vùng — đối xứng với Phải: đang ở đầu 1 hàng (không phải
             // hàng đầu tiên của vùng) thì tự động lùi lên CUỐI HÀNG TRÊN.
             setFocus(idx - 1, focusables);
-          } else if (sideSecIdx >= 0) {
-            // Đang ở sát mép trái của nội dung → mở menu bên trái.
-            returnIdxRef.current = idx;
-            const side = sections[sideSecIdx];
-            setFocus(side.start + Math.min(sideFocusRef.current, side.count - 1), focusables);
+          } else {
+            // Chỉ MỞ MENU khi đang đứng ĐÚNG Ở GÓC TRÊN CÙNG BÊN TRÁI của cả trang — tức
+            // đang ở Ô ĐẦU TIÊN của NỘI DUNG THẬT ĐẦU TIÊN (vd video đầu tiên của hàng "Tiếp
+            // tục xem"/"Video đề xuất" ở Trang chủ) — bỏ qua thanh trên cùng ('topbar') và nút
+            // Quay lại ('detailback'), giống hệt cách resetFocus() xác định "nội dung thật"
+            // (xem findRealContent phía trên). Trước đây hễ đứng ở mép trái của BẤT KỲ
+            // vùng/hàng nào (kể cả những hàng ở tuốt phía dưới trang) bấm Trái cũng mở menu,
+            // rất dễ bấm nhầm lúc đang duyệt dở các hàng bên dưới — giờ những chỗ đó đứng yên,
+            // muốn vào menu phải cuộn hẳn lên đúng video đầu tiên trước.
+            const firstContentSecIdx = sections.findIndex((s) => !['side', 'topbar', 'detailback'].includes(s.region));
+            if (sideSecIdx >= 0 && secIdx === firstContentSecIdx) {
+              returnIdxRef.current = idx;
+              const side = sections[sideSecIdx];
+              setFocus(side.start + Math.min(sideFocusRef.current, side.count - 1), focusables);
+            }
           }
           break;
         case 'ArrowDown':

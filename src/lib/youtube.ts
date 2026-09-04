@@ -102,8 +102,15 @@ export async function fetchPlaylistItems(playlistId: string): Promise<YtPlaylist
       thumbnail: item.snippet?.thumbnails?.medium?.url ?? item.snippet?.thumbnails?.default?.url ?? null,
       position: item.snippet?.position ?? 0,
     }))
-    // Video đã bị xoá/để riêng tư thì YouTube vẫn trả về nhưng không có id — bỏ luôn.
-    .filter((it: YtPlaylistItem) => it.videoId.length > 0);
+    // Video ĐÃ BỊ XOÁ hẳn thì YouTube trả về mà KHÔNG kèm id — bỏ luôn (dòng cũ).
+    // Video bị chuyển sang RIÊNG TƯ (hoặc đã xoá nhưng vẫn còn id) thì YouTube VẪN trả về
+    // đúng videoId, chỉ đổi tiêu đề thành đúng 2 chuỗi cố định "Private video"/"Deleted
+    // video" (không kèm ảnh) — đây chính là lỗ hổng khiến các video/playlist riêng tư vẫn
+    // lọt vào danh sách của bé (hiện ra thành thẻ trống, không xem được). Lọc luôn theo
+    // đúng 2 chuỗi này (YouTube trả về tiếng Anh, không đổi theo ngôn ngữ trình duyệt).
+    .filter(
+      (it: YtPlaylistItem) => it.videoId.length > 0 && it.title !== 'Private video' && it.title !== 'Deleted video'
+    );
 
   if (items.length === 0) return items;
   const keep = await filterOutShorts(
