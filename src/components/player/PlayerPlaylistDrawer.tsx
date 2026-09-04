@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import type { ResolvedVideo } from '@/types';
 
 interface Props {
@@ -16,25 +17,42 @@ interface Props {
  * PlayerPlaylistDrawer — danh sách video trong playlist, mở bằng phím MŨI TÊN XUỐNG khi
  * đang xem, qua 2 giai đoạn (giống app YouTube Kids trên TV):
  *
- *  1) "Lấp ló" — chỉ hiện hờ mép trên của 3 thẻ đầu, nhô lên từ mép dưới màn hình, đủ để
- *     báo "còn danh sách bên dưới, bấm Xuống nữa để xem hết" — CHƯA có ô nào được chọn.
- *  2) Bấm Xuống thêm 1 lần → "nở" ra thành lưới ĐẦY ĐỦ, 3 thẻ/hàng, cuộn dọc được nếu
- *     nhiều hơn 1 hàng, di chuyển chọn bằng Lên/Xuống/Trái/Phải, ô đang chọn được tô sáng.
+ *  1) "Lấp ló" — chỉ hiện hờ mép trên của LƯỚI 3 CỘT ĐỀU NHAU chứa 3 thẻ đầu, nhô lên từ
+ *     mép dưới màn hình, đủ để báo "còn danh sách bên dưới, bấm Xuống nữa để xem hết" —
+ *     CHƯA có ô nào được chọn.
+ *  2) Bấm Xuống thêm 1 lần → "nở" ra thành CÙNG 1 LƯỚI đó nhưng hiện ĐẦY ĐỦ mọi video, tự
+ *     xuống hàng, cuộn dọc được nếu nhiều hơn 1 hàng, di chuyển chọn bằng
+ *     Lên/Xuống/Trái/Phải, ô đang chọn được tô sáng.
  *
  * Cố ý đặt BÊN TRONG .player-wrap (giống PlayerControlBar) để lúc xem toàn màn hình vẫn
  * thấy được — phần tử nằm ngoài khung toàn màn hình thì trình duyệt không vẽ ra.
  */
 export function PlayerPlaylistDrawer({ stage, videos, activeIndex, currentVideoId }: Props) {
+  const activeItemRef = useRef<HTMLDivElement>(null);
+
+  // Bấm Lên/Xuống đổi hàng ở giai đoạn 2 → cuộn sao cho HÀNG MỚI hiện ra TRỌN VẸN.
+  //
+  // Trước đây lưới chỉ tự cuộn khi trình duyệt lỡ tay (scrollIntoView không được gọi), nên
+  // bấm Xuống sang hàng chưa từng thấy thì hàng đó bị cắt cụt mất nửa dưới (khung lưới cao
+  // cố định, overflow-y: auto không tự biết phải cuộn tới đâu) — đúng lỗi "hàng mới không
+  // cân, thiếu nội dung". Giờ mỗi khi đổi ô chọn, chủ động cuộn ô đó (và cả hàng chứa nó,
+  // vì thẻ hiện + tên video cao gần bằng cả hàng) vào giữa khung nhìn.
+  useEffect(() => {
+    if (stage !== 2) return;
+    activeItemRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, [stage, activeIndex]);
+
   if (stage === 0 || videos.length === 0) return null;
-  const peekVideos = stage === 1 ? videos.slice(0, 3) : videos;
+  const shownVideos = stage === 1 ? videos.slice(0, 3) : videos;
 
   return (
     <div className={`player-playlist player-playlist-stage${stage}`}>
       {stage === 2 && <div className="player-playlist-title">📂 Video trong playlist</div>}
       <div className="player-playlist-grid">
-        {peekVideos.map((v, i) => (
+        {shownVideos.map((v, i) => (
           <div
             key={v.videoId}
+            ref={stage === 2 && i === activeIndex ? activeItemRef : undefined}
             className={`player-playlist-item ${stage === 2 && i === activeIndex ? 'active' : ''} ${
               v.videoId === currentVideoId ? 'is-current' : ''
             }`}

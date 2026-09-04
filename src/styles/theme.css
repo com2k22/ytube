@@ -937,16 +937,17 @@ body {
 .player-playlist-stage2 { height: 62%; }
 
 .player-playlist-title { color: #fff; font-weight: 800; font-size: 16px; margin: 0 4px 10px; opacity: 0.85; }
-/* Giai đoạn 1: 1 hàng ngang, các thẻ chỉ hiện hờ (không bấm chọn được) — dùng flex.
-   Giai đoạn 2 (thêm class .is-grid, xem dưới): chuyển thành LƯỚI 3 CỘT/hàng, cuộn dọc được
-   nếu nhiều hơn 1 hàng. */
-.player-playlist-grid { display: flex; gap: 14px; }
-.player-playlist-stage2 .player-playlist-grid {
+/* CẢ 2 GIAI ĐOẠN đều dùng chung 1 LƯỚI 3 CỘT ĐỀU NHAU (grid-template-columns: repeat(3,
+   1fr)) — khác nhau đúng 1 chỗ: giai đoạn 1 chỉ hiện đúng 3 ô đầu (PlayerPlaylistDrawer.tsx
+   cắt mảng còn 3 phần tử) nên nhìn như "1 hàng ngang cân đối 3 video"; giai đoạn 2 hiện
+   TOÀN BỘ mảng nên tự động xuống hàng, cuộn dọc được khi nhiều hơn 1 hàng. Trước đây giai
+   đoạn 1 dùng flex + width cố định (190px) nên 3 thẻ bị co nhỏ lại, dư khoảng trắng bên
+   phải — đổi sang grid 3 cột thì 3 thẻ luôn giãn đều lấp đầy hết bề ngang. */
+.player-playlist-grid {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px 14px;
   overflow-y: auto; padding-bottom: 8px; scroll-behavior: smooth; scrollbar-width: none;
 }
-.player-playlist-stage1 .player-playlist-item { flex: 0 0 auto; width: 190px; }
-.player-playlist-item { cursor: pointer; }
+.player-playlist-item { cursor: pointer; min-width: 0; }
 .player-playlist-thumb {
   position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 12px;
   background: #222 center/cover; border: 4px solid transparent;
@@ -968,9 +969,7 @@ body {
 
 [data-tv] .player-playlist { padding: 34px 22px 40px; }
 [data-tv] .player-playlist-title { font-size: 24px; margin: 0 4px 16px; }
-[data-tv] .player-playlist-grid { gap: 22px; }
-[data-tv] .player-playlist-stage2 .player-playlist-grid { gap: 26px 22px; }
-[data-tv] .player-playlist-stage1 .player-playlist-item { width: 320px; }
+[data-tv] .player-playlist-grid { gap: 26px 22px; }
 [data-tv] .player-playlist-thumb { border-radius: 16px; border-width: 5px; }
 [data-tv] .player-playlist-item-title { font-size: 20px; margin-top: 10px; }
 
@@ -978,7 +977,6 @@ body {
   .player-playlist-stage1 { height: 18%; }
   .player-playlist-stage2 { height: 56%; }
   .player-playlist { padding: 14px 10px 10px; }
-  .player-playlist-stage1 .player-playlist-item { width: 130px; }
   .player-playlist-item-title { font-size: 11px; }
 }
 
