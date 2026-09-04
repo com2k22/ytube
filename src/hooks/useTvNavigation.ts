@@ -289,16 +289,20 @@ export function useTvNavigation(
               back !== null && back < focusables.length ? back : fallback >= 0 ? fallback : 0,
               focusables
             );
-          } else if (colInRow + 1 < sec.cols && local + 1 < sec.count) {
-            // Chỉ đi tiếp khi vẫn còn ô nữa TRONG CÙNG HÀNG. Hết hàng thì đứng yên —
-            // KHÔNG tự nhảy xuống hàng dưới (muốn xuống hàng phải bấm mũi tên xuống).
+          } else if (local + 1 < sec.count) {
+            // Đi tiếp trong cùng vùng — hết hàng (lưới nhiều hàng) thì tự động rơi xuống
+            // Ô ĐẦU HÀNG DƯỚI, giống cách đọc chữ (không dừng khựng lại, không nhảy sang
+            // vùng/menu khác). Với vùng chỉ có 1 hàng (cols === count) thì vẫn dừng ở cuối
+            // hàng như cũ vì lúc đó local + 1 === count.
             setFocus(idx + 1, focusables);
           }
           break;
         case 'ArrowLeft':
           e.preventDefault();
           if (inSide) break; // đang ở menu rồi, bấm trái nữa thì đứng yên
-          if (colInRow > 0) {
+          if (local > 0) {
+            // Lùi lại trong cùng vùng — đối xứng với Phải: đang ở đầu 1 hàng (không phải
+            // hàng đầu tiên của vùng) thì tự động lùi lên CUỐI HÀNG TRÊN.
             setFocus(idx - 1, focusables);
           } else if (sideSecIdx >= 0) {
             // Đang ở sát mép trái của nội dung → mở menu bên trái.

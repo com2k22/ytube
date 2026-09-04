@@ -224,13 +224,15 @@ export function useTvPlayerControls({
 
       // --- Khi danh sách playlist đang mở, GIAI ĐOẠN 2 (lưới đầy đủ, 3 video/hàng) ---
       if (stage === 2) {
-        const col = plIdx % GRID_COLS;
         if (e.key === 'ArrowRight') {
           take(e);
-          if (col < GRID_COLS - 1 && plIdx + 1 < plCount) setPlaylistIndex(plIdx + 1);
+          // Hết hàng thì tự động rơi xuống ô đầu hàng dưới (giống lưới video ở các trang
+          // khác, xem useTvNavigation.ts) — không dừng khựng, không thoát ra ngoài lưới.
+          if (plIdx + 1 < plCount) setPlaylistIndex(plIdx + 1);
         } else if (e.key === 'ArrowLeft') {
           take(e);
-          if (col > 0) setPlaylistIndex(plIdx - 1);
+          // Đối xứng: đang ở đầu 1 hàng (không phải hàng đầu) thì lùi lên cuối hàng trên.
+          if (plIdx > 0) setPlaylistIndex(plIdx - 1);
         } else if (e.key === 'ArrowDown') {
           take(e);
           if (plIdx + GRID_COLS < plCount) setPlaylistIndex(plIdx + GRID_COLS);

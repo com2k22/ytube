@@ -22,22 +22,24 @@ interface Props {
 export function PlaylistCard({ title, thumbnail, type, region, inProgress, progressPercent = 0, cols, onClick }: Props) {
   return (
     <div className="card" data-region={region} data-cols={cols} tabIndex={0} onClick={onClick}>
-      <div
-        className="card-thumb"
-        style={thumbnail ? { backgroundImage: `url(${thumbnail})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
-      >
-        {!thumbnail && SOURCE_TYPE_ICON[type]}
-        {inProgress && <span className="watching-badge">Đang xem</span>}
-        {inProgress && (
-          <div className="progress-wrap">
-            <div className="progress-fill" style={{ width: `${progressPercent}%` }} />
-          </div>
-        )}
-      </div>
-      <div className="card-body">
+      {/* card-highlight bọc RIÊNG ảnh + tên video/playlist — xem giải thích chi tiết ở
+          VideoCard.tsx (2 file dùng chung đúng 1 kiểu CSS trong theme.css). */}
+      <div className="card-highlight">
+        <div
+          className="card-thumb"
+          style={thumbnail ? { backgroundImage: `url(${thumbnail})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
+        >
+          {!thumbnail && SOURCE_TYPE_ICON[type]}
+          {inProgress && <span className="watching-badge">Đang xem</span>}
+          {inProgress && (
+            <div className="progress-wrap">
+              <div className="progress-fill" style={{ width: `${progressPercent}%` }} />
+            </div>
+          )}
+        </div>
         <div className="card-title">{title}</div>
-        <div className="card-sub">{inProgress ? `Đã xem ${progressPercent}%` : sourceTypeLabel(type)}</div>
       </div>
+      <div className="card-sub">{inProgress ? `Đã xem ${progressPercent}%` : sourceTypeLabel(type)}</div>
     </div>
   );
 }
