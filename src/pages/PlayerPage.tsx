@@ -197,6 +197,8 @@ export function PlayerPage() {
           onNext={() => nextVideo && goToVideo(nextVideo)}
           hasPrev={!!prevVideo}
           hasNext={!!nextVideo}
+          playlistVideos={playlistVideos}
+          onSelectVideo={goToVideo}
         />
       )}
       {kind === 'direct' && directUrl && (
@@ -210,6 +212,8 @@ export function PlayerPage() {
           onNext={() => nextVideo && goToVideo(nextVideo)}
           hasPrev={!!prevVideo}
           hasNext={!!nextVideo}
+          playlistVideos={playlistVideos}
+          onSelectVideo={goToVideo}
         />
       )}
       {!kind && <p style={{ opacity: 0.6 }}>Đang tải video...</p>}

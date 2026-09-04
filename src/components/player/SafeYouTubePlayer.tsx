@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTvPlayerControls, type PanelAction } from '@/hooks/useTvPlayerControls';
 import { PlayerControlBar } from './PlayerControlBar';
+import { PlayerPlaylistDrawer } from './PlayerPlaylistDrawer';
 import { WatchCountdownBadge } from './WatchCountdownBadge';
+import type { ResolvedVideo } from '@/types';
 
 declare global {
   interface Window {
@@ -38,11 +40,18 @@ interface Props {
   onEnded?: () => void;
   /** true khi video được mở từ trong 1 playlist — tự phát + tự vào chế độ toàn màn hình. */
   autoFullscreen?: boolean;
-  /** Chuyển sang video trước/sau trong playlist (bấm nhả phím ◀ ▶, hoặc nút trong bảng điều khiển). */
+  /** Chuyển sang video trước/sau trong playlist — chỉ còn gọi được qua nút trong bảng điều
+      khiển (phím Lên) hoặc chọn thẳng trong danh sách playlist (phím Xuống), KHÔNG còn
+      bấm nhả Trái/Phải nữa (xem useTvPlayerControls). */
   onPrev?: () => void;
   onNext?: () => void;
   hasPrev?: boolean;
   hasNext?: boolean;
+  /** Toàn bộ video trong playlist, ĐÚNG THỨ TỰ (kể cả video đang phát) — hiện trong danh
+      sách mở bằng phím Xuống. Rỗng/không truyền = video đơn lẻ, không có playlist. */
+  playlistVideos?: ResolvedVideo[];
+  /** Bé chọn 1 video khác trong danh sách đó (bấm OK khi danh sách đang mở). */
+  onSelectVideo?: (v: ResolvedVideo) => void;
 }
 
 /**
@@ -60,6 +69,8 @@ export function SafeYouTubePlayer({
   onNext,
   hasPrev,
   hasNext,
+  playlistVideos,
+  onSelectVideo,
 }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -70,6 +81,11 @@ export function SafeYouTubePlayer({
   const unmutedRef = useRef(false);
   const [captionsOn, setCaptionsOn] = useState(false);
   const [paused, setPaused] = useState(false);
+  /** true = còn đang tải/chưa phát được khung hình nào — hiện đồ hoạ "Đang tải video..."
+      thay cho màn hình đen, để bé/bố mẹ biết đây là đang chờ chứ không phải lỗi (xem
+      .player-loading trong theme.css). Tắt ngay khi video thật sự bắt đầu chạy khung hình
+      đầu tiên (state PLAYING) — sớm hơn thời điểm "đã tải xong 100%" nhiều. */
+  const [loading, setLoading] = useState(true);
   /** Bản ref của captionsOn — để callback của YouTube (gắn 1 lần) đọc được giá trị mới nhất. */
   const captionsOnRef = useRef(false);
   captionsOnRef.current = captionsOn;
@@ -142,6 +158,7 @@ export function SafeYouTubePlayer({
     unmutedRef.current = false;
     setCaptionsOn(false);
     setPaused(false);
+    setLoading(true);
 
     loadYouTubeApi().then(() => {
       if (cancelled || !containerRef.current) return;
@@ -182,6 +199,12 @@ export function SafeYouTubePlayer({
           onStateChange: (e: any) => {
             const S = window.YT.PlayerState;
             setPaused(e.data === S.PAUSED);
+            // Vừa có state đầu tiên (BUFFERING/PLAYING/PAUSED/CUED...) — trình phát YouTube
+            // đã thật sự cầm lái, không còn là màn hình đen vô danh nữa (kể cả lúc nó còn
+            // đang tự tải/đệm thì cũng đã có hình ảnh/vòng xoay riêng của YouTube). Tắt đồ
+            // hoạ "Đang tải video..." của app từ đây — khắc phục lỗi "mất ~4s đen thui
+            // không biết đang tải hay đang lỗi" ở khoảng thời gian TRƯỚC lúc này.
+            setLoading(false);
             // Gỡ phụ đề lần nữa ngay khi video BẮT ĐẦU CHẠY: lúc onReady, bộ phụ đề nhiều
             // khi còn chưa nạp xong nên gỡ chưa ăn — gỡ thêm lần này mới chắc.
             // (Không gỡ nếu bố mẹ vừa chủ động bật phụ đề lên.)
@@ -252,19 +275,31 @@ export function SafeYouTubePlayer({
     { key: 'cc', label: captionsOn ? '💬 Phụ đề: BẬT' : '💬 Phụ đề: TẮT', keepOpen: true, onSelect: toggleCaptions },
   ];
 
-  const { panelOpen, panelIndex, seekLabel } = useTvPlayerControls({
+  const playlist = playlistVideos ?? [];
+
+  const { panelOpen, panelIndex, seekLabel, playlistOpen, playlistIndex } = useTvPlayerControls({
     wrapRef,
     adapter,
     actions,
-    onPrev: hasPrev ? onPrev : undefined,
-    onNext: hasNext ? onNext : undefined,
+    playlistCount: playlist.length,
+    onSelectPlaylistItem: (i) => {
+      const v = playlist[i];
+      if (v && v.videoId !== videoId) onSelectVideo?.(v);
+    },
   });
 
   return (
     <div className="player-wrap" ref={wrapRef} data-region="player" tabIndex={0} onClick={togglePlay}>
       <div ref={containerRef} title={title} />
+      {loading && (
+        <div className="player-loading" aria-hidden="true">
+          <div className="player-loading-spinner" />
+          <div className="player-loading-text">Đang tải video...</div>
+        </div>
+      )}
       <WatchCountdownBadge />
       <PlayerControlBar open={panelOpen} actions={actions} activeIndex={panelIndex} seekLabel={seekLabel} />
+      <PlayerPlaylistDrawer open={playlistOpen} videos={playlist} activeIndex={playlistIndex} currentVideoId={videoId} />
     </div>
   );
 }

@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import Hls from 'hls.js';
 import { useTvPlayerControls, type PanelAction } from '@/hooks/useTvPlayerControls';
 import { PlayerControlBar } from './PlayerControlBar';
+import { PlayerPlaylistDrawer } from './PlayerPlaylistDrawer';
 import { WatchCountdownBadge } from './WatchCountdownBadge';
+import type { ResolvedVideo } from '@/types';
 
 interface Props {
   url: string;
@@ -11,11 +13,18 @@ interface Props {
   onEnded?: () => void;
   /** true khi video được mở từ trong 1 playlist — tự phát + tự vào chế độ toàn màn hình. */
   autoFullscreen?: boolean;
-  /** Chuyển sang video trước/sau trong playlist (bấm nhả phím ◀ ▶, hoặc nút trong bảng điều khiển). */
+  /** Chuyển sang video trước/sau trong playlist — chỉ còn gọi được qua nút trong bảng điều
+      khiển (phím Lên) hoặc chọn thẳng trong danh sách playlist (phím Xuống), KHÔNG còn
+      bấm nhả Trái/Phải nữa (xem useTvPlayerControls). */
   onPrev?: () => void;
   onNext?: () => void;
   hasPrev?: boolean;
   hasNext?: boolean;
+  /** Toàn bộ video trong playlist, ĐÚNG THỨ TỰ (kể cả video đang phát) — hiện trong danh
+      sách mở bằng phím Xuống. Rỗng/không truyền = video đơn lẻ, không có playlist. */
+  playlistVideos?: ResolvedVideo[];
+  /** Bé chọn 1 video khác trong danh sách đó (bấm OK khi danh sách đang mở). */
+  onSelectVideo?: (v: ResolvedVideo) => void;
 }
 
 /** DirectVideoPlayer — phát link mp4 trực tiếp, hoặc m3u8 (HLS) qua thư viện hls.js khi trình duyệt chưa hỗ trợ sẵn. */
@@ -29,12 +38,19 @@ export function DirectVideoPlayer({
   onNext,
   hasPrev,
   hasNext,
+  playlistVideos,
+  onSelectVideo,
 }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const [captionsOn, setCaptionsOn] = useState(false);
   const [paused, setPaused] = useState(false);
+  /** true = còn đang tải/chưa có khung hình nào để xem — hiện đồ hoạ "Đang tải video..."
+      thay cho màn hình đen (xem giải thích đầy đủ ở SafeYouTubePlayer.tsx). Tắt ngay khi
+      có khung hình đầu tiên (sự kiện 'loadeddata'), dù video tự phát được hay bị chặn phải
+      bấm nút play bằng tay — cả 2 trường hợp đều không còn là "màn hình đen bí ẩn" nữa. */
+  const [loading, setLoading] = useState(true);
 
   // Bấm vào 1 video trong playlist → vào toàn màn hình ngay (càng gần cử chỉ bấm của
   // người dùng càng ít khả năng bị trình duyệt chặn quyền toàn màn hình).
@@ -50,6 +66,8 @@ export function DirectVideoPlayer({
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
+
+    setLoading(true);
 
     const isHls = url.toLowerCase().includes('.m3u8');
     if (isHls && !video.canPlayType('application/vnd.apple.mpegurl') && Hls.isSupported()) {
@@ -81,6 +99,10 @@ export function DirectVideoPlayer({
       hideTextTracks();
       if (autoFullscreen) video.muted = false;
     };
+    // 'loadeddata' = đã có khung hình đầu tiên để xem, dù đã BẤM PHÁT được hay chưa (autoplay
+    // bị chặn thì video vẫn đứng yên ở khung hình đó, chờ bé bấm) — cả 2 trường hợp đều
+    // không còn là màn hình đen "không biết đang tải hay lỗi" nữa nên tắt đồ hoạ tải ở đây.
+    const onLoadedData = () => setLoading(false);
 
     const onTimeUpdate = () => {
       if (video.duration > 0) onProgress?.((video.currentTime / video.duration) * 100);
@@ -90,11 +112,13 @@ export function DirectVideoPlayer({
       onEnded?.();
     };
     video.addEventListener('playing', onPlaying);
+    video.addEventListener('loadeddata', onLoadedData);
     video.addEventListener('timeupdate', onTimeUpdate);
     video.addEventListener('ended', onEndedHandler);
 
     return () => {
       video.removeEventListener('playing', onPlaying);
+      video.removeEventListener('loadeddata', onLoadedData);
       video.removeEventListener('timeupdate', onTimeUpdate);
       video.removeEventListener('ended', onEndedHandler);
       hlsRef.current?.destroy();
@@ -148,19 +172,31 @@ export function DirectVideoPlayer({
     },
   ];
 
-  const { panelOpen, panelIndex, seekLabel } = useTvPlayerControls({
+  const playlist = playlistVideos ?? [];
+
+  const { panelOpen, panelIndex, seekLabel, playlistOpen, playlistIndex } = useTvPlayerControls({
     wrapRef,
     adapter,
     actions,
-    onPrev: hasPrev ? onPrev : undefined,
-    onNext: hasNext ? onNext : undefined,
+    playlistCount: playlist.length,
+    onSelectPlaylistItem: (i) => {
+      const v = playlist[i];
+      if (v && v.videoId !== url) onSelectVideo?.(v);
+    },
   });
 
   return (
     <div className="player-wrap" ref={wrapRef} data-region="player" tabIndex={0} onClick={togglePlay}>
       <video ref={videoRef} title={title} controls playsInline />
+      {loading && (
+        <div className="player-loading" aria-hidden="true">
+          <div className="player-loading-spinner" />
+          <div className="player-loading-text">Đang tải video...</div>
+        </div>
+      )}
       <WatchCountdownBadge />
       <PlayerControlBar open={panelOpen} actions={actions} activeIndex={panelIndex} seekLabel={seekLabel} />
+      <PlayerPlaylistDrawer open={playlistOpen} videos={playlist} activeIndex={playlistIndex} currentVideoId={url} />
     </div>
   );
 }

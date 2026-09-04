@@ -15,7 +15,13 @@ import react from '@vitejs/plugin-react'
 // thứ chạy được trên web thì cũng chạy y hệt trên TV.
 export default defineConfig({
   plugins: [react()],
-  base: './',
+  // base: '/' (ĐƯỜNG DẪN TUYỆT ĐỐI) — trước đây để './' (đường dẫn TƯƠNG ĐỐI) từ thời còn
+  // mở qua file://. Giờ app luôn chạy qua https://<tên-miền>/... (xem prepare-webos.js) và
+  // có NHIỀU ĐƯỜNG DẪN khác nhau (/, /parent, /player, /channel/...). Với base './', mở
+  // THẲNG 1 đường dẫn con (vd bấm thông báo đẩy mở /parent) thì trình duyệt tính SAI chỗ
+  // lấy file JS/CSS — tính tương đối theo "/parent/" thay vì gốc trang — ra lỗi 404/màn
+  // hình trắng. base: '/' luôn trỏ đúng gốc trang dù đang đứng ở đường dẫn con nào.
+  base: '/',
   resolve: {
     alias: {
       // Khai báo "@" trỏ vào thư mục src — PHẢI khớp với "paths" trong tsconfig.json, vì
