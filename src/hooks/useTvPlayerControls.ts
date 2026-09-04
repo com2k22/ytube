@@ -235,7 +235,16 @@ export function useTvPlayerControls({
           if (plIdx > 0) setPlaylistIndex(plIdx - 1);
         } else if (e.key === 'ArrowDown') {
           take(e);
-          if (plIdx + GRID_COLS < plCount) setPlaylistIndex(plIdx + GRID_COLS);
+          // Hàng cuối có thể thiếu ô (vd 7 video/3 cột → hàng cuối chỉ có 1 ô) — cộng thẳng
+          // GRID_COLS như trước sẽ tính sai là "hết lưới" khi đang đứng ở cột 2/3 của hàng
+          // áp chót, bỏ qua mất hàng cuối. Sửa: tính xem còn hàng nào phía dưới không (dựa
+          // số hàng thật), còn thì đi xuống và ghim về ô cuối cùng nếu hàng đó ngắn hơn.
+          const rows = Math.ceil(plCount / GRID_COLS);
+          const curRow = Math.floor(plIdx / GRID_COLS);
+          if (curRow + 1 < rows) {
+            const col = plIdx % GRID_COLS;
+            setPlaylistIndex(Math.min((curRow + 1) * GRID_COLS + col, plCount - 1));
+          }
         } else if (e.key === 'ArrowUp') {
           take(e);
           if (plIdx - GRID_COLS >= 0) setPlaylistIndex(plIdx - GRID_COLS);

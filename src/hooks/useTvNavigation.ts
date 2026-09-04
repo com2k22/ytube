@@ -315,11 +315,23 @@ export function useTvNavigation(
           e.preventDefault();
           if (inSide) {
             if (local + 1 < sec.count) setFocus(idx + 1, focusables);
-          } else if (local + sec.cols < sec.count) {
-            setFocus(idx + sec.cols, focusables);
           } else {
-            const next = stepSection(1);
-            if (next) setFocus(next.start + enterCol(next), focusables);
+            // Hàng CUỐI của 1 lưới nhiều hàng có thể thiếu ô (vd 7 video/3 cột → hàng cuối
+            // chỉ có đúng 1 ô ở cột đầu). Trước đây cứ cộng thẳng sec.cols vào idx, nên đứng
+            // ở cột 2/3 của hàng áp chót thì hàng cuối "không có ô nào ở đúng cột đó" → tính
+            // sai là hết lưới, nhảy thẳng sang khối khác, bỏ qua mất hàng cuối.
+            // Sửa: tính xem còn HÀNG nào phía dưới không (dựa theo số hàng thật, không phải
+            // theo đúng cột) — còn thì đi xuống, GHIM về ô cuối cùng của hàng đó nếu hàng đó
+            // ngắn hơn (không đủ tới đúng cột đang đứng).
+            const rowsInSec = Math.ceil(sec.count / sec.cols);
+            const curRow = Math.floor(local / sec.cols);
+            if (curRow + 1 < rowsInSec) {
+              const target = Math.min((curRow + 1) * sec.cols + colInRow, sec.count - 1);
+              setFocus(sec.start + target, focusables);
+            } else {
+              const next = stepSection(1);
+              if (next) setFocus(next.start + enterCol(next), focusables);
+            }
           }
           break;
         case 'ArrowUp':

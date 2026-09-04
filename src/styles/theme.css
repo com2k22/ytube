@@ -359,7 +359,11 @@ body {
 .channel-avatar { width: 96px; height: 96px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 40px; }
 /* Cỡ chữ tên kênh BẰNG ĐÚNG cỡ chữ tên video (.card-title) — 17px bản web/mobile,
    36px bản TV (xem [data-tv] .channel-name bên dưới) — nhất quán trong toàn app. */
-.channel-name { font-size: 17px; font-weight: 800; text-align: center; line-height: 1.3; }
+.channel-name {
+  font-size: 17px; font-weight: 800; text-align: center; line-height: 1.3;
+  /* Tên kênh quá dài chỉ hiện tối đa 2 dòng, thừa thì cắt bớt + hiện dấu "..." (giống tên video). */
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
 
 .back-btn { border: none; cursor: pointer; padding: 12px 20px; border-radius: 14px; font-weight: 700; font-size: 15px; }
 
