@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { getFamilyId } from '@/lib/familyId';
 import type { Profile } from '@/types';
 
 interface ProfileContextValue {
@@ -23,7 +24,21 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
   const refreshProfiles = async () => {
     setLoading(true);
-    const { data, error } = await supabase.from('profiles').select('*').order('created_at');
+    // Chỉ lấy hồ sơ của ĐÚNG gia đình mà thiết bị này đã "thiết lập lần đầu" (xem
+    // src/lib/familyId.ts + supabase/013_multi_family.sql) — nhiều gia đình khác nhau cùng
+    // dùng chung app thì không được thấy hồ sơ của nhau. Chưa thiết lập (familyId rỗng, vd
+    // đang ở màn "Thiết lập lần đầu") thì trả về danh sách rỗng, không gọi Supabase.
+    const familyId = getFamilyId();
+    if (!familyId) {
+      setProfiles([]);
+      setLoading(false);
+      return;
+    }
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('family_id', familyId)
+      .order('created_at');
     if (error) {
       console.error('[Ytube] Không tải được danh sách hồ sơ:', error.message);
       setLoading(false);

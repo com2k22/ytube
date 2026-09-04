@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { getFamilyId } from '@/lib/familyId';
 import type { AllowedSource, CustomPlaylistItem, SourceType } from '@/types';
 
 /**
@@ -23,7 +24,19 @@ export function useAllowedSources(scope: string | 'all' | null) {
       return;
     }
     setLoading(true);
-    let query = supabase.from('allowed_sources').select('*').order('created_at', { ascending: false });
+    const familyId = getFamilyId();
+    if (!familyId) {
+      // Chưa "thiết lập lần đầu" (xem src/lib/familyId.ts) → chưa biết lấy của gia đình
+      // nào, trả về rỗng thay vì lỡ lấy lẫn của gia đình khác.
+      setSources([]);
+      setLoading(false);
+      return;
+    }
+    let query = supabase
+      .from('allowed_sources')
+      .select('*')
+      .eq('family_id', familyId)
+      .order('created_at', { ascending: false });
     if (scope !== 'all') {
       query = query.or(`profile_id.eq.${scope},profile_id.is.null`);
     }

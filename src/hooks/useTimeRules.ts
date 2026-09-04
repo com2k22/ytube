@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { getFamilyId } from '@/lib/familyId';
 import type { TimeRuleGroup } from '@/types';
 
 /**
@@ -15,9 +16,16 @@ export function useTimeRules() {
 
   const refresh = useCallback(async () => {
     setLoading(true);
+    const familyId = getFamilyId();
+    if (!familyId) {
+      setGroups([]);
+      setLoading(false);
+      return;
+    }
     const { data, error } = await supabase
       .from('time_rule_groups')
       .select('*')
+      .eq('family_id', familyId)
       .is('profile_id', null)
       .order('created_at');
     if (error) {

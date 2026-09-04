@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { useFamilyAuth } from '@/hooks/useFamilyAuth';
 import { useToast } from '@/components/common/Toast';
-import { FAMILY_EMAIL } from '@/constants';
 
 interface Props {
   onClose: () => void;
+  /** false = bắt buộc đăng nhập, không cho đóng/bỏ qua (dùng khi "Thiết lập lần đầu" cho
+      1 thiết bị mới — xem FamilyBindingScreen.tsx). Mặc định true (có thể bấm ✕ để đóng,
+      dùng khi mở từ nút 🔒 Bố mẹ như trước giờ). */
+  dismissable?: boolean;
 }
 
 /**
@@ -19,10 +22,12 @@ interface Props {
  *      Gmail gia đình → mở email đó bằng điện thoại → gõ mã 6 số vào ô bên dưới bằng điều
  *      khiển TV → xong, không cần Google gì cả.
  */
-export function GoogleSignInGate({ onClose }: Props) {
+export function GoogleSignInGate({ onClose, dismissable = true }: Props) {
   const { signInWithGoogle, sendEmailCode, confirmEmailCode } = useFamilyAuth();
   const { showToast } = useToast();
-  const [email, setEmail] = useState(FAMILY_EMAIL);
+  // Không tự điền sẵn email nữa (trước đây điền sẵn Gmail chủ nhà — giờ app dùng chung cho
+  // nhiều gia đình khác nhau nên không còn 1 email cố định đúng cho tất cả).
+  const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
@@ -62,7 +67,11 @@ export function GoogleSignInGate({ onClose }: Props) {
   return (
     // data-nav-scope: khoá màn hình lại, chỉ bấm được các phím trong lớp phủ này (giống
     // PinModal cũ) — nhờ vậy trên TV không lỡ tay chọn trúng video phía sau.
-    <div className="overlay show" data-nav-scope onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div
+      className="overlay show"
+      data-nav-scope
+      onClick={(e) => dismissable && e.target === e.currentTarget && onClose()}
+    >
       <div className="modal">
         <h3>🔒 Khu vực Bố mẹ</h3>
         <p style={{ opacity: 0.75, margin: '10px 0 22px', lineHeight: 1.5 }}>
@@ -155,9 +164,11 @@ export function GoogleSignInGate({ onClose }: Props) {
 
         {error && <div className="hint bad-text" style={{ height: 'auto', margin: '10px 0 0' }}>✕ {error}</div>}
 
-        <button className="close-x" data-region="pinclose" tabIndex={0} onClick={onClose}>
-          ✕
-        </button>
+        {dismissable && (
+          <button className="close-x" data-region="pinclose" tabIndex={0} onClick={onClose}>
+            ✕
+          </button>
+        )}
       </div>
     </div>
   );

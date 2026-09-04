@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useToast } from '@/components/common/Toast';
+import { getFamilyId } from '@/lib/familyId';
 
 /**
  * BackupExportCard — "Sao lưu cấu hình" trong khu Bố mẹ (tab Tài khoản). Xuất TOÀN BỘ
@@ -15,13 +16,21 @@ export function BackupExportCard() {
   const { showToast } = useToast();
 
   const onExport = async () => {
+    const familyId = getFamilyId();
+    if (!familyId) {
+      showToast('Chưa xác định được gia đình trên thiết bị này — thử tải lại trang.');
+      return;
+    }
     setExporting(true);
     try {
+      // Lọc theo family_id — bảng gốc mở đọc công khai (using true) cho MỌI gia đình đang
+      // dùng chung app (xem supabase/013_multi_family.sql), không lọc thì file sao lưu sẽ
+      // lẫn cả dữ liệu của gia đình khác vào.
       const [profiles, sources, labels, timeRules] = await Promise.all([
-        supabase.from('profiles').select('*'),
-        supabase.from('allowed_sources').select('*'),
-        supabase.from('content_labels').select('*'),
-        supabase.from('time_rule_groups').select('*'),
+        supabase.from('profiles').select('*').eq('family_id', familyId),
+        supabase.from('allowed_sources').select('*').eq('family_id', familyId),
+        supabase.from('content_labels').select('*').eq('family_id', familyId),
+        supabase.from('time_rule_groups').select('*').eq('family_id', familyId),
       ]);
       const firstError = profiles.error || sources.error || labels.error || timeRules.error;
       if (firstError) {

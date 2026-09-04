@@ -4,6 +4,7 @@ import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { PinModal } from '@/components/parental/PinModal';
 import { GoogleSignInGate } from '@/components/parental/GoogleSignInGate';
+import { FamilyBindingScreen } from '@/components/parental/FamilyBindingScreen';
 import { BlockScreen, type RequestState } from '@/components/parent-dashboard/BlockScreen';
 import { BreakScreen } from '@/components/parent-dashboard/BreakScreen';
 import { useTvNavigation } from '@/hooks/useTvNavigation';
@@ -16,6 +17,7 @@ import { useFamilyDevices } from '@/hooks/useFamilyDevices';
 import { useProfileContext } from '@/context/ProfileContext';
 import { notifyParentAboutRequest } from '@/lib/push';
 import { isSupabaseConfigured } from '@/lib/supabaseClient';
+import { getFamilyId } from '@/lib/familyId';
 
 // Lưu ý: cố tình KHÔNG khai báo 'continue' và 'topbar' ở đây — vùng không khai báo sẽ mặc
 // định nằm trên đúng 1 hàng ngang (xem useTvNavigation), đúng ý muốn "Tiếp tục xem" tối đa
@@ -105,6 +107,12 @@ export function Layout() {
    */
   const [pinPurpose, setPinPurpose] = useState<'unlock' | 'skipbreak' | null>(null);
   const { session: familySession, loading: authLoading } = useFamilyAuth();
+  // "Thiết lập lần đầu" — thiết bị này đã từng xác định GIA ĐÌNH NÀO chưa (xem
+  // src/lib/familyId.ts). Từ khi app cho nhiều gia đình khác nhau cùng dùng chung
+  // (supabase/013_multi_family.sql), MỌI thiết bị (kể cả TV) phải qua bước này ĐÚNG 1 LẦN
+  // trước khi vào được app — sau đó ghi nhớ vĩnh viễn, bé xem tiếp không cần đăng nhập gì.
+  const [familyId, setFamilyIdState] = useState(getFamilyId());
+  const needsFamilySetup = !authLoading && !familyId;
   // Ghi nhận thiết bị này vào family_devices khi vừa đăng nhập xong, và tự đăng xuất ngay
   // nếu phụ huynh "đăng xuất từ xa" thiết bị này từ 1 thiết bị khác (xem
   // useFamilyDevices.ts + tab "Tài khoản" > "Thiết bị đã đăng nhập"). Đặt ở đây (Layout,
@@ -122,7 +130,7 @@ export function Layout() {
   const gate = useTimeGate();
   const { unlocked, grant } = useTempUnlock();
   const { onBreak, secondsLeft: breakSecondsLeft, endBreak } = useBreakGate();
-  const { activeProfile } = useProfileContext();
+  const { activeProfile, refreshProfiles } = useProfileContext();
   const { myRequest, createRequest, clearMyRequest } = useTimeRequests(activeProfile?.id ?? null);
 
   const pinOpen = pinPurpose !== null;
@@ -131,13 +139,14 @@ export function Layout() {
   // xem useFamilyAuth.ts. authLoading = còn đang tra phiên đăng nhập đã lưu trước đó, coi
   // như "chưa vào được" trong lúc chờ, để tránh nhấp nháy hiện màn đăng nhập rồi biến mất.
   const parentGateOk = !authLoading && !!familySession;
-  const showGoogleGate = isParentRoute && !parentGateOk;
+  const showGoogleGate = !needsFamilySetup && isParentRoute && !parentGateOk;
   // unlocked = bố mẹ đã cho xem ngay (nhập PIN tại chỗ, hoặc duyệt lời xin từ xa) → bỏ
-  // qua mọi giới hạn giờ cho tới khi hết suất.
-  const showBlockScreen = !isParentRoute && !gate.allowed && !unlocked && !pinOpen;
+  // qua mọi giới hạn giờ cho tới khi hết suất. "needsFamilySetup" luôn ưu tiên cao nhất —
+  // chưa xác định được gia đình thì chưa có gì để tính giờ giấc cả, khỏi hiện chồng lớp.
+  const showBlockScreen = !needsFamilySetup && !isParentRoute && !gate.allowed && !unlocked && !pinOpen;
   // Màn hình nghỉ giải lao nhường chỗ cho màn hình hết giờ: hết giờ hẳn thì nghỉ hay không
   // cũng chẳng còn ý nghĩa, hiện 2 lớp phủ chồng nhau chỉ tổ rối.
-  const showBreakScreen = !isParentRoute && !showBlockScreen && onBreak && !pinOpen;
+  const showBreakScreen = !needsFamilySetup && !isParentRoute && !showBlockScreen && onBreak && !pinOpen;
 
   /*
     Tới giờ nghỉ giải lao mà bé đang ở trang phát → RỜI HẲN về trang chủ.
@@ -174,7 +183,7 @@ export function Layout() {
   // phải nhảy vào bên trong nó; đóng lại thì quay về nội dung chính.
   useEffect(() => {
     resetFocus();
-  }, [location.pathname, pinOpen, showGoogleGate, showBlockScreen, showBreakScreen, resetFocus]);
+  }, [location.pathname, pinOpen, showGoogleGate, showBlockScreen, showBreakScreen, needsFamilySetup, resetFocus]);
 
   return (
     <div className="layout" ref={layoutRef}>
@@ -205,8 +214,10 @@ export function Layout() {
         <TopBar />
         {/* Đang ở /parent mà CHƯA đăng nhập Google thì không vẽ trang ra — tránh vào thẳng
             URL (vd bấm thông báo đẩy) mà thấy được nội dung khu Bố mẹ trong khoảnh khắc
-            trước khi màn đăng nhập kịp bật lên. Màn đăng nhập (bên dưới) tự mở vì showGoogleGate. */}
-        {isParentRoute && !parentGateOk ? null : <Outlet />}
+            trước khi màn đăng nhập kịp bật lên. Màn đăng nhập (bên dưới) tự mở vì showGoogleGate.
+            Tương tự với "Thiết lập lần đầu" (needsFamilySetup) — áp dụng cho MỌI trang chứ
+            không riêng /parent, vì chưa biết gia đình nào thì chưa có gì để hiện cả. */}
+        {needsFamilySetup || (isParentRoute && !parentGateOk) ? null : <Outlet />}
       </div>
 
       <PinModal
@@ -220,6 +231,26 @@ export function Layout() {
           setPinPurpose(null);
         }}
       />
+
+      {/* "Thiết lập lần đầu" — thiết bị này CHƯA từng xác định thuộc gia đình nào. Bắt buộc
+          (dismissable=false), áp dụng cho MỌI trang chứ không riêng /parent. Xem chú thích
+          đầu file + supabase/013_multi_family.sql. 2 bước:
+            1) Chưa đăng nhập → GoogleSignInGate (đăng nhập Google, hoặc mã qua email).
+            2) Đã đăng nhập → FamilyBindingScreen (nhận diện/tạo gia đình, lưu vào thiết bị). */}
+      {needsFamilySetup && !familySession && <GoogleSignInGate dismissable={false} onClose={() => {}} />}
+      {needsFamilySetup && familySession && (
+        <FamilyBindingScreen
+          session={familySession}
+          onBound={() => {
+            setFamilyIdState(getFamilyId());
+            // ProfileProvider (main.tsx) đã tải 1 lần lúc app khởi động, LÚC ĐÓ familyId
+            // còn rỗng (chưa thiết lập xong) nên chưa lấy được hồ sơ nào — tải lại đúng lúc
+            // vừa xác định xong gia đình, để Trang chủ hiện hồ sơ ngay, không cần tải lại
+            // trang thủ công.
+            refreshProfiles();
+          }}
+        />
+      )}
 
       {showGoogleGate && (
         <GoogleSignInGate

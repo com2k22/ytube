@@ -54,12 +54,14 @@ function sbHeaders(key) {
   return { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' };
 }
 
-/** Đọc lời xin theo mã số, kèm luôn tên bé (nhờ khoá ngoại profile_id sang bảng profiles). */
+/** Đọc lời xin theo mã số, kèm luôn tên bé (nhờ khoá ngoại profile_id sang bảng profiles)
+    và family_id (để chỉ báo đúng điện thoại của ĐÚNG gia đình — xem supabase/013_multi_family.sql,
+    nhiều gia đình khác nhau có thể cùng dùng chung app này). */
 async function loadRequest(url, key, id) {
   const query =
     `${url}/rest/v1/time_requests` +
     `?id=eq.${encodeURIComponent(id)}` +
-    `&select=id,status,requested_minutes,created_at,notified_at,profiles(name)`;
+    `&select=id,status,requested_minutes,created_at,notified_at,family_id,profiles(name)`;
   const res = await fetch(query, { headers: sbHeaders(key) });
   if (!res.ok) {
     console.error('[Ytube] Không đọc được lời xin:', res.status, await res.text());
@@ -90,9 +92,13 @@ async function claimRequest(url, key, id) {
   return rows.length > 0;
 }
 
-/** Lấy danh sách điện thoại đã bật thông báo. */
-async function loadSubscriptions(url, key) {
-  const res = await fetch(`${url}/rest/v1/push_subscriptions?select=endpoint,p256dh,auth`, {
+/** Lấy danh sách điện thoại đã bật thông báo — CHỈ của ĐÚNG gia đình có lời xin này (không
+    lấy hết mọi gia đình, tránh báo nhầm sang điện thoại nhà không liên quan). */
+async function loadSubscriptions(url, key, familyId) {
+  const query =
+    `${url}/rest/v1/push_subscriptions?select=endpoint,p256dh,auth` +
+    (familyId ? `&family_id=eq.${encodeURIComponent(familyId)}` : '&family_id=is.null');
+  const res = await fetch(query, {
     headers: sbHeaders(key),
   });
   if (!res.ok) {
@@ -202,7 +208,7 @@ export default async function handler(req, res) {
     url: '/parent',
   });
 
-  const subscriptions = await loadSubscriptions(supabaseUrl, supabaseKey);
+  const subscriptions = await loadSubscriptions(supabaseUrl, supabaseKey, request.family_id);
   let sent = 0;
 
   // Gửi song song cho nhanh — bố mẹ đang ngồi chờ, mà mỗi máy gửi tuần tự thì cộng dồn lâu.

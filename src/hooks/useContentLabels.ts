@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { getFamilyId } from '@/lib/familyId';
 import type { ContentLabel } from '@/types';
 
 /**
@@ -15,9 +16,16 @@ export function useContentLabels() {
 
   const refresh = useCallback(async () => {
     setLoading(true);
+    const familyId = getFamilyId();
+    if (!familyId) {
+      setLabels([]);
+      setLoading(false);
+      return;
+    }
     const { data, error } = await supabase
       .from('content_labels')
       .select('*')
+      .eq('family_id', familyId)
       .order('is_builtin', { ascending: false })
       .order('created_at', { ascending: true });
     if (error) {

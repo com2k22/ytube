@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { getFamilyId } from '@/lib/familyId';
 import type { TimeRequest } from '@/types';
 
 /** Số phút bé xin mỗi lần bấm nút. */
@@ -35,10 +36,16 @@ export function useTimeRequests(profileId: string | null) {
   const [myRequestId, setMyRequestId] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
+    const familyId = getFamilyId();
+    if (!familyId) {
+      setLoading(false);
+      return;
+    }
     const since = new Date(Date.now() - REQUEST_EXPIRE_MINUTES * 60_000).toISOString();
     const { data, error } = await supabase
       .from('time_requests')
       .select('*')
+      .eq('family_id', familyId)
       .gte('created_at', since)
       .order('created_at', { ascending: false });
     if (error) {
@@ -71,9 +78,14 @@ export function useTimeRequests(profileId: string | null) {
   const createRequest = useCallback(
     async (reason: string | null, minutes = DEFAULT_REQUEST_MINUTES) => {
       if (!profileId) return null;
+      const familyId = getFamilyId();
+      if (!familyId) return null;
+      // Bé xin thêm giờ KHÔNG cần đăng nhập gì cả → phải TỰ truyền family_id (đọc từ thiết
+      // bị này đã "thiết lập lần đầu"), không có auth session để DB tự điền như các bảng
+      // khác — xem supabase/013_multi_family.sql.
       const { data, error } = await supabase
         .from('time_requests')
-        .insert({ profile_id: profileId, requested_minutes: minutes, reason, status: 'pending' })
+        .insert({ profile_id: profileId, family_id: familyId, requested_minutes: minutes, reason, status: 'pending' })
         .select()
         .single();
       if (error) {
