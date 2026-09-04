@@ -885,28 +885,80 @@ body {
 }
 
 /* ====================================================================================
-   DANH SÁCH PLAYLIST TRONG TRÌNH XEM (mở bằng phím MŨI TÊN XUỐNG)
+   ICON ▶/⏸ TO GIỮA MÀN HÌNH — chớp lên rồi tự mờ dần mỗi khi bấm OK tạm dừng/phát tiếp.
    ------------------------------------------------------------------------------------
-   Giống hệt cách dựng .player-panel ở trên (nổi bên trong .player-wrap để vẫn thấy được
-   lúc toàn màn hình), nhưng đây là 1 danh sách CUỘN DỌC áp sát mép dưới, thay vì 1 hàng
-   nút. Xem PlayerPlaylistDrawer.tsx và useTvPlayerControls.ts (phím Xuống mở, phím Lên ở
-   video đầu danh sách hoặc Back thì đóng).
+   Yêu cầu "tăng size icon Play/Pause gấp đôi": lấy cỡ chữ icon trong .player-panel-btn làm
+   mốc rồi nhân đôi (28px→56px bản web, 48px→96px bản TV) — icon giữa màn hình vốn PHẢI to
+   hơn hẳn icon trong hàng nút, không thì "gấp đôi" chẳng còn ý nghĩa gì.
+   ==================================================================================== */
+.player-center-icon {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 7;
+  width: 110px; height: 110px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, 0.55); color: #fff;
+  font-size: 56px; line-height: 1; pointer-events: none;
+  animation: player-center-icon-pop 0.7s ease both;
+}
+@keyframes player-center-icon-pop {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.7); }
+  15% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  70% { opacity: 1; }
+  100% { opacity: 0; }
+}
+[data-tv] .player-center-icon { width: 180px; height: 180px; font-size: 96px; }
+@media (max-width: 760px) {
+  .player-center-icon { width: 80px; height: 80px; font-size: 38px; }
+}
+
+/* ====================================================================================
+   DANH SÁCH PLAYLIST TRONG TRÌNH XEM (mở bằng phím MŨI TÊN XUỐNG) — 2 GIAI ĐOẠN
+   ------------------------------------------------------------------------------------
+   Giống app YouTube Kids trên TV: bấm Xuống lần 1 chỉ "lấp ló" 3 thẻ đầu (báo hiệu có
+   danh sách, chưa chọn được ô nào); bấm Xuống thêm lần nữa mới "nở" ra thành lưới đầy đủ,
+   3 thẻ/hàng, chọn được từng ô. Xem PlayerPlaylistDrawer.tsx (component quyết định giai
+   đoạn nào render gì) và useTvPlayerControls.ts (phím quyết định lúc nào chuyển giai đoạn).
+   Cố ý đặt bên trong .player-wrap để lúc xem toàn màn hình vẫn thấy được.
    ==================================================================================== */
 .player-playlist {
-  position: absolute; left: 0; right: 0; bottom: 0; top: 30%; z-index: 5;
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 5;
   display: flex; flex-direction: column;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.92), rgba(0, 0, 0, 0));
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.92), rgba(0, 0, 0, 0.3) 70%, rgba(0, 0, 0, 0));
   padding: 24px 14px 14px;
+  overflow: hidden;
+  /* Cả 2 giai đoạn CHUNG 1 khối, chỉ đổi chiều cao — nhờ transition ở đây mà lúc "nở" từ
+     giai đoạn 1 sang 2 (hoặc thu lại) tự trượt mượt, không giật cục. */
+  transition: height 0.22s ease;
 }
+/* Giai đoạn 1 — "lấp ló": chỉ đủ cao để nhô lên 1 phần of 3 thẻ đầu, ẩn hẳn phần tiêu đề
+   (chưa vào chế độ chọn, chưa cần tên video) — đúng nghĩa "báo hiệu còn nữa" chứ chưa phải
+   danh sách xem đầy đủ. */
+.player-playlist-stage1 { height: 22%; }
+/* Giai đoạn 2 — lưới đầy đủ, cao hơn hẳn để thấy rõ nhiều hàng, tên video, ô đang chọn. */
+.player-playlist-stage2 { height: 62%; }
+
 .player-playlist-title { color: #fff; font-weight: 800; font-size: 16px; margin: 0 4px 10px; opacity: 0.85; }
-.player-playlist-list { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 8px; scroll-behavior: smooth; scrollbar-width: none; }
-.player-playlist-item { flex: 0 0 auto; width: 190px; cursor: pointer; }
+/* Giai đoạn 1: 1 hàng ngang, các thẻ chỉ hiện hờ (không bấm chọn được) — dùng flex.
+   Giai đoạn 2 (thêm class .is-grid, xem dưới): chuyển thành LƯỚI 3 CỘT/hàng, cuộn dọc được
+   nếu nhiều hơn 1 hàng. */
+.player-playlist-grid { display: flex; gap: 14px; }
+.player-playlist-stage2 .player-playlist-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px 14px;
+  overflow-y: auto; padding-bottom: 8px; scroll-behavior: smooth; scrollbar-width: none;
+}
+.player-playlist-stage1 .player-playlist-item { flex: 0 0 auto; width: 190px; }
+.player-playlist-item { cursor: pointer; }
 .player-playlist-thumb {
   position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 12px;
   background: #222 center/cover; border: 4px solid transparent;
   display: flex; align-items: center; justify-content: center;
 }
-.player-playlist-item.active .player-playlist-thumb { border-color: var(--focus-color); }
+/* "Làm nổi bật video mà mũi tên đang rê vào" — chỉ có tác dụng ở giai đoạn 2 (giai đoạn 1
+   không có ô nào được chọn cả, xem PlayerPlaylistDrawer.tsx: prop activeIndex bị bỏ qua ở
+   giai đoạn 1). Viền dày + sáng hẳn lên, không thể nhầm với các ô xung quanh. */
+.player-playlist-item.active .player-playlist-thumb {
+  border-color: var(--focus-color); box-shadow: 0 0 0 3px rgba(124, 156, 255, 0.4);
+  transform: scale(1.04);
+}
 .player-playlist-item.is-current .player-playlist-thumb { box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.6); }
 .player-playlist-playing { font-size: 22px; color: #fff; text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7); }
 .player-playlist-item-title {
@@ -916,14 +968,17 @@ body {
 
 [data-tv] .player-playlist { padding: 34px 22px 40px; }
 [data-tv] .player-playlist-title { font-size: 24px; margin: 0 4px 16px; }
-[data-tv] .player-playlist-list { gap: 22px; }
-[data-tv] .player-playlist-item { width: 320px; }
+[data-tv] .player-playlist-grid { gap: 22px; }
+[data-tv] .player-playlist-stage2 .player-playlist-grid { gap: 26px 22px; }
+[data-tv] .player-playlist-stage1 .player-playlist-item { width: 320px; }
 [data-tv] .player-playlist-thumb { border-radius: 16px; border-width: 5px; }
 [data-tv] .player-playlist-item-title { font-size: 20px; margin-top: 10px; }
 
 @media (max-width: 760px) {
-  .player-playlist { top: 20%; padding: 14px 10px 10px; }
-  .player-playlist-item { width: 130px; }
+  .player-playlist-stage1 { height: 18%; }
+  .player-playlist-stage2 { height: 56%; }
+  .player-playlist { padding: 14px 10px 10px; }
+  .player-playlist-stage1 .player-playlist-item { width: 130px; }
   .player-playlist-item-title { font-size: 11px; }
 }
 

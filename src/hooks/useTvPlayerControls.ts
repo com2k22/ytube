@@ -20,6 +20,9 @@ export interface PanelAction {
   onSelect: () => void;
 }
 
+/** Số video/hàng trong danh sách playlist dạng LƯỚI ở giai đoạn 2 (xem PlayerPlaylistDrawer). */
+const GRID_COLS = 3;
+
 interface Options {
   /** Thẻ bọc trình phát — dùng để biết khi nào trình phát đang "cầm lái" bàn phím. */
   wrapRef: React.RefObject<HTMLElement>;
@@ -37,23 +40,29 @@ interface Options {
 const HOLD_MS = 450;
 /** Nhịp tua khi đang giữ phím. */
 const SEEK_TICK_MS = 220;
+/** Icon Play/Pause to giữa màn hình hiện bao lâu rồi tự ẩn (mili giây). */
+const CENTER_ICON_MS = 700;
 
 /**
- * useTvPlayerControls — bộ điều khiển trình phát bằng ĐIỀU KHIỂN TV.
+ * useTvPlayerControls — bộ điều khiển trình phát bằng ĐIỀU KHIỂN TV, giống app YouTube
+ * Kids trên TV.
  *
  * Quy ước phím (chỉ có tác dụng khi ô chọn đang nằm ở khung video, hoặc đang xem toàn
- * màn hình — lúc khác thì nhường phím lại cho việc di chuyển trong trang), giống app
- * YouTube Kids trên TV:
- *   • OK            → tạm dừng / phát tiếp
- *   • Lên           → mở bảng điều khiển (chuyển video, phụ đề, cài đặt...)
- *   • Xuống         → mở danh sách video trong playlist (chọn xem video khác); nếu
- *                      playlist rỗng thì nhường phím cho trang như trước
- *   • Trái/Phải GIỮ → tua lùi / tua tới, giữ càng lâu tua càng nhanh
+ * màn hình — lúc khác thì nhường phím lại cho việc di chuyển trong trang):
+ *   • OK             → tạm dừng video + hiện GIAI ĐOẠN 1 của danh sách playlist (xem dưới);
+ *                       bấm OK lần nữa (lúc đang ở giai đoạn 1) → phát tiếp, ẩn danh sách.
+ *   • Lên             → mở bảng điều khiển (chuyển video, phụ đề, cài đặt...)
+ *   • Xuống           → mở/đi sâu thêm danh sách playlist, qua ĐÚNG 2 GIAI ĐOẠN:
+ *                         1) "lấp ló" — hiện hờ 3 video đầu, chỉ để BÁO có danh sách bên
+ *                            dưới, chưa chọn được ô nào.
+ *                         2) bấm Xuống thêm 1 lần nữa → hiện ĐẦY ĐỦ, dạng LƯỚI 3 video/hàng,
+ *                            di chuyển chọn bằng Lên/Xuống/Trái/Phải, bấm OK để xem video đó.
+ *                       Không có playlist → nhường phím Xuống cho trang như trước.
+ *   • Trái/Phải GIỮ  → tua lùi / tua tới, giữ càng lâu tua càng nhanh (chỉ khi KHÔNG đang ở
+ *                       giai đoạn 2 — lúc đó Trái/Phải dùng để dò ngang trong lưới).
  *
- * ĐÃ BỎ "bấm nhả Trái/Phải để chuyển video trước/sau": trước đây bấm nhả nhanh phím
- * Trái/Phải là nhảy sang video kế/trước, dễ bấm nhầm khi chỉ định tua. Giờ muốn chuyển
- * video thì bắt buộc phải qua nút "⏮/⏭" trong bảng điều khiển (Lên) hoặc chọn thẳng
- * trong danh sách playlist (Xuống).
+ * ĐÃ BỎ "bấm nhả Trái/Phải để chuyển video trước/sau": muốn chuyển video thì bắt buộc phải
+ * qua nút "⏮/⏭" trong bảng điều khiển (Lên) hoặc chọn thẳng trong lưới playlist (Xuống x2).
  *
  * Vì sao nghe phím ở "pha bắt" (capture): bộ điều hướng chung của app (useTvNavigation)
  * cũng nghe phím trên cùng 1 chỗ và được gắn TRƯỚC. Nghe ở pha bắt giúp trình phát được
@@ -70,11 +79,22 @@ export function useTvPlayerControls({
 }: Options) {
   const [panelOpen, setPanelOpen] = useState(false);
   const [panelIndex, setPanelIndex] = useState(0);
-  /** Danh sách video trong playlist (mở bằng phím Xuống) đang mở hay đóng + đang chọn ô nào. */
-  const [playlistOpen, setPlaylistOpen] = useState(false);
+  /** 0 = đóng hẳn. 1 = "lấp ló" (giai đoạn 1, chỉ báo có danh sách, chưa chọn ô nào).
+      2 = lưới đầy đủ (giai đoạn 2, chọn được từng video bằng Lên/Xuống/Trái/Phải). */
+  const [playlistStage, setPlaylistStage] = useState<0 | 1 | 2>(0);
   const [playlistIndex, setPlaylistIndex] = useState(0);
   /** Nhãn hiện lên giữa màn hình khi đang tua, vd "⏩ 3:20". null = không hiện. */
   const [seekLabel, setSeekLabel] = useState<string | null>(null);
+  /** Icon ▶/⏸ to giữa màn hình, chớp lên rồi tự ẩn mỗi khi tạm dừng/phát tiếp bằng OK —
+      xem CENTER_ICON_MS. null = không hiện. */
+  const [centerIcon, setCenterIcon] = useState<'play' | 'pause' | null>(null);
+  const centerIconTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  const flashCenterIcon = useCallback((icon: 'play' | 'pause') => {
+    clearTimeout(centerIconTimerRef.current);
+    setCenterIcon(icon);
+    centerIconTimerRef.current = setTimeout(() => setCenterIcon(null), CENTER_ICON_MS);
+  }, []);
 
   const holdRef = useRef<{
     key: string;
@@ -92,7 +112,7 @@ export function useTvPlayerControls({
     actions,
     panelOpen,
     panelIndex,
-    playlistOpen,
+    playlistStage,
     playlistIndex,
     playlistCount,
     onSelectPlaylistItem,
@@ -102,7 +122,7 @@ export function useTvPlayerControls({
     actions,
     panelOpen,
     panelIndex,
-    playlistOpen,
+    playlistStage,
     playlistIndex,
     playlistCount,
     onSelectPlaylistItem,
@@ -147,7 +167,7 @@ export function useTvPlayerControls({
         actions: acts,
         panelOpen: open,
         panelIndex: idx,
-        playlistOpen: plOpen,
+        playlistStage: stage,
         playlistIndex: plIdx,
         playlistCount: plCount,
         onSelectPlaylistItem: selectPlaylistItem,
@@ -173,44 +193,78 @@ export function useTvPlayerControls({
           take(e);
           setPanelOpen(false);
         } else if (e.key === 'ArrowDown') {
-          // Đang mở bảng điều khiển mà bấm Xuống nữa → chuyển thẳng sang danh sách playlist
-          // (giống YouTube Kids: Lên/Xuống là 2 bảng khác nhau, không cần đóng rồi mở lại).
+          // Đang mở bảng điều khiển mà bấm Xuống nữa → chuyển thẳng sang giai đoạn 1 của
+          // danh sách playlist (giống YouTube Kids: Lên/Xuống là 2 khu khác nhau).
           take(e);
           setPanelOpen(false);
-          if (plCount > 0) {
-            setPlaylistIndex(0);
-            setPlaylistOpen(true);
-          }
+          if (plCount > 0) setPlaylistStage(1);
         }
         return;
       }
 
-      // --- Khi DANH SÁCH PLAYLIST đang mở: phím Lên/Xuống chọn video, OK để xem ---
-      if (plOpen) {
+      // --- Khi danh sách playlist đang mở, GIAI ĐOẠN 1 ("lấp ló" — chưa chọn được ô nào) ---
+      if (stage === 1) {
         if (e.key === 'ArrowDown') {
           take(e);
-          setPlaylistIndex((i) => Math.min(i + 1, plCount - 1));
+          setPlaylistIndex(0);
+          setPlaylistStage(2); // đi sâu thêm 1 nấc → hiện đầy đủ dạng lưới.
+        } else if (e.key === 'ArrowUp' || e.key === 'Escape') {
+          take(e);
+          setPlaylistStage(0);
+        } else if (e.key === 'Enter') {
+          // Đang tạm dừng (chính là lý do giai đoạn 1 mở ra) → OK lần nữa = phát tiếp, ẩn
+          // danh sách — xem chú thích ở nhánh "Enter" bên dưới, cùng 1 quy tắc.
+          take(e);
+          ad.play();
+          flashCenterIcon('play');
+          setPlaylistStage(0);
+        }
+        return;
+      }
+
+      // --- Khi danh sách playlist đang mở, GIAI ĐOẠN 2 (lưới đầy đủ, 3 video/hàng) ---
+      if (stage === 2) {
+        const col = plIdx % GRID_COLS;
+        if (e.key === 'ArrowRight') {
+          take(e);
+          if (col < GRID_COLS - 1 && plIdx + 1 < plCount) setPlaylistIndex(plIdx + 1);
+        } else if (e.key === 'ArrowLeft') {
+          take(e);
+          if (col > 0) setPlaylistIndex(plIdx - 1);
+        } else if (e.key === 'ArrowDown') {
+          take(e);
+          if (plIdx + GRID_COLS < plCount) setPlaylistIndex(plIdx + GRID_COLS);
         } else if (e.key === 'ArrowUp') {
           take(e);
-          if (plIdx <= 0) setPlaylistOpen(false); // đã ở đầu danh sách → đóng, về lại video
-          else setPlaylistIndex((i) => i - 1);
+          if (plIdx - GRID_COLS >= 0) setPlaylistIndex(plIdx - GRID_COLS);
+          else setPlaylistStage(1); // đã ở hàng đầu lưới → lùi về giai đoạn 1 "lấp ló".
         } else if (e.key === 'Enter') {
           take(e);
           selectPlaylistItem?.(plIdx);
-          setPlaylistOpen(false);
+          setPlaylistStage(0);
         } else if (e.key === 'Escape') {
           take(e);
-          setPlaylistOpen(false);
+          setPlaylistStage(0);
         }
         return;
       }
 
-      // --- Khi cả 2 bảng đều đóng ---
+      // --- Khi cả bảng điều khiển lẫn danh sách playlist đều đóng ---
       switch (e.key) {
         case 'Enter':
           take(e);
-          if (ad.isPaused()) ad.play();
-          else ad.pause();
+          // Giống YouTube Kids trên TV: bấm OK khi đang phát → TẠM DỪNG, đồng thời hiện
+          // luôn giai đoạn 1 của danh sách playlist (bé dừng lại thường là để xem có gì
+          // khác không). Bấm OK lần nữa (xử lý ở nhánh "stage === 1" phía trên) mới phát
+          // tiếp và ẩn danh sách đi.
+          if (ad.isPaused()) {
+            ad.play();
+            flashCenterIcon('play');
+          } else {
+            ad.pause();
+            flashCenterIcon('pause');
+            if (plCount > 0) setPlaylistStage(1);
+          }
           break;
 
         case 'ArrowUp':
@@ -222,8 +276,7 @@ export function useTvPlayerControls({
         case 'ArrowDown':
           if (plCount > 0) {
             take(e);
-            setPlaylistIndex(0);
-            setPlaylistOpen(true);
+            setPlaylistStage(1);
           }
           // Không có playlist (vd video đơn lẻ) → cố ý KHÔNG chặn: nhường phím để ô chọn đi
           // xuống nội dung bên dưới trang, như trước.
@@ -247,7 +300,7 @@ export function useTvPlayerControls({
           hold.timer = setTimeout(() => {
             // Giữ đủ lâu → chuyển sang chế độ TUA. Bấm nhả nhanh (không giữ đủ lâu) giờ
             // KHÔNG còn tác dụng gì nữa — trước đây bấm nhả là chuyển video trước/sau, nay
-            // việc đó chỉ làm được qua nút trong bảng điều khiển hoặc danh sách playlist.
+            // việc đó chỉ làm được qua nút trong bảng điều khiển hoặc lưới playlist.
             hold.seeking = true;
             hold.target = ad.getCurrentTime();
             hold.interval = setInterval(() => {
@@ -293,10 +346,16 @@ export function useTvPlayerControls({
       document.removeEventListener('keyup', onKeyUp, true);
       clearHold();
     };
-  }, [enabled, wrapRef, clearHold]);
+  }, [enabled, wrapRef, clearHold, flashCenterIcon]);
 
   // Dọn sạch khi rời trang / đổi video.
-  useEffect(() => () => clearHold(), [clearHold]);
+  useEffect(
+    () => () => {
+      clearHold();
+      clearTimeout(centerIconTimerRef.current);
+    },
+    [clearHold]
+  );
 
   return {
     panelOpen,
@@ -304,9 +363,10 @@ export function useTvPlayerControls({
     panelIndex,
     setPanelIndex,
     seekLabel,
-    playlistOpen,
-    setPlaylistOpen,
+    playlistStage,
+    setPlaylistStage,
     playlistIndex,
     setPlaylistIndex,
+    centerIcon,
   };
 }

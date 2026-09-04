@@ -174,7 +174,7 @@ export function DirectVideoPlayer({
 
   const playlist = playlistVideos ?? [];
 
-  const { panelOpen, panelIndex, seekLabel, playlistOpen, playlistIndex } = useTvPlayerControls({
+  const { panelOpen, panelIndex, seekLabel, playlistStage, playlistIndex, centerIcon } = useTvPlayerControls({
     wrapRef,
     adapter,
     actions,
@@ -195,8 +195,13 @@ export function DirectVideoPlayer({
         </div>
       )}
       <WatchCountdownBadge />
+      {centerIcon && (
+        <div className="player-center-icon" aria-hidden="true">
+          {centerIcon === 'pause' ? '⏸' : '▶'}
+        </div>
+      )}
       <PlayerControlBar open={panelOpen} actions={actions} activeIndex={panelIndex} seekLabel={seekLabel} />
-      <PlayerPlaylistDrawer open={playlistOpen} videos={playlist} activeIndex={playlistIndex} currentVideoId={url} />
+      <PlayerPlaylistDrawer stage={playlistStage} videos={playlist} activeIndex={playlistIndex} currentVideoId={url} />
     </div>
   );
 }
