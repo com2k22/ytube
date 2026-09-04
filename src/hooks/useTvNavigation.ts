@@ -101,18 +101,20 @@ export function useTvNavigation(
    */
   const bringIntoView = useCallback((el: HTMLElement) => {
     // 1) Cuộn NGANG bên trong hàng thẻ (khối nào có thanh cuộn ngang thì cuộn khối đó).
-    let parent: HTMLElement | null = el.parentElement;
-    while (parent && parent !== document.body) {
-      const overflowX = getComputedStyle(parent).overflowX;
-      if ((overflowX === 'auto' || overflowX === 'scroll') && parent.scrollWidth > parent.clientWidth) {
-        const er = el.getBoundingClientRect();
-        const pr = parent.getBoundingClientRect();
-        const pad = 20;
-        if (er.left < pr.left + pad) parent.scrollLeft += er.left - pr.left - pad;
-        else if (er.right > pr.right - pad) parent.scrollLeft += er.right - pr.right + pad;
-        break;
-      }
-      parent = parent.parentElement;
+    //
+    // Trước đây dò khối cha bằng cách LEO TỪNG CẤP + gọi getComputedStyle ở MỖI cấp để hỏi
+    // "overflow-x của ông này có phải auto/scroll không" — getComputedStyle ép trình duyệt
+    // tính lại kiểu dáng ngay lúc đó (khá tốn), mà hàm này chạy lại mỗi lần bấm phím, DOM
+    // càng sâu thì càng nhiều lần gọi. Chỗ thật sự cuộn ngang trong app chỉ có đúng 1 kiểu
+    // (class .shelf, xem theme.css), nên dùng closest('.shelf') là đủ và rẻ hơn hẳn — không
+    // ép tính lại kiểu dáng, chỉ so khớp class thôi.
+    const shelfParent = el.closest<HTMLElement>('.shelf');
+    if (shelfParent && shelfParent.scrollWidth > shelfParent.clientWidth) {
+      const er = el.getBoundingClientRect();
+      const pr = shelfParent.getBoundingClientRect();
+      const pad = 20;
+      if (er.left < pr.left + pad) shelfParent.scrollBy({ left: er.left - pr.left - pad, behavior: 'smooth' });
+      else if (er.right > pr.right - pad) shelfParent.scrollBy({ left: er.right - pr.right + pad, behavior: 'smooth' });
     }
 
     // 2) Cuộn DỌC cả trang, chừa sẵn chỗ cho thanh trên cùng đang dính.
@@ -144,14 +146,18 @@ export function useTvNavigation(
       // thì cuộn thẳng về ĐỈNH TRANG (scrollY = 0) luôn, lộ hết phần đầu trang.
       const targetScrollY = window.scrollY + (topRef - topLimit);
       if (targetScrollY < topLimit) {
-        window.scrollTo({ top: 0 });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
-        window.scrollBy(0, topRef - topLimit);
+        // Khai rõ behavior:'smooth' thay vì để trống — trước đây dựa hẳn vào CSS
+        // scroll-behavior (dòng ~30) để trượt mượt, nhưng khai rõ ở đây chắc ăn hơn trên
+        // TV (một số bản trình duyệt TV áp dụng CSS đó không ổn định cho scrollBy/scrollTo
+        // gọi bằng JS) — cùng 1 hiệu ứng, chỉ chắc chắn hơn.
+        window.scrollBy({ top: topRef - topLimit, behavior: 'smooth' });
       }
     } else if (r.bottom > bottomLimit) {
       // Math.min: với ô cao hơn cả màn hình thì ưu tiên giữ phần ĐẦU của khối (kể cả tiêu
       // đề), đừng cuộn quá tay làm phần đầu chui lên trên khuất mất.
-      window.scrollBy(0, Math.min(r.bottom - bottomLimit, topRef - topLimit));
+      window.scrollBy({ top: Math.min(r.bottom - bottomLimit, topRef - topLimit), behavior: 'smooth' });
     }
   }, []);
 
@@ -187,10 +193,17 @@ export function useTvNavigation(
 
   const setFocus = useCallback(
     (index: number, focusables: HTMLElement[]) => {
-      focusables.forEach((el) => el.classList.remove('tv-focused'));
+      // Trước đây quét (forEach) BỎ class 'tv-focused' qua TOÀN BỘ ô trên trang mỗi lần
+      // bấm phím — có khi vài chục ô (mọi thẻ ở mọi hàng đang hiện). Trình duyệt phải tính
+      // lại kiểu dáng cho từng ô đó, cộng dồn với việc đọc lại vị trí/cuộn trang ngay sau
+      // (bringIntoView) gây giật hẳn lên khi bấm liên tục — nhất là từ khi Phải/Xuống tự
+      // nhảy hàng nên phải cuộn trang thường xuyên hơn trước. Giờ chỉ bỏ class ở ĐÚNG 1 ô
+      // vừa rời đi, việc còn lại (thêm class ở ô mới) vốn đã chỉ đụng 1 ô — mượt hơn hẳn.
       const clamped = Math.max(0, Math.min(index, focusables.length - 1));
       focusIndexRef.current = clamped;
       const el = focusables[clamped];
+      const prevEl = focusedElRef.current;
+      if (prevEl && prevEl !== el) prevEl.classList.remove('tv-focused');
       focusedElRef.current = el ?? null;
       if (el) {
         el.classList.add('tv-focused');
