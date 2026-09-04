@@ -42,6 +42,12 @@ export interface ResolvedVideo {
   thumbnail: string | null;
   durationLabel?: string;
   sourceType: SourceType;
+  /** id dòng trong allowed_sources mà video này thuộc về — CHỈ cần khi video đến từ 1 dòng
+      whitelist RIÊNG của chính nó (video lẻ/link trực tiếp, xem PlayerPage.tsx: danh sách
+      "video lẻ khác" khi đang xem 1 video không nằm trong playlist nào). Video trong 1
+      playlist (custom_playlist/youtube_playlist) thì để trống — mọi video trong đó dùng
+      CHUNG đúng 1 sourceId của trang đang mở, không cần khai riêng từng video. */
+  sourceId?: string;
 }
 
 export interface TimeRuleGroup {

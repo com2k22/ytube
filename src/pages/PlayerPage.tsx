@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useProfileContext } from '@/context/ProfileContext';
 import { useSourceById } from '@/hooks/useSourceById';
+import { useAllowedSources } from '@/hooks/useAllowedSources';
 import { useWatchProgress } from '@/hooks/useWatchProgress';
 import { useWatchSession } from '@/hooks/useWatchSession';
 import { useWatchStretchTicker } from '@/hooks/useWatchStretch';
@@ -32,6 +33,10 @@ export function PlayerPage() {
 
   const { activeProfile } = useProfileContext();
   const { source } = useSourceById(sourceId);
+  // Toàn bộ whitelist của bé — chỉ dùng để dựng "danh sách video lẻ khác" bên dưới (không
+  // phải chờ tải xong mới phát được video hiện tại, vì kind/ytVideoId/directUrl đã lấy
+  // thẳng từ query string ở trên rồi).
+  const { sources: allSources } = useAllowedSources(activeProfile?.id ?? null);
   const { saveProgress } = useWatchProgress(activeProfile?.id ?? null);
   const { session, startSession, heartbeat } = useWatchSession(activeProfile?.id ?? null);
   const navigate = useNavigate();
@@ -110,6 +115,44 @@ export function PlayerPage() {
   /** Danh sách hiện ở dưới trang — bỏ video đang phát ra cho gọn. */
   const nextVideos = playlistVideos.filter((v) => v.videoId !== ytVideoId);
 
+  /**
+   * "Video lẻ khác" — dùng khi đang xem 1 video KHÔNG nằm trong playlist nào (playlistVideos
+   * rỗng): trước đây bấm Xuống ở màn hình này không có gì để hiện (nhường phím cho trang),
+   * giờ hiện đúng danh sách các video lẻ/link trực tiếp khác trong whitelist của bé — cùng
+   * kiểu 2 giai đoạn với danh sách playlist (xem SafeYouTubePlayer/DirectVideoPlayer).
+   *
+   * Lọc & khử trùng THEO ĐÚNG logic "Video đề xuất" ở HomePage.tsx: 1 video YouTube lẻ đã
+   * được ghép sẵn vào 1 playlist tự tạo nào đó thì không tính là "lẻ" nữa (đã xem được qua
+   * playlist đó rồi, hiện lại đây thành 2 lần trùng nhau).
+   */
+  const looseVideos = useMemo<ResolvedVideo[]>(() => {
+    const idsInCustomPlaylists = new Set(
+      allSources.filter((s) => s.type === 'custom_playlist').flatMap((s) => s.items.map((it) => it.videoId))
+    );
+    return allSources
+      .filter((s) => {
+        if (s.type === 'direct_url') return true;
+        if (s.type === 'youtube_video') {
+          const vid = extractVideoId(s.url);
+          return !vid || !idsInCustomPlaylists.has(vid);
+        }
+        return false;
+      })
+      .map((s): ResolvedVideo | null => {
+        if (s.type === 'direct_url') {
+          return { videoId: s.url, title: s.title, thumbnail: s.thumbnail, sourceType: s.type, sourceId: s.id };
+        }
+        const vid = extractVideoId(s.url);
+        if (!vid) return null;
+        return { videoId: vid, title: s.title, thumbnail: s.thumbnail, sourceType: s.type, sourceId: s.id };
+      })
+      .filter((v): v is ResolvedVideo => v !== null);
+  }, [allSources]);
+
+  /** Danh sách đưa vào bảng "bấm Xuống để xem" trong trình phát: có playlist thật thì ưu
+      tiên playlist đó; không có (đang xem video lẻ) thì dùng danh sách video lẻ khác. */
+  const drawerVideos = playlistVideos.length > 0 ? playlistVideos : looseVideos;
+
   // Đếm mạch xem liên tục để biết khi nào bắt bé nghỉ giải lao (xem useWatchStretch).
   // Chỉ đếm khi trang phát đang mở VÀ cửa sổ đang hiện — bé bấm về trang chủ hay tắt màn
   // hình thì dừng đếm, không tính oan.
@@ -127,17 +170,28 @@ export function PlayerPage() {
   };
 
   /**
-   * Chuyển sang video khác TRONG CÙNG playlist.
+   * Chuyển sang video khác — TRONG CÙNG playlist (playlistVideos), hoặc sang 1 video lẻ
+   * KHÁC HẲN trong whitelist (looseVideos, khi đang xem video lẻ và bé chọn video lẻ khác
+   * qua danh sách bấm-Xuống).
    *
    * replace: true — cố ý THAY THẾ trang hiện tại trong lịch sử thay vì chồng thêm 1 trang
-   * mới. Không có nó thì xem liên tiếp 5 video xong bấm Back phải bấm 5 lần mới ra khỏi
-   * playlist (lùi lại từng video vừa xem một) — rất khó chịu, nhất là khi video tự chuyển
-   * tiếp. Có nó thì bấm Back 1 lần là về thẳng danh sách playlist.
+   * mới. Không có nó thì xem liên tiếp nhiều video xong bấm Back phải bấm nhiều lần mới ra
+   * được (lùi lại từng video vừa xem một) — rất khó chịu. Có nó thì bấm Back 1 lần là về
+   * thẳng chỗ cũ.
    */
   const goToVideo = (v: ResolvedVideo) => {
-    const p = new URLSearchParams({ videoId: v.videoId, title: v.title });
+    const p = new URLSearchParams({ title: v.title });
+    // Link trực tiếp (direct_url) đi theo tham số directUrl, video YouTube đi theo videoId
+    // — v.videoId với direct_url CHÍNH LÀ url (xem chú thích trong types/index.ts).
+    if (v.sourceType === 'direct_url') p.set('directUrl', v.videoId);
+    else p.set('videoId', v.videoId);
     if (playlistId) p.set('playlistId', playlistId);
-    if (sourceId) p.set('sourceId', sourceId);
+    // v.sourceId: video lẻ khác có DÒNG WHITELIST RIÊNG của chính nó, phải dùng đúng id đó
+    // (không phải id của video đang xem) để lưu tiến độ/thống kê cho đúng video. Video
+    // trong cùng 1 playlist thì không có sourceId riêng — dùng lại sourceId của trang hiện
+    // tại như trước giờ (mọi video trong playlist đó dùng chung 1 dòng whitelist).
+    const targetSourceId = v.sourceId ?? sourceId;
+    if (targetSourceId) p.set('sourceId', targetSourceId);
     navigate(`/player?${p.toString()}`, { replace: true });
   };
 
@@ -197,7 +251,7 @@ export function PlayerPage() {
           onNext={() => nextVideo && goToVideo(nextVideo)}
           hasPrev={!!prevVideo}
           hasNext={!!nextVideo}
-          playlistVideos={playlistVideos}
+          playlistVideos={drawerVideos}
           onSelectVideo={goToVideo}
         />
       )}
@@ -212,7 +266,7 @@ export function PlayerPage() {
           onNext={() => nextVideo && goToVideo(nextVideo)}
           hasPrev={!!prevVideo}
           hasNext={!!nextVideo}
-          playlistVideos={playlistVideos}
+          playlistVideos={drawerVideos}
           onSelectVideo={goToVideo}
         />
       )}

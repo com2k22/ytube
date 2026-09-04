@@ -47,8 +47,11 @@ interface Props {
   onNext?: () => void;
   hasPrev?: boolean;
   hasNext?: boolean;
-  /** Toàn bộ video trong playlist, ĐÚNG THỨ TỰ (kể cả video đang phát) — hiện trong danh
-      sách mở bằng phím Xuống. Rỗng/không truyền = video đơn lẻ, không có playlist. */
+  /** Danh sách video hiện trong bảng "bấm Xuống để xem" — hoặc toàn bộ video trong 1
+      playlist THẬT (đúng thứ tự, kể cả video đang phát), hoặc — khi đang xem video LẺ,
+      không thuộc playlist nào — danh sách các video lẻ KHÁC trong whitelist của bé (xem
+      PlayerPage.tsx: biến drawerVideos). Component này không cần biết đang ở trường hợp
+      nào, chỉ cần render đúng mảng được đưa vào. Rỗng/không truyền = không hiện gì cả. */
   playlistVideos?: ResolvedVideo[];
   /** Bé chọn 1 video khác trong danh sách đó (bấm OK khi danh sách đang mở). */
   onSelectVideo?: (v: ResolvedVideo) => void;

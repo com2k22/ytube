@@ -10,8 +10,11 @@
   /* Độ rộng 1 thẻ video/playlist và khoảng cách giữa các thẻ — khai báo 1 chỗ ở đây để
      chế độ TV (cuối file) chỉ cần đổi 2 biến này là mọi khối thẻ tự to lên đồng loạt,
      kể cả lưới "Playlist đề xuất" ở Trang chủ (xem HomePage.tsx). */
-  --card-w: 340px;
-  --shelf-gap: 22px;
+  /* Giảm nhẹ + giãn khoảng cách hơn bản trước (340/22) — đỡ rối mắt hơn khi các thẻ san
+     sát nhau. Cỡ chữ tiêu đề thẻ (.card-title) KHÔNG phụ thuộc 2 biến này (là px cố định
+     riêng, xem bên dưới) nên không hề nhỏ đi. */
+  --card-w: 310px;
+  --shelf-gap: 28px;
 }
 
 html,
@@ -454,8 +457,10 @@ body {
    ==================================================================================== */
 [data-tv] {
   --radius: 18px;
-  --card-w: 700px;
-  --shelf-gap: 34px;
+  /* Giảm nhẹ (700→620) + giãn khoảng cách hơn (34→46) — bớt rối mắt, chữ tiêu đề thẻ
+     (.card-title, xem [data-tv] .card-title bên dưới) vẫn giữ nguyên 36px như cũ. */
+  --card-w: 620px;
+  --shelf-gap: 46px;
   /* Giảm từ 132px xuống 104px (yêu cầu "giảm độ rộng menu trái") — icon/nút bên trong
      cũng thu nhỏ theo (72px → 60px, xem [data-tv] .side-item và .sidebar-profile bên
      dưới) để vẫn nằm cân đối, không bị chật/đụng mép dải. */
@@ -923,7 +928,9 @@ body {
   position: absolute; left: 0; right: 0; bottom: 0; z-index: 5;
   display: flex; flex-direction: column;
   background: linear-gradient(to top, rgba(0, 0, 0, 0.92), rgba(0, 0, 0, 0.3) 70%, rgba(0, 0, 0, 0));
-  padding: 24px 14px 14px;
+  /* Đệm 2 bên tăng lên (14px→34px) — thu hẹp bớt bề ngang thật của lưới 3 cột, nhờ vậy mỗi
+     thẻ nhỏ lại 1 chút thay vì chiếm trọn hết bề ngang màn hình, đỡ rối mắt hơn. */
+  padding: 24px 34px 14px;
   overflow: hidden;
   /* Cả 2 giai đoạn CHUNG 1 khối, chỉ đổi chiều cao — nhờ transition ở đây mà lúc "nở" từ
      giai đoạn 1 sang 2 (hoặc thu lại) tự trượt mượt, không giật cục. */
@@ -944,7 +951,7 @@ body {
    đoạn 1 dùng flex + width cố định (190px) nên 3 thẻ bị co nhỏ lại, dư khoảng trắng bên
    phải — đổi sang grid 3 cột thì 3 thẻ luôn giãn đều lấp đầy hết bề ngang. */
 .player-playlist-grid {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px 14px;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px 26px;
   overflow-y: auto; padding-bottom: 8px; scroll-behavior: smooth; scrollbar-width: none;
 }
 .player-playlist-item { cursor: pointer; min-width: 0; }
@@ -962,22 +969,25 @@ body {
 }
 .player-playlist-item.is-current .player-playlist-thumb { box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.6); }
 .player-playlist-playing { font-size: 22px; color: #fff; text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7); }
+/* Cỡ chữ tên video BẰNG ĐÚNG .card-title (thẻ ở Trang chủ) — 17px/800/1.3 bản web, xem
+   [data-tv] bên dưới cho bản TV (36px/900/1.26) — để nhất quán, không phải 1 cỡ chữ "riêng
+   của trình xem" nhỏ hơn hẳn phần còn lại của app. */
 .player-playlist-item-title {
-  color: #fff; font-size: 13px; font-weight: 700; margin-top: 6px;
+  color: #fff; font-size: 17px; font-weight: 800; line-height: 1.3; margin-top: 8px;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
 
-[data-tv] .player-playlist { padding: 34px 22px 40px; }
+[data-tv] .player-playlist { padding: 34px 60px 40px; }
 [data-tv] .player-playlist-title { font-size: 24px; margin: 0 4px 16px; }
-[data-tv] .player-playlist-grid { gap: 26px 22px; }
+[data-tv] .player-playlist-grid { gap: 34px 40px; }
 [data-tv] .player-playlist-thumb { border-radius: 16px; border-width: 5px; }
-[data-tv] .player-playlist-item-title { font-size: 20px; margin-top: 10px; }
+[data-tv] .player-playlist-item-title { font-size: 36px; font-weight: 900; line-height: 1.26; margin-top: 14px; }
 
 @media (max-width: 760px) {
   .player-playlist-stage1 { height: 18%; }
   .player-playlist-stage2 { height: 56%; }
   .player-playlist { padding: 14px 10px 10px; }
-  .player-playlist-item-title { font-size: 11px; }
+  .player-playlist-item-title { font-size: 15px; }
 }
 
 /* ====================================================================================
