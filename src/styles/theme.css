@@ -605,19 +605,36 @@ body {
 [data-tv] .progress-wrap { height: 8px; left: 0; right: 0; bottom: 0; border-radius: 0; }
 [data-tv] .card .card-thumb::after { top: 12px; right: 14px; font-size: 30px; }
 
-/* Viền sáng đánh dấu ô đang chọn: ôm quanh riêng phần ẢNH, không ôm cả phần chữ —
-   nếu ôm cả chữ sẽ thành 1 khung to rỗng trông rất xấu khi thẻ đã bỏ khung hộp. */
-[data-tv] .card.tv-focused { outline: none; box-shadow: none; transform: none; }
-[data-tv] .card.tv-focused .card-thumb {
-  outline: 6px solid var(--focus-color);
-  outline-offset: 5px;
+/* Video đang được chọn: bọc TRỌN cả ảnh lẫn chữ trong 1 khối nền TRẮNG bo góc (giống kiểu
+   YouTube Kids trên TV) — chữ tiêu đề chuyển từ trắng sang đen để đọc được trên nền trắng.
+   Dễ nhận biết hơn nhiều so với chỉ có viền màu quanh ảnh — phù hợp cho trẻ nhỏ. */
+[data-tv] .card.tv-focused {
+  outline: none; box-shadow: none; transform: none;
+  background: #fff;
+  border-radius: calc(var(--radius) + 14px);
+  padding: 12px;
+  margin: -12px;
 }
+[data-tv] .card.tv-focused .card-thumb { outline: none; }
+[data-tv] .card.tv-focused .card-title,
+[data-tv] .card.tv-focused .card-sub { color: #14151a; }
+[data-tv] .card.tv-focused .card-sub { opacity: 0.7; }
 [data-tv] .tv-focused { outline-width: 6px; }
 
 /* --- Hàng kênh yêu thích --- */
 [data-tv] .channel-shelf .channel-item { width: 220px; padding: 16px 8px; border-radius: 28px; }
 [data-tv] .channel-avatar { width: 160px; height: 160px; font-size: 66px; }
 [data-tv] .channel-name { font-size: 26px; font-weight: 800; }
+
+/* Kênh đang được chọn: cùng kiểu bọc nền TRẮNG như thẻ video ở trên (đồng bộ toàn app) —
+   ghi đè lại viền màu chung của .tv-focused (dòng ngay dưới) bằng nền trắng bo tròn ôm hết
+   cả ảnh đại diện lẫn tên kênh, tên kênh chuyển sang màu đen. */
+[data-tv] .channel-item.tv-focused {
+  outline: none; box-shadow: none;
+  background: #fff;
+  border-color: transparent;
+}
+[data-tv] .channel-item.tv-focused .channel-name { color: #14151a; }
 
 /* Chừa khoảng an toàn khi cuộn tới ô đang chọn.
    Thanh trên cùng (cao 118px) luôn dính tại chỗ, nên nếu không khai báo dòng này, trình
@@ -962,11 +979,13 @@ body {
 }
 /* "Làm nổi bật video mà mũi tên đang rê vào" — chỉ có tác dụng ở giai đoạn 2 (giai đoạn 1
    không có ô nào được chọn cả, xem PlayerPlaylistDrawer.tsx: prop activeIndex bị bỏ qua ở
-   giai đoạn 1). Viền dày + sáng hẳn lên, không thể nhầm với các ô xung quanh. */
-.player-playlist-item.active .player-playlist-thumb {
-  border-color: var(--focus-color); box-shadow: 0 0 0 3px rgba(124, 156, 255, 0.4);
-  transform: scale(1.04);
+   giai đoạn 1). Bọc trọn cả ảnh lẫn chữ trong khối nền TRẮNG (đồng bộ với kiểu làm nổi bật
+   thẻ video ở Trang chủ, xem [data-tv] .card.tv-focused) — chữ chuyển sang màu đen. */
+.player-playlist-item.active {
+  background: #fff; border-radius: 16px; padding: 10px; margin: -10px;
 }
+.player-playlist-item.active .player-playlist-thumb { border-color: transparent; box-shadow: none; }
+.player-playlist-item.active .player-playlist-item-title { color: #14151a; }
 .player-playlist-item.is-current .player-playlist-thumb { box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.6); }
 .player-playlist-playing { font-size: 22px; color: #fff; text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7); }
 /* Cỡ chữ tên video BẰNG ĐÚNG .card-title (thẻ ở Trang chủ) — 17px/800/1.3 bản web, xem
@@ -982,6 +1001,7 @@ body {
 [data-tv] .player-playlist-grid { gap: 34px 40px; }
 [data-tv] .player-playlist-thumb { border-radius: 16px; border-width: 5px; }
 [data-tv] .player-playlist-item-title { font-size: 36px; font-weight: 900; line-height: 1.26; margin-top: 14px; }
+[data-tv] .player-playlist-item.active { border-radius: 22px; padding: 16px; margin: -16px; }
 
 @media (max-width: 760px) {
   .player-playlist-stage1 { height: 18%; }
