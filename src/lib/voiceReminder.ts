@@ -64,9 +64,19 @@ export interface VoiceReminder {
  * Lưu ý thật thà: không phải thiết bị nào cũng có sẵn giọng TIẾNG VIỆT — điện thoại và
  * máy tính thường có, TV webOS thì tuỳ đời máy. Không có thì hàm này lặng lẽ trả về false
  * và bé sẽ không nghe thấy gì (đúng ý: màn hình xem phim không hiện chữ báo).
+ *
+ * ⚠️ CỐ Ý TẮT HẲN đường này trên TV (data-tv). Lỗi thật đã gặp: một số TV webOS không đọc
+ * tiếng Việt bằng giọng máy nội bộ như điện thoại/máy tính, mà lại chuyển thẳng yêu cầu
+ * `speechSynthesis.speak()` sang DỊCH VỤ ĐỌC-TIẾNG-QUA-MẠNG của chính hệ điều hành TV (gắn
+ * với tài khoản Google/LG của TV) — TV đó chưa đăng nhập tài khoản nên chính con TV (loa
+ * hệ thống, không phải app) tự nói to "Chưa đăng nhập" thay vì câu nhắc của mình. Vì hàm
+ * này chỉ là NƯỚC CUỐI (dự phòng khi cả 2 lớp trước — Google TTS máy chủ + audio — đều
+ * hỏng), tắt hẳn trên TV còn hơn để TV la lên 1 câu chẳng liên quan làm bé hoảng. Điện
+ * thoại/máy tính không gặp lỗi này nên vẫn giữ nguyên.
  */
 export function speakWithBrowser(text: string): boolean {
   try {
+    if (typeof document !== 'undefined' && document.documentElement.hasAttribute('data-tv')) return false;
     const synth = window.speechSynthesis;
     if (!synth) return false;
     const utterance = new SpeechSynthesisUtterance(text);
