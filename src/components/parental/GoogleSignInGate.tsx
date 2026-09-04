@@ -18,9 +18,10 @@ interface Props {
  * Có 2 CÁCH đăng nhập:
  *   1) Nút "Đăng nhập bằng Google" — thử trước, đơn giản nhất nếu trình duyệt TV cho phép.
  *   2) "Hoặc dùng mã gửi qua email" — DỰ PHÒNG cho trường hợp Google chặn trình duyệt TV
- *      (lỗi "disallowed_useragent"). Bấm "Gửi mã" → Supabase gửi 1 email chứa mã 6 số tới
- *      Gmail gia đình → mở email đó bằng điện thoại → gõ mã 6 số vào ô bên dưới bằng điều
- *      khiển TV → xong, không cần Google gì cả.
+ *      (lỗi "disallowed_useragent"). Bấm "Gửi mã" → Supabase gửi 1 email chứa mã số tới
+ *      Gmail gia đình → mở email đó bằng điện thoại → gõ mã đó vào ô bên dưới bằng điều
+ *      khiển TV → xong, không cần Google gì cả. (Số chữ số của mã tuỳ cấu hình Supabase —
+ *      không cố định 6 số, nên ô nhập và kiểm tra đều để linh hoạt 4-10 chữ số.)
  */
 export function GoogleSignInGate({ onClose, dismissable = true }: Props) {
   const { signInWithGoogle, sendEmailCode, confirmEmailCode } = useFamilyAuth();
@@ -51,8 +52,8 @@ export function GoogleSignInGate({ onClose, dismissable = true }: Props) {
 
   const handleConfirmCode = async () => {
     setError('');
-    if (!/^\d{6}$/.test(code)) {
-      setError('Mã gồm đúng 6 chữ số.');
+    if (!/^\d{4,10}$/.test(code)) {
+      setError('Mã gồm từ 4 đến 10 chữ số.');
       return;
     }
     setConfirming(true);
@@ -112,16 +113,16 @@ export function GoogleSignInGate({ onClose, dismissable = true }: Props) {
         ) : (
           <>
             <div className="form-row">
-              <label>Mã 6 số nhận được qua email</label>
+              <label>Mã nhận được qua email</label>
               <input
                 type="text"
                 inputMode="numeric"
-                maxLength={6}
+                maxLength={10}
                 data-region="pinemail"
                 tabIndex={0}
                 value={code}
                 onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-                placeholder="000000"
+                placeholder="Nhập mã trong email"
               />
             </div>
             <button
