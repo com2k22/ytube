@@ -10,12 +10,16 @@ import { AddSourceForm } from '@/components/parental/AddSourceForm';
 import { WeeklyReportTab } from '@/components/parent-dashboard/WeeklyReportTab';
 import { TimeRequestCard } from '@/components/parent-dashboard/TimeRequestCard';
 import { PushSetupCard } from '@/components/parent-dashboard/PushSetupCard';
+import { useFamilyAuth } from '@/hooks/useFamilyAuth';
 
 type Tab = 'time' | 'content' | 'report' | 'pin';
 
-/** Trang "Bố mẹ" — quản lý thời gian xem từ xa + thêm nội dung whitelist. Yêu cầu PIN (xem PinModal). */
+/** Trang "Bố mẹ" — quản lý thời gian xem từ xa + thêm nội dung whitelist. Vào được là nhờ
+    đã đăng nhập đúng tài khoản Google gia đình trên thiết bị này (xem GoogleSignInGate,
+    thay cho PIN cũ — PIN giờ chỉ còn dùng cho "Cho xem ngay"/"Bỏ qua giờ nghỉ", xem ChangePinCard). */
 export function ParentDashboardPage() {
   const { profiles, activeProfile } = useProfileContext();
+  const { session: familySession, signOut } = useFamilyAuth();
   const [tab, setTab] = useState<Tab>('time');
   const [configProfileId, setConfigProfileId] = useState(activeProfile?.id ?? profiles[0]?.id ?? '');
   const [previewBlock, setPreviewBlock] = useState(false);
@@ -115,7 +119,34 @@ export function ParentDashboardPage() {
 
       {tab === 'report' && <WeeklyReportTab />}
 
-      {tab === 'pin' && <ChangePinCard />}
+      {tab === 'pin' && (
+        <div>
+          {/* Tài khoản Google đang đăng nhập trên THIẾT BỊ NÀY (thay cho PIN cũ khi vào khu
+              Bố mẹ) — xem useFamilyAuth.ts. Đăng xuất ở đây thì lần sau vào khu Bố mẹ trên
+              thiết bị này phải đăng nhập lại. */}
+          <div className="section-title" style={{ marginTop: 4 }}>
+            👤 Tài khoản gia đình
+          </div>
+          <p style={{ opacity: 0.75, margin: '4px 0 14px' }}>
+            Đang đăng nhập: {familySession?.user?.email ?? '(không rõ)'}
+          </p>
+          <button
+            className="add-window-btn"
+            style={{ marginBottom: 28 }}
+            data-region="ptime"
+            tabIndex={0}
+            onClick={() => {
+              signOut();
+              navigate('/');
+            }}
+          >
+            Đăng xuất khỏi thiết bị này
+          </button>
+
+          <div className="section-title">🔑 Đổi PIN (cho "Cho xem ngay" / "Bỏ qua giờ nghỉ")</div>
+          <ChangePinCard />
+        </div>
+      )}
 
       {previewBlock && (
         <BlockScreen nextWindowStart={firstWindowStart} onOpenParentGate={() => setPreviewBlock(false)} isPreview />

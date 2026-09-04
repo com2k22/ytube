@@ -13,6 +13,12 @@ export const PROFILE_EMOJI: Record<string, string> = {
   [PROFILE_IDS.COM]: '🦄',
 };
 
+// Gmail chủ gia đình — phải khớp đúng với owner_email trong bảng "families"
+// (supabase/011_family_auth.sql). Dùng để tự điền sẵn ô email ở màn hình "đăng nhập bằng
+// mã gửi qua email" (GoogleSignInGate) — trên TV gõ email bằng điều khiển từ xa rất bất
+// tiện, có sẵn rồi thì chỉ cần bấm "Gửi mã" là xong, không phải gõ gì cả.
+export const FAMILY_EMAIL = 'ngocphongdo@gmail.com';
+
 // Màu cố định của từng bé trên biểu đồ "Báo cáo tuần". Trỏ sang biến CSS (khai trong
 // src/styles/theme.css) vì mỗi giao diện cần một sắc độ riêng cho dễ nhìn: nền tối cần
 // màu sáng hơn, nền hồng cần màu đậm hơn.

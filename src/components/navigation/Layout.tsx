@@ -3,6 +3,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { PinModal } from '@/components/parental/PinModal';
+import { GoogleSignInGate } from '@/components/parental/GoogleSignInGate';
 import { BlockScreen, type RequestState } from '@/components/parent-dashboard/BlockScreen';
 import { BreakScreen } from '@/components/parent-dashboard/BreakScreen';
 import { useTvNavigation } from '@/hooks/useTvNavigation';
@@ -10,6 +11,7 @@ import { useTimeGate } from '@/hooks/useTimeGate';
 import { useTempUnlock } from '@/hooks/useTempUnlock';
 import { useBreakGate } from '@/hooks/useWatchStretch';
 import { useTimeRequests, DEFAULT_REQUEST_MINUTES } from '@/hooks/useTimeRequests';
+import { useFamilyAuth } from '@/hooks/useFamilyAuth';
 import { useProfileContext } from '@/context/ProfileContext';
 import { notifyParentAboutRequest } from '@/lib/push';
 import { isSupabaseConfigured } from '@/lib/supabaseClient';
@@ -58,44 +60,41 @@ const SECTION_COLS = {
   // xếp dọc 1 cột cho chắc ăn, đi bằng lên/xuống. 'plabelpick' (chọn nhãn khi thêm nội dung)
   // cố ý KHÔNG khai ở đây — giống 'pkidpick', mặc định nằm trên 1 hàng ngang.
   plabel: 1,
+  // 'pinemail' = 1 cột: khối "đăng nhập bằng mã gửi qua email" trong GoogleSignInGate (ô
+  // email, nút gửi mã, ô nhập mã 6 số, nút xác nhận) — xếp dọc, đi bằng lên/xuống.
+  pinemail: 1,
 };
 
 /**
  * Layout — khung sườn cố định (Sidebar + TopBar) bao quanh mọi trang, xử lý:
  * - Điều hướng D-pad toàn cục (useTvNavigation) trên cả sidebar lẫn nội dung trang.
- * - Cổng PIN phụ huynh (bấm 🔒 Bố mẹ ở cuối menu bên trái — xem Sidebar).
+ * - Cổng đăng nhập Google cho khu Bố mẹ (bấm 🔒 Bố mẹ ở cuối menu bên trái — xem Sidebar).
+ *   Đã đổi từ mã PIN sang đăng nhập Google (xem useFamilyAuth.ts + GoogleSignInGate.tsx +
+ *   supabase/011_family_auth.sql) — đăng nhập 1 lần trên thiết bị nào thì thiết bị đó nhớ
+ *   luôn, không phải nhập lại PIN mỗi lần vào khu Bố mẹ nữa.
  * - Màn hình chặn (BlockScreen) — 2 trường hợp: CHƯA ĐẾN GIỜ xem, và ĐÃ HẾT thời gian
  *   của hôm nay. Không áp dụng khi đang ở trang /parent để phụ huynh luôn vào được.
- *   Bé không tự đóng được — bấm "VÂNG" chỉ là xác nhận đã đọc. Chỉ bố mẹ thoát được, và
- *   đều phải nhập mã PIN, theo 1 trong 2 đường:
- *     • "🔓 Cho xem ngay" → mở khoá TẠM, hết hiệu lực khi tắt app (xem useTempUnlock).
- *     • "🔒 Bố mẹ bấm vào đây" (chỉ có trên điện thoại) → vào khu Bố mẹ để sửa hẳn cấu
- *       hình giờ.
- * - Cổng PIN cho chính trang /parent (parentGateOk bên dưới). QUAN TRỌNG: trước đây trang
- *   /parent hoàn toàn KHÔNG có lớp bảo vệ nào ở mức vào thẳng URL — chỉ được che chắn
- *   "gián tiếp" vì lối duy nhất TỚI được /parent trong lúc dùng app là bấm nút Bố mẹ rồi
- *   nhập đúng PIN. Bấm thông báo đẩy "Con xin thêm giờ" trên điện thoại (xem sw.js,
- *   notificationclick mở thẳng URL '/parent') lại KHÔNG đi qua lối đó — mở app là vào
- *   thẳng khu Bố mẹ, không ai hỏi mã PIN gì cả. Nay vá tận gốc: bất kể vào /parent bằng
- *   đường nào (thông báo, gõ thẳng URL, bookmark, mở lại tab...), nếu phiên này CHƯA từng
- *   qua PIN thì bảng PIN tự bật lên ngay, nội dung trang không hiện ra cho tới khi nhập
- *   đúng mã.
+ *   Bé không tự đóng được — bấm "VÂNG" chỉ là xác nhận đã đọc. Chỉ bố mẹ thoát được, theo
+ *   1 trong 2 đường:
+ *     • "🔓 Cho xem ngay" → vẫn dùng mã PIN cũ (mở khoá TẠM, hết hiệu lực khi tắt app, xem
+ *       useTempUnlock) — CHƯA đổi sang Google, việc này chỉ cần mở nhanh tại chỗ.
+ *     • "🔒 Bố mẹ bấm vào đây" (chỉ có trên điện thoại) → vào khu Bố mẹ (đăng nhập Google)
+ *       để sửa hẳn cấu hình giờ.
+ * - Cổng vào chính trang /parent: bất kể vào bằng đường nào (bấm nút Bố mẹ, thông báo đẩy
+ *   "Con xin thêm giờ" mở thẳng URL '/parent', gõ thẳng URL, bookmark, mở lại tab...), nếu
+ *   thiết bị này CHƯA đăng nhập đúng tài khoản Google gia đình thì màn hình đăng nhập tự
+ *   bật lên ngay, nội dung trang không hiện ra cho tới khi đăng nhập xong.
  */
 export function Layout() {
   const layoutRef = useRef<HTMLDivElement>(null);
   /**
-   * Mở bảng PIN để làm gì. null = đang đóng.
-   *  'parent'    → vào khu Bố mẹ
+   * Mở bảng PIN để làm gì. null = đang đóng. (Chỉ còn 2 lý do — "vào khu Bố mẹ" đã chuyển
+   * sang đăng nhập Google, xem GoogleSignInGate bên dưới, không còn dùng PIN nữa.)
    *  'unlock'    → cho bé xem ngay (bỏ qua giới hạn giờ, tới khi tắt app)
    *  'skipbreak' → cho xem tiếp ngay, không phải chờ hết giờ nghỉ giải lao
    */
-  const [pinPurpose, setPinPurpose] = useState<'parent' | 'unlock' | 'skipbreak' | null>(null);
-  /**
-   * Đã nhập ĐÚNG PIN để vào /parent trong PHIÊN NÀY chưa (reset khi tắt/mở lại app, và
-   * reset ngay khi rời khỏi /parent — quay lại lần sau lại phải nhập PIN lần nữa, giữ
-   * đúng thói quen bấm nút Bố mẹ trước đây: mỗi lần vào đều hỏi PIN).
-   */
-  const [parentGateOk, setParentGateOk] = useState(false);
+  const [pinPurpose, setPinPurpose] = useState<'unlock' | 'skipbreak' | null>(null);
+  const { session: familySession, loading: authLoading } = useFamilyAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -113,6 +112,11 @@ export function Layout() {
 
   const pinOpen = pinPurpose !== null;
   const isParentRoute = location.pathname.startsWith('/parent');
+  // Đã đăng nhập đúng tài khoản Google gia đình trên THIẾT BỊ NÀY chưa (thay cho PIN cũ) —
+  // xem useFamilyAuth.ts. authLoading = còn đang tra phiên đăng nhập đã lưu trước đó, coi
+  // như "chưa vào được" trong lúc chờ, để tránh nhấp nháy hiện màn đăng nhập rồi biến mất.
+  const parentGateOk = !authLoading && !!familySession;
+  const showGoogleGate = isParentRoute && !parentGateOk;
   // unlocked = bố mẹ đã cho xem ngay (nhập PIN tại chỗ, hoặc duyệt lời xin từ xa) → bỏ
   // qua mọi giới hạn giờ cho tới khi hết suất.
   const showBlockScreen = !isParentRoute && !gate.allowed && !unlocked && !pinOpen;
@@ -151,24 +155,11 @@ export function Layout() {
     myRequest?.status === 'pending' ? 'pending' : myRequest?.status === 'denied' ? 'denied' : 'idle';
 
   // Đặt lại ô đang chọn mỗi khi: đổi trang, HOẶC mở/đóng 1 lớp phủ khoá màn hình (bảng
-  // PIN, màn hình Chưa đến giờ xem). Lớp phủ mở ra thì ô chọn phải nhảy vào bên trong nó;
-  // đóng lại thì quay về nội dung chính.
+  // PIN, màn hình đăng nhập Google, màn hình Chưa đến giờ xem). Lớp phủ mở ra thì ô chọn
+  // phải nhảy vào bên trong nó; đóng lại thì quay về nội dung chính.
   useEffect(() => {
     resetFocus();
-  }, [location.pathname, pinOpen, showBlockScreen, showBreakScreen, resetFocus]);
-
-  // Cổng PIN cho /parent — xem giải thích đầy đủ ở khối chú thích trên đầu component.
-  // Rời khỏi /parent thì quên ngay việc đã qua PIN, để lần sau vào lại (kể cả bằng cách
-  // bấm nút Bố mẹ) vẫn phải nhập lại — đúng thói quen cũ. Đang ở /parent mà chưa qua PIN
-  // (vào thẳng bằng URL, ví dụ từ thông báo đẩy) thì tự bật bảng PIN lên ngay.
-  useEffect(() => {
-    if (!isParentRoute) {
-      setParentGateOk(false);
-      return;
-    }
-    if (!parentGateOk && pinPurpose !== 'parent') setPinPurpose('parent');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isParentRoute, parentGateOk]);
+  }, [location.pathname, pinOpen, showGoogleGate, showBlockScreen, showBreakScreen, resetFocus]);
 
   return (
     <div className="layout" ref={layoutRef}>
@@ -191,37 +182,39 @@ export function Layout() {
           Vercel &gt; Settings &gt; Environment Variables rồi deploy lại (xem README, Bước D).
         </div>
       )}
-      <Sidebar onOpenParentGate={() => setPinPurpose('parent')} />
+      <Sidebar onOpenParentGate={() => navigate('/parent')} />
       {/* class "content-col" để CSS chế độ TV chỉnh được cột nội dung này (cần khai báo
           min-width: 0 thì các hàng thẻ mới cuộn ngang được bên trong, thay vì đẩy phình
           cả trang ra ngang) */}
       <div className="content-col" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <TopBar />
-        {/* Đang ở /parent mà CHƯA qua PIN thì không vẽ trang ra — tránh vào thẳng URL (vd
-            bấm thông báo đẩy) mà thấy được nội dung khu Bố mẹ trong khoảnh khắc trước khi
-            bảng PIN kịp bật lên. Bảng PIN (bên dưới) đã tự mở nhờ effect ở trên rồi. */}
+        {/* Đang ở /parent mà CHƯA đăng nhập Google thì không vẽ trang ra — tránh vào thẳng
+            URL (vd bấm thông báo đẩy) mà thấy được nội dung khu Bố mẹ trong khoảnh khắc
+            trước khi màn đăng nhập kịp bật lên. Màn đăng nhập (bên dưới) tự mở vì showGoogleGate. */}
         {isParentRoute && !parentGateOk ? null : <Outlet />}
       </div>
 
       <PinModal
         open={pinOpen}
-        onClose={() => {
-          setPinPurpose(null);
-          // Bấm ✕ đóng bảng PIN mà đang đứng ở /parent và chưa nhập đúng mã lần nào →
-          // không được đứng lại đó với trang trắng, đưa về Trang chủ cho gọn.
-          if (isParentRoute && !parentGateOk) navigate('/');
-        }}
+        onClose={() => setPinPurpose(null)}
         onSuccess={() => {
           // Cùng 1 bảng PIN, nhưng nhập đúng rồi thì làm gì lại tuỳ nút nào vừa mở nó ra.
+          // (Chỉ còn 2 lý do — "vào khu Bố mẹ" đã chuyển sang đăng nhập Google, xem dưới.)
           if (pinPurpose === 'unlock') grant();
           else if (pinPurpose === 'skipbreak') endBreak();
-          else {
-            setParentGateOk(true);
-            navigate('/parent');
-          }
           setPinPurpose(null);
         }}
       />
+
+      {showGoogleGate && (
+        <GoogleSignInGate
+          onClose={() => {
+            // Đóng màn đăng nhập mà chưa đăng nhập xong → không đứng lại đó với trang
+            // trắng, đưa về Trang chủ cho gọn (giống hệt PinModal cũ).
+            navigate('/');
+          }}
+        />
+      )}
 
       {showBlockScreen && (
         <BlockScreen
@@ -229,7 +222,7 @@ export function Layout() {
           nextWindowStart={gate.nextWindowStart}
           usedMinutes={gate.usedMinutes}
           dailyLimitMinutes={gate.dailyLimitMinutes}
-          onOpenParentGate={() => setPinPurpose('parent')}
+          onOpenParentGate={() => navigate('/parent')}
           onUnlockRequest={() => setPinPurpose('unlock')}
           onAskForMore={async () => {
             const requestId = await createRequest(gate.reason);
