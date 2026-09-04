@@ -1,5 +1,5 @@
 import { SOURCE_TYPE_ICON } from '@/constants';
-import type { SourceType } from '@/types';
+import type { ContentLabel, SourceType } from '@/types';
 
 interface Props {
   title: string;
@@ -15,11 +15,26 @@ interface Props {
   progressPercent?: number;
   /** Số cột của vùng điều hướng D-pad chứa thẻ này (dùng cho lưới nhiều hàng, cột tính động — xem useTvNavigation). */
   cols?: number;
+  /** Nhãn đã gán cho nội dung này (xem useContentLabels.ts) — hiện thành ô nhỏ màu, cùng
+      hàng với dòng "Đã xem.."/"Playlist"... Rỗng/không truyền = không hiện nhãn nào. Nhãn
+      "Ẩn" cố ý KHÔNG truyền vào đây — nội dung gán nhãn Ẩn không được render ra card nào cả
+      (lọc từ trước, xem HomePage.tsx), nên component này không cần tự né riêng nhãn đó. */
+  labels?: ContentLabel[];
   onClick: () => void;
 }
 
 /** Thẻ playlist/video-lẻ/link-trực-tiếp hiển thị ở Trang chủ hoặc trang Kênh. */
-export function PlaylistCard({ title, thumbnail, type, region, inProgress, progressPercent = 0, cols, onClick }: Props) {
+export function PlaylistCard({
+  title,
+  thumbnail,
+  type,
+  region,
+  inProgress,
+  progressPercent = 0,
+  cols,
+  labels,
+  onClick,
+}: Props) {
   return (
     <div className="card" data-region={region} data-cols={cols} tabIndex={0} onClick={onClick}>
       {/* card-highlight bọc RIÊNG ảnh + tên video/playlist — xem giải thích chi tiết ở
@@ -39,7 +54,19 @@ export function PlaylistCard({ title, thumbnail, type, region, inProgress, progr
         </div>
         <div className="card-title">{title}</div>
       </div>
-      <div className="card-sub">{inProgress ? `Đã xem ${progressPercent}%` : sourceTypeLabel(type)}</div>
+      <div className="card-sub">
+        {inProgress ? `Đã xem ${progressPercent}%` : sourceTypeLabel(type)}
+        {labels && labels.length > 0 && (
+          <span className="card-labels">
+            {labels.map((l) => (
+              <span key={l.id} className={`label-chip ${l.is_priority ? 'label-chip-priority' : ''}`}>
+                {l.is_priority ? '⭐ ' : ''}
+                {l.name}
+              </span>
+            ))}
+          </span>
+        )}
+      </div>
     </div>
   );
 }

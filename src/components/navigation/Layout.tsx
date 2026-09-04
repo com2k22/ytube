@@ -53,6 +53,11 @@ const SECTION_COLS = {
   pvid: 1,
   pdraft: 3,
   padded: 2,
+  // 'plabel' = 1 cột: khối "Quản lý nhãn" — mỗi hàng nhãn có 1-3 nút/ô tuỳ trạng thái
+  // (đổi tên/xoá, hoặc ô nhập + lưu + huỷ lúc đang sửa tên) nên KHÔNG cố định số cột được;
+  // xếp dọc 1 cột cho chắc ăn, đi bằng lên/xuống. 'plabelpick' (chọn nhãn khi thêm nội dung)
+  // cố ý KHÔNG khai ở đây — giống 'pkidpick', mặc định nằm trên 1 hàng ngang.
+  plabel: 1,
 };
 
 /**

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAllowedSources } from '@/hooks/useAllowedSources';
+import { useContentLabels } from '@/hooks/useContentLabels';
 import { useToast } from '@/components/common/Toast';
 import { isSafeHttpsUrl, sanitizeTitle } from '@/utils/urlValidator';
 import { extractPlaylistId, extractVideoId, extractChannelRef } from '@/utils/youtubeParser';
@@ -64,13 +65,24 @@ function profileBadge(profileId: string | null) {
  */
 export function AddSourceForm() {
   const { sources, loading, addSource, updateSource, removeSource } = useAllowedSources('all');
+  const { labels, addLabel, renameLabel, removeLabel } = useContentLabels();
   const { showToast } = useToast();
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [selectedKids, setSelectedKids] = useState<string[]>([PROFILE_IDS.MINA]);
+  const [selectedLabelIds, setSelectedLabelIds] = useState<string[]>([]);
   const [urlHint, setUrlHint] = useState<{ text: string; ok: boolean } | null>(null);
   const [resolving, setResolving] = useState(false);
+
+  // Riêng cho khối "Quản lý nhãn": tên nhãn mới đang gõ dở, và nhãn đang sửa tên (nếu có).
+  const [newLabelName, setNewLabelName] = useState('');
+  const [renamingLabelId, setRenamingLabelId] = useState<string | null>(null);
+  const [renameDraft, setRenameDraft] = useState('');
+
+  const toggleLabel = (id: string) => {
+    setSelectedLabelIds((prev) => (prev.includes(id) ? prev.filter((l) => l !== id) : [...prev, id]));
+  };
 
   // Riêng cho loại "Playlist tự tạo": ghép nhiều video đơn lẻ lại thành 1 danh sách.
   const [draftItems, setDraftItems] = useState<CustomPlaylistItem[]>([]);
@@ -198,6 +210,7 @@ export function AddSourceForm() {
     setEditingId(null);
     setForm(emptyForm);
     setSelectedKids([PROFILE_IDS.MINA]);
+    setSelectedLabelIds([]);
     setUrlHint(null);
     setDraftItems([]);
     setDraftVideoUrl('');
@@ -207,9 +220,46 @@ export function AddSourceForm() {
     setEditingId(s.id);
     setForm({ type: s.type, title: s.title, url: s.url, thumbnail: s.thumbnail });
     setSelectedKids(s.profile_id ? [s.profile_id] : [PROFILE_IDS.MINA, PROFILE_IDS.COM]);
+    setSelectedLabelIds(s.label_ids ?? []);
     setUrlHint(null);
     setDraftItems(s.type === 'custom_playlist' ? s.items : []);
     setDraftVideoUrl('');
+  };
+
+  const onAddLabel = async () => {
+    const clean = newLabelName.trim();
+    if (!clean) return;
+    const ok = await addLabel(clean);
+    if (ok) {
+      showToast(`🏷 Đã thêm nhãn "${clean}"`);
+      setNewLabelName('');
+    } else showToast('Có lỗi khi thêm nhãn — thử lại nhé.');
+  };
+
+  const startRenameLabel = (id: string, currentName: string) => {
+    setRenamingLabelId(id);
+    setRenameDraft(currentName);
+  };
+
+  const submitRenameLabel = async () => {
+    if (!renamingLabelId) return;
+    const clean = renameDraft.trim();
+    if (!clean) return;
+    const ok = await renameLabel(renamingLabelId, clean);
+    if (ok) showToast('💾 Đã đổi tên nhãn');
+    else showToast('Có lỗi khi đổi tên — thử lại nhé.');
+    setRenamingLabelId(null);
+  };
+
+  const onDeleteLabel = async (id: string, name: string) => {
+    if (!window.confirm(`Xoá nhãn "${name}"? Nhãn này sẽ tự gỡ khỏi mọi nội dung đang gán.`)) return;
+    const label = labels.find((l) => l.id === id);
+    if (!label) return;
+    const ok = await removeLabel(label);
+    if (ok) {
+      showToast(`🗑 Đã xoá nhãn "${name}"`);
+      setSelectedLabelIds((prev) => prev.filter((l) => l !== id));
+    } else showToast('Có lỗi khi xoá nhãn — thử lại nhé.');
   };
 
   const onDelete = async (s: AllowedSource) => {
@@ -246,6 +296,7 @@ export function AddSourceForm() {
       url: isCustom ? CUSTOM_PLAYLIST_URL : form.url,
       thumbnail: isCustom ? form.thumbnail ?? draftItems[0]?.thumbnail ?? null : form.thumbnail,
       items: isCustom ? draftItems : [],
+      labelIds: selectedLabelIds,
     };
 
     const ok = isEditing ? await updateSource(editingId as string, payload) : await addSource(payload);
@@ -259,6 +310,97 @@ export function AddSourceForm() {
 
   return (
     <>
+      <div className="settings-card" style={{ maxWidth: 480 }}>
+        <h4>🏷 Quản lý nhãn</h4>
+        <p style={{ fontSize: 12.5, opacity: 0.65, margin: '-8px 0 16px' }}>
+          Gán nhãn cho video/playlist ở form bên dưới để dễ phân loại. "Ưu tiên" đẩy nội
+          dung lên đầu mỗi mục ở Trang chủ; "Ẩn" tạm giấu nội dung khỏi Trang chủ.
+        </p>
+        <div className="added-list">
+          {labels.map((l) => (
+            <div className="added-item" key={l.id} style={{ justifyContent: 'space-between' }}>
+              {renamingLabelId === l.id ? (
+                <div style={{ display: 'flex', gap: 8, flex: 1, minWidth: 0 }}>
+                  <input
+                    data-region="plabel"
+                    tabIndex={0}
+                    value={renameDraft}
+                    onChange={(e) => setRenameDraft(e.target.value)}
+                    style={{ flex: 1 }}
+                    autoFocus
+                  />
+                  <button className="icon-btn" data-region="plabel" tabIndex={0} title="Lưu" onClick={submitRenameLabel}>
+                    ✓
+                  </button>
+                  <button
+                    className="icon-btn"
+                    data-region="plabel"
+                    tabIndex={0}
+                    title="Huỷ"
+                    onClick={() => setRenamingLabelId(null)}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', minWidth: 0 }}>
+                    <span>{l.is_priority ? '⭐' : l.is_hidden ? '🙈' : '🏷'}</span>
+                    <span className="ellip">{l.name}</span>
+                    {l.is_builtin && (
+                      <span style={{ fontSize: 11, opacity: 0.55, flexShrink: 0 }}>(đặc biệt)</span>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                    <button
+                      className="icon-btn"
+                      data-region="plabel"
+                      tabIndex={0}
+                      title="Đổi tên"
+                      onClick={() => startRenameLabel(l.id, l.name)}
+                    >
+                      ✏️
+                    </button>
+                    {!l.is_builtin && (
+                      <button
+                        className="icon-btn"
+                        data-region="plabel"
+                        tabIndex={0}
+                        title="Xoá"
+                        onClick={() => onDeleteLabel(l.id, l.name)}
+                      >
+                        🗑
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+          <input
+            data-region="plabel"
+            tabIndex={0}
+            value={newLabelName}
+            onChange={(e) => setNewLabelName(e.target.value)}
+            placeholder="Tên nhãn mới, VD: Nhạc thiếu nhi"
+            style={{ flex: 1 }}
+          />
+          <button
+            type="button"
+            className="add-window-btn"
+            style={{ flexShrink: 0 }}
+            data-region="plabel"
+            tabIndex={0}
+            disabled={!newLabelName.trim()}
+            onClick={onAddLabel}
+          >
+            ➕ Thêm nhãn
+          </button>
+        </div>
+      </div>
+
       <div className="settings-card" style={{ maxWidth: 480 }}>
         <h4>{isEditing ? '✏️ Sửa nội dung' : '➕ Thêm nội dung mới'}</h4>
         <p style={{ fontSize: 12.5, opacity: 0.65, margin: '-8px 0 16px' }}>
@@ -451,6 +593,28 @@ export function AddSourceForm() {
             Chọn cả 2 nếu nội dung phù hợp với cả hai bé.
           </div>
         </div>
+
+        {labels.length > 0 && (
+          <div className="form-row">
+            <label>Nhãn (không bắt buộc)</label>
+            <div className="day-pills">
+              {labels.map((l) => (
+                <div
+                  key={l.id}
+                  className={`day-pill ${selectedLabelIds.includes(l.id) ? 'on' : ''}`}
+                  data-region="plabelpick"
+                  tabIndex={0}
+                  onClick={() => toggleLabel(l.id)}
+                >
+                  {l.is_priority ? '⭐' : l.is_hidden ? '🙈' : '🏷'} {l.name}
+                </div>
+              ))}
+            </div>
+            <div className="hint" style={{ opacity: 0.6, height: 'auto', marginTop: 6 }}>
+              Chọn được nhiều nhãn cùng lúc — tạo/đổi tên/xoá nhãn ở khối "🏷 Quản lý nhãn" phía trên.
+            </div>
+          </div>
+        )}
 
         <div style={{ display: 'flex', gap: 10 }}>
           <button className="submit-btn" data-region="psubmit" tabIndex={0} onClick={submit}>

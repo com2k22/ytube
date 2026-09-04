@@ -350,6 +350,17 @@ body {
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
 .card-sub { font-size: 13.5px; opacity: 0.65; padding: 5px 16px 18px; }
+/* Nhãn (Học tập/Giải trí/Ưu tiên...) — hiện thành ô nhỏ bo tròn, CÙNG HÀNG với chữ "Đã
+   xem.."/"Playlist"... ngay trước nó (xem PlaylistCard.tsx: card-labels nằm trong card-sub).
+   opacity:1 riêng cho card-labels vì .card-sub đang mờ đi 0.65 — nhãn cần rõ hơn chữ phụ. */
+.card-labels { opacity: 1; }
+.label-chip {
+  display: inline-block; margin-left: 6px; padding: 2px 9px; border-radius: 999px;
+  font-size: 11px; font-weight: 800; background: rgba(255, 255, 255, 0.16); color: inherit;
+  vertical-align: middle; white-space: nowrap;
+}
+/* Nhãn "Ưu tiên" nổi bật hẳn bằng màu riêng (vàng), khác với các nhãn thường. */
+.label-chip-priority { background: #ffb020; color: #14151a; }
 
 .channel-shelf .channel-item {
   box-sizing: border-box;
@@ -613,6 +624,7 @@ body {
    dễ đọc hơn cả tăng cỡ chữ. Dòng phụ cũng bớt mờ đi (0.6 → 0.75) cho rõ. */
 [data-tv] .card-title { padding: 16px 6px 0; font-size: 36px; font-weight: 900; line-height: 1.26; }
 [data-tv] .card-sub { font-size: 26px; font-weight: 700; padding: 8px 16px 0; opacity: 0.75; }
+[data-tv] .label-chip { font-size: 18px; padding: 4px 16px; margin-left: 12px; }
 /* Thời lượng nằm GÓC DƯỚI PHẢI của ảnh (đúng như YouTube), thay vì góc trên phải —
    vừa quen mắt hơn, vừa tránh đè lên chiếc nơ 🎀 của theme Chibi ở góc trên phải. */
 [data-tv] .duration { font-size: 22px; font-weight: 800; padding: 6px 14px; border-radius: 10px; top: auto; bottom: 16px; right: 14px; }
@@ -779,6 +791,7 @@ body {
   .grid3 { grid-template-columns: 1fr; gap: 16px; }
   .card-title { font-size: 15px; }
   .card-sub { font-size: 12px; }
+  .label-chip { font-size: 9.5px; padding: 1px 7px; margin-left: 5px; }
   .channel-shelf .channel-item { width: 96px; }
   .channel-avatar { width: 72px; height: 72px; font-size: 30px; }
   .channel-name { font-size: 15px; }

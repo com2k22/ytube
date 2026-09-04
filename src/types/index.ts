@@ -32,6 +32,27 @@ export interface AllowedSource {
   thumbnail: string | null;
   /** Chỉ dùng khi type = 'custom_playlist' — danh sách video do phụ huynh tự ghép. */
   items: CustomPlaylistItem[];
+  /** id các nhãn đã gán (xem ContentLabel bên dưới) — [] = chưa gán nhãn nào. */
+  label_ids: string[];
+  created_at: string;
+}
+
+/**
+ * ContentLabel — 1 nhãn dùng để gán cho video/playlist đã thêm (VD: "Học tập", "Giải
+ * trí"...), xem supabase/010_content_labels.sql.
+ *
+ * 2 nhãn có sẵn giữ HÀNH VI ĐẶC BIỆT cố định (is_builtin = true, không xoá được):
+ *  - is_priority: nội dung gán nhãn này hiện ĐẦU TIÊN trong mỗi mục ở Trang chủ.
+ *  - is_hidden: nội dung gán nhãn này KHÔNG hiện ở Trang chủ nữa (vẫn xem được nếu vào
+ *    thẳng trang Kênh chứa nó).
+ * Nhãn khác (kể cả do phụ huynh tự đặt tên) chỉ là nhãn mô tả thường.
+ */
+export interface ContentLabel {
+  id: string;
+  name: string;
+  is_priority: boolean;
+  is_hidden: boolean;
+  is_builtin: boolean;
   created_at: string;
 }
 

@@ -50,6 +50,8 @@ export function useAllowedSources(scope: string | 'all' | null) {
     thumbnail?: string | null;
     /** Chỉ cần khi type = 'custom_playlist'. */
     items?: CustomPlaylistItem[];
+    /** id các nhãn đã gán (xem useContentLabels.ts) — bỏ trống = chưa gán nhãn nào. */
+    labelIds?: string[];
   }) => {
     const { error } = await supabase.from('allowed_sources').insert({
       profile_id: input.profileId,
@@ -58,6 +60,7 @@ export function useAllowedSources(scope: string | 'all' | null) {
       url: input.url,
       thumbnail: input.thumbnail ?? null,
       items: input.items ?? [],
+      label_ids: input.labelIds ?? [],
     });
     if (error) {
       console.error('[Ytube] Không thêm được nguồn:', error.message);
@@ -87,6 +90,8 @@ export function useAllowedSources(scope: string | 'all' | null) {
       thumbnail?: string | null;
       /** Chỉ cần khi type = 'custom_playlist'. */
       items?: CustomPlaylistItem[];
+      /** id các nhãn đã gán (xem useContentLabels.ts) — bỏ trống = xoá hết nhãn đang gán. */
+      labelIds?: string[];
     }
   ) => {
     const { error } = await supabase
@@ -98,6 +103,7 @@ export function useAllowedSources(scope: string | 'all' | null) {
         url: input.url,
         thumbnail: input.thumbnail ?? null,
         items: input.items ?? [],
+        label_ids: input.labelIds ?? [],
       })
       .eq('id', id);
     if (error) {

@@ -3,26 +3,48 @@ import { ListVideo, Clapperboard, Tv, PlayCircle } from 'lucide-react';
 import { useProfileContext } from '@/context/ProfileContext';
 import { useAllowedSources } from '@/hooks/useAllowedSources';
 import { useWatchProgress } from '@/hooks/useWatchProgress';
+import { useContentLabels } from '@/hooks/useContentLabels';
 import { PlaylistCard } from '@/components/common/PlaylistCard';
 import { extractVideoId } from '@/utils/youtubeParser';
-import type { AllowedSource } from '@/types';
+import type { AllowedSource, ContentLabel } from '@/types';
 
 /** Trang chủ — 4 khu: Tiếp tục xem / Danh sách / Video đề xuất / Kênh yêu thích. */
 export function HomePage() {
   const { activeProfile } = useProfileContext();
   const { sources, loading } = useAllowedSources(activeProfile?.id ?? null);
   const { summarizeSource } = useWatchProgress(activeProfile?.id ?? null);
+  const { labels: allLabels } = useContentLabels();
   const navigate = useNavigate();
 
   if (!activeProfile) return null;
 
-  const playable = sources.filter(
-    (s) => s.type === 'youtube_playlist' || s.type === 'youtube_video' || s.type === 'direct_url' || s.type === 'custom_playlist'
-  );
-  const channels = sources.filter((s) => s.type === 'youtube_channel');
+  const hiddenLabelId = allLabels.find((l) => l.is_hidden)?.id ?? null;
+  const priorityLabelId = allLabels.find((l) => l.is_priority)?.id ?? null;
+  /** Nhãn thật (đối tượng đầy đủ) đã gán cho 1 nguồn — bỏ qua nhãn Ẩn (không cần hiện chip
+      cho nhãn đó, xem PlaylistCard.tsx) và bỏ qua id nhãn "ma" (đã xoá nhưng lỡ còn sót). */
+  const labelsOf = (s: AllowedSource): ContentLabel[] =>
+    s.label_ids.map((id) => allLabels.find((l) => l.id === id)).filter((l): l is ContentLabel => !!l && !l.is_hidden);
+  const isHidden = (s: AllowedSource) => !!hiddenLabelId && s.label_ids.includes(hiddenLabelId);
+  const isPriority = (s: AllowedSource) => !!priorityLabelId && s.label_ids.includes(priorityLabelId);
+  /** Sắp nội dung gán nhãn "Ưu tiên" lên ĐẦU mỗi mục — giữ nguyên thứ tự tương đối giữa các
+      video còn lại (Array.prototype.sort ổn định), chỉ kéo nhóm Ưu tiên lên trước. */
+  const sortPriorityFirst = <T,>(items: T[], getSource: (item: T) => AllowedSource): T[] =>
+    [...items].sort((a, b) => Number(isPriority(getSource(b))) - Number(isPriority(getSource(a))));
+
+  const playable = sources
+    .filter(
+      (s) =>
+        s.type === 'youtube_playlist' || s.type === 'youtube_video' || s.type === 'direct_url' || s.type === 'custom_playlist'
+    )
+    // Nhãn "Ẩn" — tạm ẩn khỏi Trang chủ (vẫn xem được nếu vào thẳng trang Kênh chứa nó).
+    .filter((s) => !isHidden(s));
+  const channels = sources.filter((s) => s.type === 'youtube_channel').filter((s) => !isHidden(s));
 
   const withProgress = playable.map((s) => ({ source: s, progress: summarizeSource(s.id) }));
-  const continuing = withProgress.filter((x) => x.progress.inProgress);
+  const continuing = sortPriorityFirst(
+    withProgress.filter((x) => x.progress.inProgress),
+    (x) => x.source
+  );
 
   // Nội dung đang "xem dở" ở khối Tiếp tục xem VẪN hiện tiếp ở khối Playlist/Video đề xuất
   // bên dưới (không loại trừ) — để bé dễ tìm lại kể cả khi đã cuộn qua khối đầu.
@@ -33,15 +55,21 @@ export function HomePage() {
     sources.filter((s) => s.type === 'custom_playlist').flatMap((s) => s.items.map((it) => it.videoId))
   );
 
-  const recommendedPlaylists = playable.filter((s) => s.type === 'youtube_playlist' || s.type === 'custom_playlist');
-  const recommendedVideos = playable.filter((s) => {
-    if (s.type === 'direct_url') return true;
-    if (s.type === 'youtube_video') {
-      const vid = extractVideoId(s.url);
-      return !vid || !videoIdsInCustomPlaylists.has(vid);
-    }
-    return false;
-  });
+  const recommendedPlaylists = sortPriorityFirst(
+    playable.filter((s) => s.type === 'youtube_playlist' || s.type === 'custom_playlist'),
+    (s) => s
+  );
+  const recommendedVideos = sortPriorityFirst(
+    playable.filter((s) => {
+      if (s.type === 'direct_url') return true;
+      if (s.type === 'youtube_video') {
+        const vid = extractVideoId(s.url);
+        return !vid || !videoIdsInCustomPlaylists.has(vid);
+      }
+      return false;
+    }),
+    (s) => s
+  );
 
   const openSource = (source: AllowedSource) => {
     if (source.type === 'youtube_playlist' || source.type === 'custom_playlist') {
@@ -96,6 +124,7 @@ export function HomePage() {
                 region="continue"
                 inProgress
                 progressPercent={progress.percent}
+                labels={labelsOf(source)}
                 onClick={() => openSource(source)}
               />
             ))}
@@ -121,6 +150,7 @@ export function HomePage() {
                 thumbnail={source.thumbnail}
                 type={source.type}
                 region="playlistrec"
+                labels={labelsOf(source)}
                 onClick={() => openSource(source)}
               />
             ))}
@@ -141,6 +171,7 @@ export function HomePage() {
                 thumbnail={source.thumbnail}
                 type={source.type}
                 region="videorec"
+                labels={labelsOf(source)}
                 onClick={() => openSource(source)}
               />
             ))}
