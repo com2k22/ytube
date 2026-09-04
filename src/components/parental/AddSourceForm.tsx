@@ -311,8 +311,12 @@ export function AddSourceForm() {
   };
 
   return (
-    <>
-      <div className="settings-card" style={{ maxWidth: 480 }}>
+    // "parent-cols": trên máy tính chia 2 cột — form thêm nội dung + quản lý nhãn (trái),
+    // danh sách nội dung đã thêm (phải, cần chỗ rộng để đọc). Trên điện thoại/TV không đổi
+    // gì (vẫn xếp trên-xuống-dưới đúng thứ tự cũ) — xem giải thích ở theme.css.
+    <div className="parent-cols">
+      <div className="col col-form">
+      <div className="settings-card">
         <h4>🏷 Quản lý nhãn</h4>
         <p style={{ fontSize: 12.5, opacity: 0.65, margin: '-8px 0 16px' }}>
           Gán nhãn cho video/playlist ở form bên dưới để dễ phân loại. "Ưu tiên" đẩy nội
@@ -403,7 +407,7 @@ export function AddSourceForm() {
         </div>
       </div>
 
-      <div className="settings-card" style={{ maxWidth: 480 }}>
+      <div className="settings-card">
         <h4>{isEditing ? '✏️ Sửa nội dung' : '➕ Thêm nội dung mới'}</h4>
         <p style={{ fontSize: 12.5, opacity: 0.65, margin: '-8px 0 16px' }}>
           Chỉ nội dung trong danh sách này bé mới xem được.
@@ -629,8 +633,10 @@ export function AddSourceForm() {
           )}
         </div>
       </div>
+      </div>
 
-      <div className="settings-card" style={{ maxWidth: 640 }}>
+      <div className="col col-list">
+      <div className="settings-card">
         <h4>📋 Nội dung đã thêm ({sources.length})</h4>
         {loading && <p style={{ fontSize: 13, opacity: 0.6 }}>Đang tải...</p>}
         {!loading && sources.length === 0 && (
@@ -677,6 +683,7 @@ export function AddSourceForm() {
           );
         })}
       </div>
-    </>
+      </div>
+    </div>
   );
 }

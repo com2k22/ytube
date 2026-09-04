@@ -1432,3 +1432,64 @@ body {
   /* Chừa chỗ cho thanh dưới đáy, không thì phần cuối trang bị nó che mất. */
   .main { padding-bottom: 96px; }
 }
+
+/* =====================================================================
+   KHU BỐ MẸ TRÊN MÁY TÍNH (ParentDashboardPage) — màn rộng, KHÔNG áp dụng cho TV.
+   =====================================================================
+   Vì sao phải chặn riêng [data-tv]: màn hình TV thực tế CŨNG rộng (1920/1280px) nên lọt
+   luôn vào điều kiện "min-width" bên dưới nếu không chặn — mà giao diện menu dọc/nhiều cột
+   ở đây chỉ hợp với chuột+bàn phím, dùng điều khiển TV (D-pad) sẽ rất khó bấm. `data-tv`
+   KHÔNG dựa vào kích thước màn hình (xem main.tsx) nên dùng được để phân biệt chắc chắn:
+   TV thật luôn có data-tv, máy tính/laptop thì không — mọi luật trong khối này đều bọc
+   trong ":root:not([data-tv])" để CHỈ áp dụng cho máy tính, tuyệt đối không đụng tới TV.
+   ===================================================================== */
+@media (min-width: 1000px) {
+  /* --- Menu dọc bên trái thay cho hàng tab ngang --- */
+  :root:not([data-tv]) .parent-layout { display: flex; align-items: flex-start; gap: 32px; }
+  :root:not([data-tv]) .parent-tabs {
+    flex-direction: column;
+    width: 230px;
+    flex-shrink: 0;
+    gap: 6px;
+    margin: 8px 0 0;
+    position: sticky;
+    top: 24px;
+  }
+  :root:not([data-tv]) .tab-btn { width: 100%; text-align: left; padding: 13px 18px; }
+  :root:not([data-tv]) .parent-main { flex: 1; min-width: 0; }
+
+  /* --- Chia 2 cột: form nhập liệu bên trái, danh sách/trạng thái bên phải — đỡ phải cuộn
+     dài như trên điện thoại. .col-form luôn đứng bên TRÁI, .col-list bên PHẢI, BẤT KỂ thứ
+     tự thật trong mã nguồn (dùng "order" của CSS Grid) — nhờ vậy điện thoại/TV vẫn giữ
+     đúng thứ tự trên-xuống-dưới như cũ, không bị đổi hành vi ngoài ý muốn. */
+  :root:not([data-tv]) .parent-cols {
+    display: grid;
+    grid-template-columns: minmax(340px, 460px) 1fr;
+    gap: 28px;
+    align-items: start;
+  }
+  :root:not([data-tv]) .parent-cols .col { min-width: 0; }
+  :root:not([data-tv]) .parent-cols .col-form { order: 1; }
+  :root:not([data-tv]) .parent-cols .col-list { order: 2; }
+
+  /* --- Danh sách nhiều thẻ cùng loại (khu Tài khoản) xếp dạng lưới thay vì xếp chồng dài
+     xuống dưới. --- */
+  :root:not([data-tv]) .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 20px;
+    align-items: start;
+  }
+
+  /* --- Chữ/khoảng cách trong form nhỉnh hơn 1 chút so với cỡ điện thoại mặc định — đọc
+     thoải mái hơn trên màn hình lớn, KHÔNG to bằng cỡ TV (xem [data-tv] ở trên, TV xem xa
+     hơn hẳn máy tính nên cần chữ to hơn máy tính rất nhiều). Chỉ áp dụng bên trong trang
+     Khu Bố mẹ (.parent-page), không đụng tới trang khác. */
+  :root:not([data-tv]) .parent-page .form-row label { font-size: 13px; }
+  :root:not([data-tv]) .parent-page .form-row select,
+  :root:not([data-tv]) .parent-page .form-row input { font-size: 14.5px; padding: 11px 14px; }
+  :root:not([data-tv]) .parent-page .submit-btn { font-size: 15px; padding: 13px; }
+  :root:not([data-tv]) .parent-page .add-window-btn { font-size: 13.5px; padding: 11px 18px; }
+  :root:not([data-tv]) .parent-page .settings-card { padding: 24px 26px; }
+  :root:not([data-tv]) .parent-page .greet { font-size: 26px; }
+}

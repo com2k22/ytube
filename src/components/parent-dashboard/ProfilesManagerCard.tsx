@@ -89,7 +89,11 @@ export function ProfilesManagerCard() {
   };
 
   return (
-    <div>
+    // "parent-cols": trên máy tính chia 2 cột — danh sách bé (phải) + form thêm/sửa (trái).
+    // Thứ tự trong mã nguồn giữ NGUYÊN như bản cũ (danh sách trước, form sau) để điện
+    // thoại/TV không đổi gì — "form bên trái" trên máy tính chỉ là CSS "order" (theme.css).
+    <div className="parent-cols">
+      <div className="col col-list">
       <div className="settings-card">
         <h4>👶 Hồ sơ các bé</h4>
         <p style={{ opacity: 0.65, margin: '-6px 0 16px', fontSize: 12.5, lineHeight: 1.5 }}>
@@ -109,7 +113,9 @@ export function ProfilesManagerCard() {
           </div>
         ))}
       </div>
+      </div>
 
+      <div className="col col-form">
       <div className="settings-card" style={{ marginTop: 16 }}>
         <h4>{editingId ? '✏️ Sửa hồ sơ' : '➕ Thêm bé mới'}</h4>
 
@@ -153,6 +159,7 @@ export function ProfilesManagerCard() {
             </button>
           )}
         </div>
+      </div>
       </div>
     </div>
   );
