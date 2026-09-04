@@ -1,3 +1,4 @@
+import { CircleDot, Square, Undo2, Hourglass, Clock } from 'lucide-react';
 import { useWatchSession } from '@/hooks/useWatchSession';
 import { useToast } from '@/components/common/Toast';
 
@@ -18,8 +19,8 @@ export function SessionLiveCard({ profileId, profileLabel }: Props) {
   if (!session || !session.is_active) {
     return (
       <div className="settings-card">
-        <h4>🔴 Phiên xem hiện tại</h4>
-        <span style={{ opacity: 0.6 }}>Hiện không có phiên xem nào đang diễn ra.</span>
+        <h4><CircleDot className="icon icon-lead" aria-hidden="true" /> Phiên xem hiện tại</h4>
+        <span style={{ opacity: 0.6 }}>Không có phiên xem nào đang diễn ra.</span>
       </div>
     );
   }
@@ -28,7 +29,7 @@ export function SessionLiveCard({ profileId, profileLabel }: Props) {
 
   return (
     <div className="settings-card">
-      <h4>🔴 Phiên xem hiện tại</h4>
+      <h4><CircleDot className="icon icon-lead" aria-hidden="true" /> Phiên xem hiện tại</h4>
       <div className="session-live">
         <div style={{ width: '100%' }}>
           <div>
@@ -36,8 +37,8 @@ export function SessionLiveCard({ profileId, profileLabel }: Props) {
             {elapsedMin} phút
           </div>
           {session.end_after_current && (
-            <div style={{ fontSize: 12.5, opacity: 0.7, marginTop: 6 }}>
-              🕒 Sẽ tự kết thúc ngay khi xem xong video hiện tại
+            <div style={{ fontSize: 12.5, opacity: 0.7, marginTop: 6, display: 'flex', alignItems: 'center' }}>
+              <Clock className="icon icon-lead" aria-hidden="true" /> Sẽ tự kết thúc khi xem xong video này
             </div>
           )}
           <div style={{ display: 'flex', gap: 10, marginTop: 12, flexWrap: 'wrap' }}>
@@ -47,10 +48,11 @@ export function SessionLiveCard({ profileId, profileLabel }: Props) {
               className="stop-btn"
               onClick={async () => {
                 await stopNow(session);
-                showToast(`⏹ Đã kết thúc phiên xem của ${profileLabel}`);
+                showToast(`Đã kết thúc phiên xem của ${profileLabel}`);
               }}
             >
-              ⏹ Kết thúc phiên xem ngay
+              <Square className="icon icon-lead" aria-hidden="true" />
+              Kết thúc phiên xem ngay
             </button>
             <button
               data-region="psession"
@@ -60,12 +62,20 @@ export function SessionLiveCard({ profileId, profileLabel }: Props) {
                 await toggleStopAfterCurrent(session);
                 showToast(
                   session.end_after_current
-                    ? '↩️ Đã huỷ lịch tự tắt'
-                    : `⏳ Sẽ tự tắt sau khi ${profileLabel} xem xong video này`
+                    ? 'Đã huỷ lịch tự tắt'
+                    : `Sẽ tự tắt sau khi ${profileLabel} xem xong video này`
                 );
               }}
             >
-              {session.end_after_current ? '↩️ Huỷ lịch tắt' : '⏳ Xem xong phiên rồi tắt'}
+              {session.end_after_current ? (
+                <>
+                  <Undo2 className="icon icon-lead" aria-hidden="true" /> Huỷ lịch tắt
+                </>
+              ) : (
+                <>
+                  <Hourglass className="icon icon-lead" aria-hidden="true" /> Xem xong phiên rồi tắt
+                </>
+              )}
             </button>
           </div>
         </div>

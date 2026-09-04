@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { KeyRound, Save, X } from 'lucide-react';
 import { useParentalPin } from '@/hooks/useParentalPin';
 import { useToast } from '@/components/common/Toast';
 
@@ -32,7 +33,7 @@ export function ChangePinCard() {
     const ok = await changePin(oldPin, newPin);
     setSaving(false);
     if (ok) {
-      showToast('🔑 Đã đổi mã PIN thành công');
+      showToast('Đã đổi mã PIN thành công');
       setOldPin('');
       setNewPin('');
       setConfirmPin('');
@@ -43,9 +44,9 @@ export function ChangePinCard() {
 
   return (
     <div className="settings-card" style={{ maxWidth: 420 }}>
-      <h4>🔑 Đổi mã PIN phụ huynh</h4>
+      <h4><KeyRound className="icon icon-lead" aria-hidden="true" /> Đổi mã PIN phụ huynh</h4>
       <p style={{ fontSize: 12.5, opacity: 0.65, margin: '-6px 0 16px' }}>
-        Cần nhập đúng mã PIN hiện tại trước khi đổi sang mã mới, để chỉ bố mẹ mới đổi được.
+        Cần nhập đúng mã PIN hiện tại trước khi đổi.
       </p>
 
       <div className="form-row">
@@ -88,7 +89,11 @@ export function ChangePinCard() {
         />
       </div>
 
-      {error && <div className="hint bad-text" style={{ height: 'auto', marginBottom: 8 }}>✕ {error}</div>}
+      {error && (
+        <div className="hint bad-text" style={{ height: 'auto', marginBottom: 8, display: 'flex', alignItems: 'center' }}>
+          <X className="icon icon-lead" aria-hidden="true" /> {error}
+        </div>
+      )}
 
       <button
         className="submit-btn"
@@ -98,7 +103,13 @@ export function ChangePinCard() {
         disabled={saving}
         onClick={submit}
       >
-        {saving ? 'Đang lưu...' : '💾 Đổi mã PIN'}
+        {saving ? (
+          'Đang lưu...'
+        ) : (
+          <>
+            <Save className="icon icon-lead" aria-hidden="true" /> Đổi mã PIN
+          </>
+        )}
       </button>
     </div>
   );

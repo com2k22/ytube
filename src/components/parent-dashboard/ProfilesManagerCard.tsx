@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Baby, Pencil, Trash2, Plus, Check } from 'lucide-react';
 import { useProfileContext } from '@/context/ProfileContext';
 import { useToast } from '@/components/common/Toast';
 import { supabase } from '@/lib/supabaseClient';
@@ -84,7 +85,7 @@ export function ProfilesManagerCard() {
       const remaining = profiles.find((p) => p.id !== id);
       if (remaining) switchProfile(remaining.id);
     }
-    showToast(`🗑 Đã xoá hồ sơ "${name}"`);
+    showToast(`Đã xoá hồ sơ "${name}"`);
     await refreshProfiles();
   };
 
@@ -95,9 +96,9 @@ export function ProfilesManagerCard() {
     <div className="parent-cols">
       <div className="col col-list">
       <div className="settings-card">
-        <h4>👶 Hồ sơ các bé</h4>
+        <h4><Baby className="icon icon-lead" aria-hidden="true" /> Hồ sơ các bé</h4>
         <p style={{ opacity: 0.65, margin: '-6px 0 16px', fontSize: 12.5, lineHeight: 1.5 }}>
-          Thêm/bớt/đổi tên hồ sơ bé — Trang chủ, whitelist và báo cáo tuần tự cập nhật theo.
+          Thêm/bớt/đổi tên hồ sơ bé.
         </p>
 
         {profiles.map((p) => (
@@ -105,10 +106,10 @@ export function ProfilesManagerCard() {
             <span style={{ fontSize: 22, marginRight: 10 }}>{profileEmoji(p)}</span>
             <div style={{ flex: 1 }}>{p.name}</div>
             <button className="icon-btn" data-region="padded" tabIndex={0} title="Sửa" onClick={() => startEdit(p.id, p.name, p.avatar)}>
-              ✏️
+              <Pencil className="icon" aria-hidden="true" />
             </button>
             <button className="icon-btn" data-region="padded" tabIndex={0} title="Xoá" onClick={() => onDelete(p.id, p.name)}>
-              🗑️
+              <Trash2 className="icon" aria-hidden="true" />
             </button>
           </div>
         ))}
@@ -117,7 +118,17 @@ export function ProfilesManagerCard() {
 
       <div className="col col-form">
       <div className="settings-card" style={{ marginTop: 16 }}>
-        <h4>{editingId ? '✏️ Sửa hồ sơ' : '➕ Thêm bé mới'}</h4>
+        <h4>
+          {editingId ? (
+            <>
+              <Pencil className="icon icon-lead" aria-hidden="true" /> Sửa hồ sơ
+            </>
+          ) : (
+            <>
+              <Plus className="icon icon-lead" aria-hidden="true" /> Thêm bé mới
+            </>
+          )}
+        </h4>
 
         <div className="form-row">
           <label>Tên bé</label>
@@ -151,7 +162,17 @@ export function ProfilesManagerCard() {
 
         <div style={{ display: 'flex', gap: 10 }}>
           <button className="submit-btn" style={{ width: 'auto', padding: '12px 26px' }} data-region="pkidform" tabIndex={0} disabled={saving} onClick={submit}>
-            {saving ? 'Đang lưu...' : editingId ? '💾 Lưu' : '➕ Thêm bé'}
+            {saving ? (
+              'Đang lưu...'
+            ) : editingId ? (
+              <>
+                <Check className="icon icon-lead" aria-hidden="true" /> Lưu
+              </>
+            ) : (
+              <>
+                <Plus className="icon icon-lead" aria-hidden="true" /> Thêm bé
+              </>
+            )}
           </button>
           {editingId && (
             <button className="add-window-btn" data-region="pkidform" tabIndex={0} onClick={resetForm}>

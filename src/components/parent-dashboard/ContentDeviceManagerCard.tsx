@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { Tv, Unplug } from 'lucide-react';
 import { useFamilyContentDevices } from '@/hooks/useFamilyContentDevices';
 import { useToast } from '@/components/common/Toast';
 import { getFamilyId } from '@/lib/familyId';
@@ -37,17 +38,16 @@ export function ContentDeviceManagerCard() {
       : `Ngắt ghép "${label}" khỏi gia đình? Thiết bị đó sẽ không xem được nội dung nữa cho tới khi ghép lại.`;
     if (!window.confirm(msg)) return;
     const ok = await removeDevice(id);
-    if (ok) showToast('✅ Đã ngắt ghép thiết bị');
+    if (ok) showToast('Đã ngắt ghép thiết bị');
     else showToast('Có lỗi khi ngắt ghép — thử lại nhé.');
   };
 
   return (
     <div className="settings-card" style={{ marginTop: 20 }}>
-      <h4>📺 Thiết bị đã ghép xem nội dung</h4>
+      <h4><Tv className="icon icon-lead" aria-hidden="true" /> Thiết bị đã ghép xem nội dung</h4>
       <p style={{ opacity: 0.65, margin: '-6px 0 16px', fontSize: 12.5, lineHeight: 1.5 }}>
-        Mọi TV/thiết bị đang xem được nội dung của gia đình — kể cả TV ghép bằng mã, chưa
-        từng đăng nhập Khu vực Bố mẹ. Ngắt ghép 1 thiết bị ở đây thì thiết bị đó KHÔNG xem
-        được phim nữa (khác với "Đăng xuất" ở mục trên — mục đó chỉ chặn vào Khu vực Bố mẹ).
+        Ngắt ghép 1 thiết bị thì thiết bị đó KHÔNG xem được phim nữa (khác với "Đăng xuất" ở
+        mục trên — mục đó chỉ chặn vào Khu vực Bố mẹ).
       </p>
 
       {loading ? (
@@ -72,7 +72,7 @@ export function ContentDeviceManagerCard() {
                 title="Ngắt ghép thiết bị này"
                 onClick={() => onRemove(d.id, d.label, isThisDevice)}
               >
-                🔌
+                <Unplug className="icon" aria-hidden="true" />
               </button>
             </div>
           );

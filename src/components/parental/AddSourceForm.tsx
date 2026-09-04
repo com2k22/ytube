@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Tag, Plus, Pencil, Trash2, X, Check, Search, ClipboardList, ChevronUp, ChevronDown } from 'lucide-react';
 import { useAllowedSources } from '@/hooks/useAllowedSources';
 import { useContentLabels } from '@/hooks/useContentLabels';
 import { useProfileContext } from '@/context/ProfileContext';
@@ -317,10 +318,9 @@ export function AddSourceForm() {
     <div className="parent-cols">
       <div className="col col-form">
       <div className="settings-card">
-        <h4>🏷 Quản lý nhãn</h4>
+        <h4><Tag className="icon icon-lead" aria-hidden="true" /> Quản lý nhãn</h4>
         <p style={{ fontSize: 12.5, opacity: 0.65, margin: '-8px 0 16px' }}>
-          Gán nhãn cho video/playlist ở form bên dưới để dễ phân loại. "Ưu tiên" đẩy nội
-          dung lên đầu mỗi mục ở Trang chủ; "Ẩn" tạm giấu nội dung khỏi Trang chủ.
+          Gán nhãn để dễ phân loại nội dung.
         </p>
         <div className="added-list">
           {labels.map((l) => (
@@ -336,7 +336,7 @@ export function AddSourceForm() {
                     autoFocus
                   />
                   <button className="icon-btn" data-region="plabel" tabIndex={0} title="Lưu" onClick={submitRenameLabel}>
-                    ✓
+                    <Check className="icon" aria-hidden="true" />
                   </button>
                   <button
                     className="icon-btn"
@@ -345,7 +345,7 @@ export function AddSourceForm() {
                     title="Huỷ"
                     onClick={() => setRenamingLabelId(null)}
                   >
-                    ✕
+                    <X className="icon" aria-hidden="true" />
                   </button>
                 </div>
               ) : (
@@ -365,7 +365,7 @@ export function AddSourceForm() {
                       title="Đổi tên"
                       onClick={() => startRenameLabel(l.id, l.name)}
                     >
-                      ✏️
+                      <Pencil className="icon" aria-hidden="true" />
                     </button>
                     {!l.is_builtin && (
                       <button
@@ -375,7 +375,7 @@ export function AddSourceForm() {
                         title="Xoá"
                         onClick={() => onDeleteLabel(l.id, l.name)}
                       >
-                        🗑
+                        <Trash2 className="icon" aria-hidden="true" />
                       </button>
                     )}
                   </div>
@@ -402,13 +402,23 @@ export function AddSourceForm() {
             disabled={!newLabelName.trim()}
             onClick={onAddLabel}
           >
-            ➕ Thêm nhãn
+            <Plus className="icon icon-lead" aria-hidden="true" /> Thêm nhãn
           </button>
         </div>
       </div>
 
       <div className="settings-card">
-        <h4>{isEditing ? '✏️ Sửa nội dung' : '➕ Thêm nội dung mới'}</h4>
+        <h4>
+          {isEditing ? (
+            <>
+              <Pencil className="icon icon-lead" aria-hidden="true" /> Sửa nội dung
+            </>
+          ) : (
+            <>
+              <Plus className="icon icon-lead" aria-hidden="true" /> Thêm nội dung mới
+            </>
+          )}
+        </h4>
         <p style={{ fontSize: 12.5, opacity: 0.65, margin: '-8px 0 16px' }}>
           Chỉ nội dung trong danh sách này bé mới xem được.
         </p>
@@ -450,7 +460,13 @@ export function AddSourceForm() {
                 disabled={resolving || !isSafeHttpsUrl(form.url)}
                 onClick={autoFill}
               >
-                {resolving ? 'Đang dò...' : '🔎 Dò tiêu đề từ YouTube'}
+                {resolving ? (
+                  'Đang dò...'
+                ) : (
+                  <>
+                    <Search className="icon icon-lead" aria-hidden="true" /> Dò tiêu đề từ YouTube
+                  </>
+                )}
               </button>
             )}
           </div>
@@ -496,7 +512,7 @@ export function AddSourceForm() {
                           disabled={already}
                           onClick={() => addExistingVideo(v)}
                         >
-                          {already ? '✓' : '➕'}
+                          {already ? <Check className="icon" aria-hidden="true" /> : <Plus className="icon" aria-hidden="true" />}
                         </button>
                       </div>
                     );
@@ -526,18 +542,21 @@ export function AddSourceForm() {
                 disabled={addingVideo || !draftVideoUrl.trim()}
                 onClick={addDraftVideo}
               >
-                {addingVideo ? 'Đang thêm...' : '➕ Thêm'}
+                {addingVideo ? (
+                  'Đang thêm...'
+                ) : (
+                  <>
+                    <Plus className="icon icon-lead" aria-hidden="true" /> Thêm
+                  </>
+                )}
               </button>
-            </div>
-            <div className="hint" style={{ opacity: 0.6, height: 'auto', margin: '6px 0 10px' }}>
-              Thêm từng video 1 — playlist sẽ phát theo đúng thứ tự đã ghép.
             </div>
             {draftItems.length === 0 && (
               <p style={{ fontSize: 12.5, opacity: 0.55 }}>Chưa ghép video nào.</p>
             )}
             {draftItems.length > 1 && (
               <div className="hint" style={{ opacity: 0.6, height: 'auto', margin: '0 0 6px' }}>
-                Dùng nút ▲ ▼ để sắp thứ tự — playlist sẽ phát đúng theo thứ tự này.
+                Dùng nút mũi tên để sắp thứ tự phát.
               </div>
             )}
             <div className="added-list">
@@ -558,7 +577,7 @@ export function AddSourceForm() {
                       disabled={i === 0}
                       onClick={() => moveDraftVideo(i, -1)}
                     >
-                      ▲
+                      <ChevronUp className="icon" aria-hidden="true" />
                     </button>
                     <button
                       className="icon-btn"
@@ -568,10 +587,10 @@ export function AddSourceForm() {
                       disabled={i === draftItems.length - 1}
                       onClick={() => moveDraftVideo(i, 1)}
                     >
-                      ▼
+                      <ChevronDown className="icon" aria-hidden="true" />
                     </button>
                     <button className="icon-btn" data-region="pdraft" tabIndex={0} title="Bỏ video này" onClick={() => removeDraftVideo(it.videoId)}>
-                      ✕
+                      <X className="icon" aria-hidden="true" />
                     </button>
                   </div>
                 </div>
@@ -595,9 +614,6 @@ export function AddSourceForm() {
               </div>
             ))}
           </div>
-          <div className="hint" style={{ opacity: 0.6, height: 'auto', marginTop: 6 }}>
-            Chọn hết tất cả bé nếu nội dung phù hợp với cả nhà.
-          </div>
         </div>
 
         {labels.length > 0 && (
@@ -616,15 +632,18 @@ export function AddSourceForm() {
                 </div>
               ))}
             </div>
-            <div className="hint" style={{ opacity: 0.6, height: 'auto', marginTop: 6 }}>
-              Chọn được nhiều nhãn cùng lúc — tạo/đổi tên/xoá nhãn ở khối "🏷 Quản lý nhãn" phía trên.
-            </div>
           </div>
         )}
 
         <div style={{ display: 'flex', gap: 10 }}>
           <button className="submit-btn" data-region="psubmit" tabIndex={0} onClick={submit}>
-            {isEditing ? '💾 Lưu thay đổi' : 'Thêm vào danh sách'}
+            {isEditing ? (
+              <>
+                <Check className="icon icon-lead" aria-hidden="true" /> Lưu thay đổi
+              </>
+            ) : (
+              'Thêm vào danh sách'
+            )}
           </button>
           {isEditing && (
             <button className="add-window-btn" data-region="psubmit" tabIndex={0} onClick={resetForm} style={{ flexShrink: 0 }}>
@@ -637,7 +656,7 @@ export function AddSourceForm() {
 
       <div className="col col-list">
       <div className="settings-card">
-        <h4>📋 Nội dung đã thêm ({sources.length})</h4>
+        <h4><ClipboardList className="icon icon-lead" aria-hidden="true" /> Nội dung đã thêm ({sources.length})</h4>
         {loading && <p style={{ fontSize: 13, opacity: 0.6 }}>Đang tải...</p>}
         {!loading && sources.length === 0 && (
           <p style={{ fontSize: 13, opacity: 0.6 }}>Chưa có nội dung nào — thêm ở form phía trên nhé.</p>
@@ -670,10 +689,10 @@ export function AddSourceForm() {
                     </div>
                     <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
                       <button className="icon-btn" data-region="padded" tabIndex={0} title="Sửa" onClick={() => startEdit(s)}>
-                        ✏️
+                        <Pencil className="icon" aria-hidden="true" />
                       </button>
                       <button className="icon-btn" data-region="padded" tabIndex={0} title="Xoá" onClick={() => onDelete(s)}>
-                        🗑
+                        <Trash2 className="icon" aria-hidden="true" />
                       </button>
                     </div>
                   </div>

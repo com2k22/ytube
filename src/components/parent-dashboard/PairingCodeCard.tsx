@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link2, RefreshCw, Plus } from 'lucide-react';
 import { useFamilyPairing } from '@/hooks/useFamilyPairing';
 import { useToast } from '@/components/common/Toast';
 
@@ -52,11 +53,10 @@ export function PairingCodeCard() {
 
   return (
     <div className="settings-card" style={{ marginTop: 20 }}>
-      <h4>🔗 Ghép TV mới</h4>
+      <h4><Link2 className="icon icon-lead" aria-hidden="true" /> Ghép TV mới</h4>
       <p style={{ opacity: 0.65, margin: '-6px 0 16px', fontSize: 12.5, lineHeight: 1.5 }}>
-        Cho 1 TV mới xem được nội dung của gia đình mà KHÔNG cần đăng nhập Google/email ngay
-        trên TV đó — và TV đó cũng KHÔNG tự vào được Khu vực Bố mẹ. Tạo mã ở đây, rồi sang TV
-        mới chọn "Ghép bằng mã từ điện thoại" và gõ đúng mã này.
+        Tạo mã ở đây, rồi sang TV mới chọn "Ghép bằng mã từ điện thoại" và gõ đúng mã này. TV
+        đó xem được nội dung nhưng không vào được Khu vực Bố mẹ.
       </p>
 
       {code && !expired && (
@@ -91,7 +91,17 @@ export function PairingCodeCard() {
         disabled={creating}
         onClick={onCreate}
       >
-        {creating ? 'Đang tạo...' : code ? '🔄 Tạo mã mới' : '➕ Tạo mã ghép'}
+        {creating ? (
+          'Đang tạo...'
+        ) : code ? (
+          <>
+            <RefreshCw className="icon icon-lead" aria-hidden="true" /> Tạo mã mới
+          </>
+        ) : (
+          <>
+            <Plus className="icon icon-lead" aria-hidden="true" /> Tạo mã ghép
+          </>
+        )}
       </button>
     </div>
   );

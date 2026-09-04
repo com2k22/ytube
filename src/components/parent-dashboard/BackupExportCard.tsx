@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Save, Download } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { useToast } from '@/components/common/Toast';
 import { getFamilyId } from '@/lib/familyId';
@@ -57,7 +58,7 @@ export function BackupExportCard() {
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-      showToast('💾 Đã tải file sao lưu về máy');
+      showToast('Đã tải file sao lưu về máy');
     } finally {
       setExporting(false);
     }
@@ -65,11 +66,9 @@ export function BackupExportCard() {
 
   return (
     <div className="settings-card" style={{ marginTop: 20 }}>
-      <h4>💾 Sao lưu cấu hình</h4>
+      <h4><Save className="icon icon-lead" aria-hidden="true" /> Sao lưu cấu hình</h4>
       <p style={{ opacity: 0.65, margin: '-6px 0 16px', fontSize: 12.5, lineHeight: 1.5 }}>
-        Tải về 1 file chứa toàn bộ hồ sơ các bé, whitelist nội dung, nhãn và giờ giấc hiện
-        tại — giữ lại phòng khi đổi TV hoặc cài lại app. Nên làm ở điện thoại/máy tính, trên
-        TV trình duyệt có thể không cho tải file về.
+        Tải file chứa hồ sơ, nội dung và giờ giấc hiện tại — phòng khi đổi TV hoặc cài lại app.
       </p>
       <button
         className="add-window-btn"
@@ -78,7 +77,13 @@ export function BackupExportCard() {
         disabled={exporting}
         onClick={onExport}
       >
-        {exporting ? 'Đang chuẩn bị...' : '⬇️ Xuất file sao lưu'}
+        {exporting ? (
+          'Đang chuẩn bị...'
+        ) : (
+          <>
+            <Download className="icon icon-lead" aria-hidden="true" /> Xuất file sao lưu
+          </>
+        )}
       </button>
     </div>
   );

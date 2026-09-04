@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { RefreshCw, TrendingUp, ChevronUp, ChevronDown } from 'lucide-react';
 import { useProfileContext } from '@/context/ProfileContext';
 import { useWeeklyReport, type ReportDay } from '@/hooks/useWeeklyReport';
 import { profileChartColor, profileEmoji, SOURCE_TYPE_ICON } from '@/constants';
@@ -51,7 +52,7 @@ export function WeeklyReportTab() {
       <div className="settings-card">
         <p style={{ margin: '0 0 12px' }}>{error}</p>
         <button className="add-window-btn" data-region="preport" tabIndex={0} onClick={refresh}>
-          🔄 Thử lại
+          <RefreshCw className="icon icon-lead" aria-hidden="true" /> Thử lại
         </button>
       </div>
     );
@@ -83,7 +84,7 @@ export function WeeklyReportTab() {
 
       {/* ---- Biểu đồ cột 7 ngày ---- */}
       <div className="settings-card wr-chart-card">
-        <h4>📈 Thời gian xem trong tuần (T2 → CN)</h4>
+        <h4><TrendingUp className="icon icon-lead" aria-hidden="true" /> Thời gian xem trong tuần (T2 → CN)</h4>
 
         <div className="wr-legend">
           {profiles.map((p) => (
@@ -158,7 +159,15 @@ export function WeeklyReportTab() {
           tabIndex={0}
           onClick={() => setShowTable((v) => !v)}
         >
-          {showTable ? '▲ Ẩn bảng số liệu' : '▼ Xem bảng số liệu'}
+          {showTable ? (
+            <>
+              <ChevronUp className="icon icon-lead" aria-hidden="true" /> Ẩn bảng số liệu
+            </>
+          ) : (
+            <>
+              <ChevronDown className="icon icon-lead" aria-hidden="true" /> Xem bảng số liệu
+            </>
+          )}
         </button>
 
         {/* Bảng chữ — dành cho người khó phân biệt màu, và để đọc con số chính xác mà

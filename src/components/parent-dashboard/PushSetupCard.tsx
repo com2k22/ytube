@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Bell, BellOff, CheckCircle2 } from 'lucide-react';
 import {
   disablePush,
   enablePush,
@@ -53,10 +54,9 @@ export function PushSetupCard() {
 
   return (
     <div className="settings-card">
-      <h4>🔔 Thông báo trên máy này</h4>
+      <h4><Bell className="icon icon-lead" aria-hidden="true" /> Thông báo trên máy này</h4>
       <p style={{ fontSize: 12.5, opacity: 0.7, margin: '-8px 0 14px' }}>
-        Bật để khi bé bấm "con xin thêm giờ", máy này rung báo ngay — kể cả lúc app đang đóng.
-        Mỗi điện thoại phải tự bật riêng: bật ở máy bố thì máy mẹ vẫn chưa có.
+        Báo ngay khi bé xin thêm giờ. Mỗi máy phải tự bật riêng.
       </p>
 
       {!supported && <div className="hint bad-text" style={{ height: 'auto' }}>Máy này không hỗ trợ thông báo đẩy.</div>}
@@ -95,15 +95,21 @@ export function PushSetupCard() {
             disabled={busy || blocked || iosNeedsHomeScreen}
             onClick={onEnable}
           >
-            {busy ? 'Đang bật...' : '🔔 Bật thông báo cho máy này'}
+            {busy ? (
+              'Đang bật...'
+            ) : (
+              <>
+                <Bell className="icon icon-lead" aria-hidden="true" /> Bật thông báo cho máy này
+              </>
+            )}
           </button>
         </>
       )}
 
       {supported && subscribed && (
         <>
-          <div className="hint ok-text" style={{ height: 'auto', marginBottom: 12 }}>
-            ✓ Máy này đang nhận thông báo.
+          <div className="hint ok-text" style={{ height: 'auto', marginBottom: 12, display: 'flex', alignItems: 'center' }}>
+            <CheckCircle2 className="icon icon-lead" aria-hidden="true" /> Máy này đang nhận thông báo.
           </div>
           <button
             className="add-window-btn"
@@ -112,7 +118,7 @@ export function PushSetupCard() {
             disabled={busy}
             onClick={onDisable}
           >
-            🔕 Tắt thông báo trên máy này
+            <BellOff className="icon icon-lead" aria-hidden="true" /> Tắt thông báo trên máy này
           </button>
         </>
       )}

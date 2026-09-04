@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Clock, ListPlus, Baby, BarChart3, User, Users, KeyRound, BellRing } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useProfileContext } from '@/context/ProfileContext';
 import { useTimeRules } from '@/hooks/useTimeRules';
 import { SessionLiveCard } from '@/components/parent-dashboard/SessionLiveCard';
@@ -23,13 +25,14 @@ type Tab = 'time' | 'content' | 'kids' | 'report' | 'account';
     để CSS xếp lại được thành thanh dưới đáy trên điện thoại (icon trên, chữ nhỏ dưới,
     giống hệt menu Trang chủ/Bố mẹ ở Sidebar.tsx) mà không cần đổi HTML theo từng màn hình.
     Tên rút gọn dùng chung cho MỌI cỡ màn hình (không riêng điện thoại) — đã xem demo và
-    được duyệt, ngắn gọn vẫn đủ rõ nghĩa trên máy tính/TV. */
-const TABS: { value: Tab; icon: string; label: string }[] = [
-  { value: 'time', icon: '⏰', label: 'Thời gian' },
-  { value: 'content', icon: '➕', label: 'Nội dung' },
-  { value: 'kids', icon: '👶', label: 'Hồ sơ bé' },
-  { value: 'report', icon: '📊', label: 'Báo cáo' },
-  { value: 'account', icon: '👤', label: 'Tài khoản' },
+    được duyệt, ngắn gọn vẫn đủ rõ nghĩa trên máy tính/TV.
+    Icon dùng component SVG (lucide-react), giống Sidebar.tsx — không còn emoji. */
+const TABS: { value: Tab; icon: LucideIcon; label: string }[] = [
+  { value: 'time', icon: Clock, label: 'Thời gian' },
+  { value: 'content', icon: ListPlus, label: 'Nội dung' },
+  { value: 'kids', icon: Baby, label: 'Hồ sơ bé' },
+  { value: 'report', icon: BarChart3, label: 'Báo cáo' },
+  { value: 'account', icon: User, label: 'Tài khoản' },
 ];
 
 /** Trang "Bố mẹ" — quản lý thời gian xem từ xa + thêm nội dung whitelist. Vào được là nhờ
@@ -57,7 +60,7 @@ export function ParentDashboardPage() {
         ← Quay lại
       </button>
       <div className="greet" style={{ marginTop: 20 }}>
-        👨‍👩‍👧 Khu vực Bố mẹ
+        <Users className="icon icon-lead" aria-hidden="true" /> Khu vực Bố mẹ
       </div>
 
       {/* "parent-layout": trên điện thoại/TV vẫn xếp trên-xuống-dưới như cũ (CSS mặc định
@@ -73,7 +76,9 @@ export function ParentDashboardPage() {
               tabIndex={0}
               onClick={() => setTab(t.value)}
             >
-              <span className="tab-btn-icon">{t.icon}</span>
+              <span className="tab-btn-icon">
+                <t.icon className="icon" aria-hidden="true" />
+              </span>
               <span className="tab-btn-label">{t.label}</span>
             </button>
           ))}
@@ -123,7 +128,8 @@ export function ParentDashboardPage() {
                   tabIndex={0}
                   onClick={() => setPreviewBlock(true)}
                 >
-                  🔔 Xem thử màn hình chặn
+                  <BellRing className="icon icon-lead" aria-hidden="true" />
+                  Xem thử màn hình chặn
                 </button>
               </div>
             </div>
@@ -140,11 +146,11 @@ export function ParentDashboardPage() {
               {/* Tài khoản Google đang đăng nhập trên THIẾT BỊ NÀY (thay cho PIN cũ khi vào
                   khu Bố mẹ) — xem useFamilyAuth.ts. Đăng xuất ở đây thì lần sau vào khu Bố
                   mẹ trên thiết bị này phải đăng nhập lại. */}
-              <div className="section-title" style={{ marginTop: 4 }}>
-                👤 Tài khoản gia đình
+              <div className="section-title" style={{ marginTop: 4, display: 'flex', alignItems: 'center' }}>
+                <User className="icon icon-lead" aria-hidden="true" /> Tài khoản gia đình
               </div>
               <p style={{ opacity: 0.75, margin: '4px 0 14px' }}>
-                Đang đăng nhập: {familySession?.user?.email ?? '(không rõ)'}
+                {familySession?.user?.email ?? '(không rõ)'}
               </p>
               <button
                 className="add-window-btn"
@@ -167,8 +173,8 @@ export function ParentDashboardPage() {
                 <PairingCodeCard />
                 <BackupExportCard />
                 <div>
-                  <div className="section-title" style={{ marginTop: 0 }}>
-                    🔑 Đổi PIN (cho "Cho xem ngay" / "Bỏ qua giờ nghỉ")
+                  <div className="section-title" style={{ marginTop: 0, display: 'flex', alignItems: 'center' }}>
+                    <KeyRound className="icon icon-lead" aria-hidden="true" /> Đổi PIN
                   </div>
                   <ChangePinCard />
                 </div>

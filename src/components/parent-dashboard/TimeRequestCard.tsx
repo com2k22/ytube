@@ -1,3 +1,4 @@
+import { Hand, X } from 'lucide-react';
 import { useProfileContext } from '@/context/ProfileContext';
 import { useTimeRequests } from '@/hooks/useTimeRequests';
 import { profileEmoji } from '@/constants';
@@ -29,7 +30,7 @@ export function TimeRequestCard() {
 
   return (
     <div className="settings-card request-card">
-      <h4>🙋 Con đang xin thêm giờ ({pending.length})</h4>
+      <h4><Hand className="icon icon-lead" aria-hidden="true" /> Con đang xin thêm giờ ({pending.length})</h4>
 
       {pending.map((req) => {
         const child = profiles.find((p) => p.id === req.profile_id);
@@ -64,7 +65,7 @@ export function TimeRequestCard() {
                 tabIndex={0}
                 onClick={() => deny(req.id)}
               >
-                ✕ Không
+                <X className="icon icon-lead" aria-hidden="true" /> Không
               </button>
             </div>
           </div>

@@ -441,7 +441,15 @@ body {
 .mini-profile-btn { padding: 9px 18px; border-radius: 999px; font-weight: 700; font-size: 14px; cursor: pointer; border: 2px solid transparent; }
 
 .settings-card { border-radius: 20px; padding: 20px 22px; margin-bottom: 20px; max-width: 640px; }
-.settings-card h4 { margin: 0 0 14px; font-size: 16px; font-weight: 800; }
+.settings-card h4 { margin: 0 0 14px; font-size: 16px; font-weight: 800; display: flex; align-items: center; }
+/* .icon — icon hiện đại (lucide-react, SVG) thay cho emoji trong khu Bố mẹ (h4, nút, tab).
+   Cỡ = 1em nên TỰ ĐỘNG to/nhỏ theo đúng font-size chỗ đặt nó (kể cả trên TV, điện thoại...)
+   — không cần khai riêng cho từng breakpoint như trước giờ vẫn làm cho .icon-btn/.tab-btn.
+   stroke ăn theo currentColor (mặc định của lucide-react) nên cũng tự đổi màu theo chữ. */
+.icon { width: 1em; height: 1em; flex-shrink: 0; vertical-align: -0.15em; }
+/* .icon-lead — icon đứng TRƯỚC 1 nhãn chữ (h4, nút có chữ) — chừa khoảng cách bên phải.
+   Icon đứng MỘT MÌNH trong nút tròn nhỏ (.icon-btn) thì KHÔNG dùng class này. */
+.icon-lead { margin-right: 7px; }
 .settings-row { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
 .settings-row label { font-size: 13.5px; font-weight: 700; opacity: 0.8; min-width: 170px; }
 .settings-row span { font-size: 13px; opacity: 0.65; }

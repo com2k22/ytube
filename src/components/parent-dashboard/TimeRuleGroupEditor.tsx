@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { CalendarDays, Trash2, Save, Plus } from 'lucide-react';
 import { useTimeRules } from '@/hooks/useTimeRules';
 import { useToast } from '@/components/common/Toast';
 import type { DayCode, TimeRuleGroup, TimeWindow } from '@/types';
@@ -55,26 +56,27 @@ export function TimeRuleGroupEditor() {
 
   const saveAll = async () => {
     await Promise.all(draft.map((g) => saveGroup(g)));
-    showToast('💾 Đã lưu cài đặt giờ xem (áp dụng cho cả 2 bé)');
+    showToast('Đã lưu cài đặt giờ xem');
   };
 
   return (
     <>
-      <div className="section-title" style={{ fontSize: 17, marginTop: 6 }}>
-        📅 Cấu hình theo nhóm ngày
+      <div className="section-title" style={{ fontSize: 17, marginTop: 6, display: 'flex', alignItems: 'center' }}>
+        <CalendarDays className="icon icon-lead" aria-hidden="true" /> Cấu hình theo nhóm ngày
       </div>
       <p style={{ fontSize: 12.5, opacity: 0.6, margin: '-8px 0 16px', maxWidth: 560 }}>
-        Cài đặt này áp dụng CHUNG cho cả Mina và Cốm. Mỗi nhóm chọn các ngày riêng, với khung giờ, tổng thời
-        gian/ngày và thời gian mỗi lượt xem riêng — ví dụ ngày đi học khác cuối tuần.
+        Áp dụng chung cho cả 2 bé. Mỗi nhóm ngày có khung giờ và thời lượng xem riêng.
       </p>
 
       {draft.map((g, gi) => (
         <div className="settings-card" key={g.id}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <h4 style={{ margin: 0 }}>📅 Nhóm ngày {gi + 1}</h4>
+            <h4 style={{ margin: 0 }}>
+              <CalendarDays className="icon icon-lead" aria-hidden="true" /> Nhóm ngày {gi + 1}
+            </h4>
             {draft.length > 1 && (
               <button className="icon-btn" data-region="ptime" tabIndex={0} title="Xoá nhóm ngày" onClick={() => deleteGroup(g.id)}>
-                🗑
+                <Trash2 className="icon" aria-hidden="true" />
               </button>
             )}
           </div>
@@ -145,24 +147,24 @@ export function TimeRuleGroupEditor() {
                   onChange={(e) => updateWindow(gi, wi, 'end', e.target.value)}
                 />
                 <button className="icon-btn" data-region="pwin" tabIndex={0} title="Xoá khung giờ" onClick={() => removeWindow(gi, wi)}>
-                  🗑
+                  <Trash2 className="icon" aria-hidden="true" />
                 </button>
               </div>
             ))}
             <button className="add-window-btn" data-region="ptime" tabIndex={0} onClick={() => addWindow(gi)}>
-              + Thêm khung giờ
+              <Plus className="icon icon-lead" aria-hidden="true" /> Thêm khung giờ
             </button>
           </div>
         </div>
       ))}
 
       <button className="add-window-btn" style={{ marginBottom: 24 }} data-region="ptime" tabIndex={0} onClick={() => addGroup()}>
-        + Thêm nhóm ngày
+        <Plus className="icon icon-lead" aria-hidden="true" /> Thêm nhóm ngày
       </button>
 
       <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
         <button className="submit-btn" style={{ width: 'auto', padding: '12px 26px' }} data-region="ptime" tabIndex={0} onClick={saveAll}>
-          💾 Lưu cài đặt
+          <Save className="icon icon-lead" aria-hidden="true" /> Lưu cài đặt
         </button>
       </div>
     </>
