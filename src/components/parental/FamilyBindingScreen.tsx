@@ -111,14 +111,14 @@ export function FamilyBindingScreen({ session, onBound }: Props) {
 
   return (
     <div className="overlay show" data-nav-scope>
-      <div className="modal">
+      <div className="modal gate-modal">
         <h3>👨‍👩‍👧 Thiết lập gia đình</h3>
 
         {checking ? (
-          <p style={{ opacity: 0.75, margin: '10px 0' }}>Đang kiểm tra tài khoản...</p>
+          <p className="gate-desc">Đang kiểm tra tài khoản...</p>
         ) : needsCreate ? (
           <>
-            <p style={{ opacity: 0.75, margin: '10px 0 20px', lineHeight: 1.5 }}>
+            <p className="gate-desc">
               Email này chưa thuộc gia đình nào trên app — đặt tên cho gia đình bạn để bắt
               đầu (sẽ tạo sẵn 1 hồ sơ bé, thêm/sửa/xoá sau đều được).
             </p>

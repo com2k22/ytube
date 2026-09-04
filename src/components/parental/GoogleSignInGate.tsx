@@ -40,7 +40,9 @@ export function GoogleSignInGate({ onClose, dismissable = true }: Props) {
     const { error: err } = await sendEmailCode(email.trim());
     setSending(false);
     if (err) {
-      setError('Không gửi được mã — kiểm tra lại email hoặc thử lại sau.');
+      // Kèm luôn nội dung lỗi thật từ Supabase (thay vì chỉ 1 câu chung chung) — để biết
+      // chính xác vì sao gửi hỏng (vd sai cấu hình SMTP, giới hạn số email/giờ...).
+      setError(`Không gửi được mã: ${err.message}`);
       return;
     }
     setSent(true);
@@ -72,34 +74,17 @@ export function GoogleSignInGate({ onClose, dismissable = true }: Props) {
       data-nav-scope
       onClick={(e) => dismissable && e.target === e.currentTarget && onClose()}
     >
-      <div className="modal">
+      <div className="modal gate-modal">
         <h3>🔒 Khu vực Bố mẹ</h3>
-        <p style={{ opacity: 0.75, margin: '10px 0 22px', lineHeight: 1.5 }}>
+        <p className="gate-desc">
           Đăng nhập bằng tài khoản Google của gia đình để vào chỉnh whitelist, giờ giấc...
           Đăng nhập 1 lần, thiết bị này sẽ nhớ luôn cho lần sau.
         </p>
-        <button
-          data-region="pin"
-          tabIndex={0}
-          onClick={() => signInWithGoogle()}
-          style={{
-            width: '100%',
-            padding: '16px 20px',
-            fontSize: 16,
-            fontWeight: 800,
-            borderRadius: 14,
-            border: 'none',
-            cursor: 'pointer',
-            background: '#fff',
-            color: '#1a1a1a',
-          }}
-        >
+        <button className="gate-google-btn" data-region="pin" tabIndex={0} onClick={() => signInWithGoogle()}>
           Đăng nhập bằng Google
         </button>
 
-        <div style={{ margin: '20px 0 14px', opacity: 0.55, fontSize: 13, textAlign: 'center' }}>
-          — hoặc dùng mã gửi qua email (nếu TV không cho đăng nhập Google) —
-        </div>
+        <div className="gate-divider">— hoặc dùng mã gửi qua email (nếu TV không cho đăng nhập Google) —</div>
 
         <div className="form-row">
           <label>Email nhận mã</label>
