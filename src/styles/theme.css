@@ -432,6 +432,10 @@ body {
 /* ============ PARENT DASHBOARD (quản lý thời gian) ============ */
 .parent-tabs { display: flex; gap: 10px; margin: 20px 0 26px; }
 .tab-btn { border: none; cursor: pointer; padding: 12px 20px; border-radius: 14px; font-weight: 800; font-size: 15px; }
+/* icon + chữ tách riêng 2 thẻ span (xem ParentDashboardPage.tsx) thay vì gộp chung 1 chuỗi
+   — mặc định (máy tính/TV/iPad) chỉ cần khoảng cách nhỏ để đọc liền như 1 cụm "⏰ Thời
+   gian"; điện thoại xếp lại thành icon trên/chữ dưới, xem khối "THANH MENU DƯỚI ĐÁY". */
+.tab-btn-icon { margin-right: 7px; }
 
 .mini-profiles { display: flex; gap: 10px; margin-bottom: 22px; }
 .mini-profile-btn { padding: 9px 18px; border-radius: 999px; font-weight: 700; font-size: 14px; cursor: pointer; border: 2px solid transparent; }
@@ -1431,6 +1435,54 @@ body {
 
   /* Chừa chỗ cho thanh dưới đáy, không thì phần cuối trang bị nó che mất. */
   .main { padding-bottom: 96px; }
+}
+
+/* =====================================================================
+   KHU BỐ MẸ TRÊN ĐIỆN THOẠI — trên điện thoại thật, app CHỈ còn đúng 1 trang (Khu Bố mẹ,
+   xem Layout.tsx phần "khoá thẳng vào Khu vực Bố mẹ") — Trang chủ/xem video không dùng tới
+   nữa. Vì vậy:
+     1) Ẩn hẳn thanh menu Trang chủ/Bố mẹ của Sidebar (khối "THANH MENU DƯỚI ĐÁY" ở trên) —
+        không còn tác dụng gì (Trang chủ không dẫn tới đâu, Bố mẹ thì đã sẵn ở đây rồi).
+     2) 5 mục CỦA CHÍNH Khu Bố mẹ (.parent-tabs) THAY THẾ vai trò "thanh dưới đáy" đó —
+        đúng khoảng trống .main{padding-bottom:96px} đã chừa sẵn ở trên, không cần thêm gì.
+   Cùng mốc 700px với khối trên (không phải 760px) — mọi iPad đều rộng hơn mốc này nên giữ
+   nguyên bố cục hiện có, chỉ điện thoại thật mới đổi. */
+@media (max-width: 700px) {
+  .sidebar { display: none; }
+  /* TopBar chỉ có logo (đã ẩn từ trước) + nút chọn hồ sơ — nút đó cũng chỉ có ý nghĩa cho
+     việc XEM VIDEO (đổi hồ sơ đang xem), không còn trang xem nào trên điện thoại nữa nên
+     ẩn LUÔN cả thanh này, nhường hết chỗ phía trên cho tiêu đề "Khu vực Bố mẹ". */
+  .topbar { display: none; }
+
+  .parent-tabs {
+    position: fixed; left: 0; right: 0; bottom: 0; top: auto;
+    display: flex; flex-direction: row; justify-content: space-around; align-items: stretch;
+    width: auto; margin: 0; gap: 0;
+    padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+    z-index: 40;
+    box-sizing: border-box;
+  }
+  [data-theme='dark'] .parent-tabs { background: #16171d; border-top: 1px solid #23242c; }
+  [data-theme='chibi'] .parent-tabs { background: #fff0f6; border-top: 3px dashed #ffb6d5; }
+
+  .parent-tabs .tab-btn {
+    flex: 1; min-width: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    background: none !important; border: none;
+    padding: 7px 2px; border-radius: 14px; font-size: 10.5px; font-weight: 800;
+  }
+  .parent-tabs .tab-btn-icon { font-size: 20px; line-height: 1; margin-right: 0; }
+  .parent-tabs .tab-btn-label {
+    display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+  }
+  [data-theme='dark'] .parent-tabs .tab-btn { color: #c7c9d1; }
+  [data-theme='dark'] .parent-tabs .tab-btn.active { color: #7c9cff; }
+  [data-theme='chibi'] .parent-tabs .tab-btn { color: #c2447a; }
+  [data-theme='chibi'] .parent-tabs .tab-btn.active { color: #ff5c9e; }
+
+  /* Không còn trang nào để "Quay lại" nữa (Trang chủ đã ẩn khỏi điện thoại) — ẩn luôn nút
+     này trên Khu Bố mẹ, đỡ bấm vào rồi bị tự động đưa quay lại đây (xem Layout.tsx). */
+  .parent-page .back-btn { display: none; }
 }
 
 /* =====================================================================

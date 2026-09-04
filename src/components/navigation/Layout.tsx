@@ -19,6 +19,7 @@ import { useProfileContext } from '@/context/ProfileContext';
 import { notifyParentAboutRequest } from '@/lib/push';
 import { isSupabaseConfigured } from '@/lib/supabaseClient';
 import { getFamilyId } from '@/lib/familyId';
+import { isPhoneScreen } from '@/lib/screenSize';
 
 // Lưu ý: cố tình KHÔNG khai báo 'continue' và 'topbar' ở đây — vùng không khai báo sẽ mặc
 // định nằm trên đúng 1 hàng ngang (xem useTvNavigation), đúng ý muốn "Tiếp tục xem" tối đa
@@ -180,6 +181,29 @@ export function Layout() {
   useEffect(() => {
     if (onBreak && location.pathname === '/player') navigate('/');
   }, [onBreak, location.pathname, navigate]);
+
+  /*
+    Trên ĐIỆN THOẠI THẬT: khoá thẳng vào Khu vực Bố mẹ, không cho vào Trang chủ/xem video
+    nữa — giao diện xem video (lưới thẻ, trình phát...) chưa tối ưu cho màn hình điện thoại,
+    và trên thực tế bé chỉ xem trên TV, điện thoại chỉ để bố mẹ quản lý từ xa. iPad KHÔNG bị
+    ảnh hưởng (isPhoneScreen() chỉ đúng ở bề ngang ≤700px, mọi iPad đều rộng hơn — xem
+    src/lib/screenSize.ts). Không áp dụng lúc còn "Thiết lập lần đầu": lớp phủ đó đã tự khoá
+    kín mọi trang rồi, đợi thiết lập xong (needsFamilySetup=false) thì mới cần điều hướng.
+
+    Lắng nghe cả sự kiện resize (không chỉ chạy 1 lần lúc mount) — phòng khi trình duyệt bị
+    thu nhỏ ngang qua mốc điện thoại trong lúc đang mở (hiếm nhưng vẫn nên xử lý đúng).
+  */
+  useEffect(() => {
+    const enforcePhoneParentOnly = () => {
+      if (needsFamilySetup) return;
+      if (isPhoneScreen() && !location.pathname.startsWith('/parent')) {
+        navigate('/parent', { replace: true });
+      }
+    };
+    enforcePhoneParentOnly();
+    window.addEventListener('resize', enforcePhoneParentOnly);
+    return () => window.removeEventListener('resize', enforcePhoneParentOnly);
+  }, [location.pathname, needsFamilySetup, navigate]);
 
   // Bố mẹ vừa duyệt lời xin từ điện thoại → TV tự mở khoá đúng số phút được cho.
   // useRef để chỉ ăn 1 lần cho mỗi lời xin, không mở lại mỗi lần vẽ lại màn hình.

@@ -19,6 +19,19 @@ import { useFamilyAuth } from '@/hooks/useFamilyAuth';
 
 type Tab = 'time' | 'content' | 'kids' | 'report' | 'account';
 
+/** Icon + tên rút gọn cho từng tab — tách riêng icon/chữ (thay vì gộp 1 chuỗi như bản cũ)
+    để CSS xếp lại được thành thanh dưới đáy trên điện thoại (icon trên, chữ nhỏ dưới,
+    giống hệt menu Trang chủ/Bố mẹ ở Sidebar.tsx) mà không cần đổi HTML theo từng màn hình.
+    Tên rút gọn dùng chung cho MỌI cỡ màn hình (không riêng điện thoại) — đã xem demo và
+    được duyệt, ngắn gọn vẫn đủ rõ nghĩa trên máy tính/TV. */
+const TABS: { value: Tab; icon: string; label: string }[] = [
+  { value: 'time', icon: '⏰', label: 'Thời gian' },
+  { value: 'content', icon: '➕', label: 'Nội dung' },
+  { value: 'kids', icon: '👶', label: 'Hồ sơ bé' },
+  { value: 'report', icon: '📊', label: 'Báo cáo' },
+  { value: 'account', icon: '👤', label: 'Tài khoản' },
+];
+
 /** Trang "Bố mẹ" — quản lý thời gian xem từ xa + thêm nội dung whitelist. Vào được là nhờ
     đã đăng nhập đúng tài khoản Google gia đình trên thiết bị này (xem GoogleSignInGate,
     thay cho PIN cũ — PIN giờ chỉ còn dùng cho "Cho xem ngay"/"Bỏ qua giờ nghỉ", xem ChangePinCard). */
@@ -52,46 +65,18 @@ export function ParentDashboardPage() {
           phải (xem theme.css) — dễ thấy hết các mục cùng lúc, không phải cuộn ngang. */}
       <div className="parent-layout">
         <div className="parent-tabs">
-          <button
-            className={`tab-btn ${tab === 'time' ? 'active' : ''}`}
-            data-region="ptabs"
-            tabIndex={0}
-            onClick={() => setTab('time')}
-          >
-            ⏰ Quản lý thời gian
-          </button>
-          <button
-            className={`tab-btn ${tab === 'content' ? 'active' : ''}`}
-            data-region="ptabs"
-            tabIndex={0}
-            onClick={() => setTab('content')}
-          >
-            ➕ Thêm nội dung
-          </button>
-          <button
-            className={`tab-btn ${tab === 'kids' ? 'active' : ''}`}
-            data-region="ptabs"
-            tabIndex={0}
-            onClick={() => setTab('kids')}
-          >
-            👶 Hồ sơ các bé
-          </button>
-          <button
-            className={`tab-btn ${tab === 'report' ? 'active' : ''}`}
-            data-region="ptabs"
-            tabIndex={0}
-            onClick={() => setTab('report')}
-          >
-            📊 Báo cáo tuần
-          </button>
-          <button
-            className={`tab-btn ${tab === 'account' ? 'active' : ''}`}
-            data-region="ptabs"
-            tabIndex={0}
-            onClick={() => setTab('account')}
-          >
-            👤 Tài khoản
-          </button>
+          {TABS.map((t) => (
+            <button
+              key={t.value}
+              className={`tab-btn ${tab === t.value ? 'active' : ''}`}
+              data-region="ptabs"
+              tabIndex={0}
+              onClick={() => setTab(t.value)}
+            >
+              <span className="tab-btn-icon">{t.icon}</span>
+              <span className="tab-btn-label">{t.label}</span>
+            </button>
+          ))}
         </div>
 
         <div className="parent-main">
