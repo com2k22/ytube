@@ -54,11 +54,15 @@ body {
 :root,
 [data-theme='dark'] {
   --focus-color: #7c9cff;
-  /* Màu 2 bé trên biểu đồ "Báo cáo tuần" — bản cho nền TỐI (sáng hơn để nổi trên nền đen).
-     Cặp xanh dương + cam đã kiểm tra là phân biệt được với người mù màu; đừng đổi tuỳ ý.
-     Xem PROFILE_CHART_COLOR trong src/constants.ts. */
-  --chart-mina: #3987e5;
-  --chart-com: #d95926;
+  /* Màu các bé trên biểu đồ "Báo cáo tuần" — bản cho nền TỐI (sáng hơn để nổi trên nền
+     đen). Gán theo THỨ TỰ tạo hồ sơ (bé 1 = --chart-1, bé 2 = --chart-2...), không gắn
+     theo tên — xem profileChartColor() trong src/constants.ts. 2 màu đầu (xanh dương +
+     cam) đã kiểm tra là phân biệt được với người mù màu; đừng đổi tuỳ ý. 2 màu sau dự
+     phòng cho khi có thêm bé thứ 3/4. */
+  --chart-1: #3987e5;
+  --chart-2: #d95926;
+  --chart-3: #7cd992;
+  --chart-4: #d97cd9;
 }
 [data-theme='dark'] body,
 body {
@@ -115,8 +119,10 @@ body {
 [data-theme='chibi'] {
   --focus-color: #ff9fc4;
   /* Bản cho nền SÁNG — đậm hơn một chút để cột không bị "chìm" vào nền hồng nhạt. */
-  --chart-mina: #2a78d6;
-  --chart-com: #eb6834;
+  --chart-1: #2a78d6;
+  --chart-2: #eb6834;
+  --chart-3: #2fa360;
+  --chart-4: #b23fb2;
 }
 [data-theme='chibi'] body,
 [data-theme='chibi'] {

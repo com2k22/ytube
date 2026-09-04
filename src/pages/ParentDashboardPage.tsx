@@ -10,9 +10,12 @@ import { AddSourceForm } from '@/components/parental/AddSourceForm';
 import { WeeklyReportTab } from '@/components/parent-dashboard/WeeklyReportTab';
 import { TimeRequestCard } from '@/components/parent-dashboard/TimeRequestCard';
 import { PushSetupCard } from '@/components/parent-dashboard/PushSetupCard';
+import { ProfilesManagerCard } from '@/components/parent-dashboard/ProfilesManagerCard';
+import { DeviceManagerCard } from '@/components/parent-dashboard/DeviceManagerCard';
+import { BackupExportCard } from '@/components/parent-dashboard/BackupExportCard';
 import { useFamilyAuth } from '@/hooks/useFamilyAuth';
 
-type Tab = 'time' | 'content' | 'report' | 'pin';
+type Tab = 'time' | 'content' | 'kids' | 'report' | 'account';
 
 /** Trang "Bố mẹ" — quản lý thời gian xem từ xa + thêm nội dung whitelist. Vào được là nhờ
     đã đăng nhập đúng tài khoản Google gia đình trên thiết bị này (xem GoogleSignInGate,
@@ -58,6 +61,14 @@ export function ParentDashboardPage() {
           ➕ Thêm nội dung
         </button>
         <button
+          className={`tab-btn ${tab === 'kids' ? 'active' : ''}`}
+          data-region="ptabs"
+          tabIndex={0}
+          onClick={() => setTab('kids')}
+        >
+          👶 Hồ sơ các bé
+        </button>
+        <button
           className={`tab-btn ${tab === 'report' ? 'active' : ''}`}
           data-region="ptabs"
           tabIndex={0}
@@ -66,12 +77,12 @@ export function ParentDashboardPage() {
           📊 Báo cáo tuần
         </button>
         <button
-          className={`tab-btn ${tab === 'pin' ? 'active' : ''}`}
+          className={`tab-btn ${tab === 'account' ? 'active' : ''}`}
           data-region="ptabs"
           tabIndex={0}
-          onClick={() => setTab('pin')}
+          onClick={() => setTab('account')}
         >
-          🔑 Đổi PIN
+          👤 Tài khoản
         </button>
       </div>
 
@@ -117,9 +128,11 @@ export function ParentDashboardPage() {
 
       {tab === 'content' && <AddSourceForm />}
 
+      {tab === 'kids' && <ProfilesManagerCard />}
+
       {tab === 'report' && <WeeklyReportTab />}
 
-      {tab === 'pin' && (
+      {tab === 'account' && (
         <div>
           {/* Tài khoản Google đang đăng nhập trên THIẾT BỊ NÀY (thay cho PIN cũ khi vào khu
               Bố mẹ) — xem useFamilyAuth.ts. Đăng xuất ở đây thì lần sau vào khu Bố mẹ trên
@@ -143,7 +156,12 @@ export function ParentDashboardPage() {
             Đăng xuất khỏi thiết bị này
           </button>
 
-          <div className="section-title">🔑 Đổi PIN (cho "Cho xem ngay" / "Bỏ qua giờ nghỉ")</div>
+          <DeviceManagerCard />
+          <BackupExportCard />
+
+          <div className="section-title" style={{ marginTop: 28 }}>
+            🔑 Đổi PIN (cho "Cho xem ngay" / "Bỏ qua giờ nghỉ")
+          </div>
           <ChangePinCard />
         </div>
       )}

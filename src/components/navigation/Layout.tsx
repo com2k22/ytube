@@ -12,6 +12,7 @@ import { useTempUnlock } from '@/hooks/useTempUnlock';
 import { useBreakGate } from '@/hooks/useWatchStretch';
 import { useTimeRequests, DEFAULT_REQUEST_MINUTES } from '@/hooks/useTimeRequests';
 import { useFamilyAuth } from '@/hooks/useFamilyAuth';
+import { useFamilyDevices } from '@/hooks/useFamilyDevices';
 import { useProfileContext } from '@/context/ProfileContext';
 import { notifyParentAboutRequest } from '@/lib/push';
 import { isSupabaseConfigured } from '@/lib/supabaseClient';
@@ -63,6 +64,15 @@ const SECTION_COLS = {
   // 'pinemail' = 1 cột: khối "đăng nhập bằng mã gửi qua email" trong GoogleSignInGate (ô
   // email, nút gửi mã, ô nhập mã 6 số, nút xác nhận) — xếp dọc, đi bằng lên/xuống.
   pinemail: 1,
+  // 'pkidform' = 1 cột: form thêm/sửa hồ sơ bé (ô tên, nút lưu, nút huỷ) trong
+  // ProfilesManagerCard — xếp dọc, đi bằng lên/xuống.
+  pkidform: 1,
+  // 'pkidemoji' = 6 cột: bộ emoji chọn sẵn khi thêm/sửa hồ sơ bé, xếp lưới ngang.
+  pkidemoji: 6,
+  // 'pdevice' = 1 cột: danh sách thiết bị đã đăng nhập (mỗi dòng 1 nút "đăng xuất").
+  pdevice: 1,
+  // 'pbackup' = 1 cột: nút "Xuất file sao lưu".
+  pbackup: 1,
 };
 
 /**
@@ -95,6 +105,11 @@ export function Layout() {
    */
   const [pinPurpose, setPinPurpose] = useState<'unlock' | 'skipbreak' | null>(null);
   const { session: familySession, loading: authLoading } = useFamilyAuth();
+  // Ghi nhận thiết bị này vào family_devices khi vừa đăng nhập xong, và tự đăng xuất ngay
+  // nếu phụ huynh "đăng xuất từ xa" thiết bị này từ 1 thiết bị khác (xem
+  // useFamilyDevices.ts + tab "Tài khoản" > "Thiết bị đã đăng nhập"). Đặt ở đây (Layout,
+  // mount đúng 1 lần cho toàn app) để hoạt động trên MỌI trang, không riêng gì /parent.
+  useFamilyDevices(familySession);
   const navigate = useNavigate();
   const location = useLocation();
 

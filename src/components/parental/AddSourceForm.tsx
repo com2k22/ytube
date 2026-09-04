@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useAllowedSources } from '@/hooks/useAllowedSources';
 import { useContentLabels } from '@/hooks/useContentLabels';
+import { useProfileContext } from '@/context/ProfileContext';
 import { useToast } from '@/components/common/Toast';
 import { isSafeHttpsUrl, sanitizeTitle } from '@/utils/urlValidator';
 import { extractPlaylistId, extractVideoId, extractChannelRef } from '@/utils/youtubeParser';
 import { fetchPlaylistInfo, fetchVideoInfo, fetchChannelInfo, resolveChannelHandle } from '@/lib/youtube';
-import { PROFILE_IDS, PROFILE_EMOJI, SOURCE_TYPE_ICON } from '@/constants';
+import { profileEmoji, SOURCE_TYPE_ICON } from '@/constants';
 import type { AllowedSource, CustomPlaylistItem, SourceType } from '@/types';
 
 const TYPE_OPTIONS: { value: SourceType; label: string }[] = [
@@ -42,22 +43,10 @@ const GROUP_ORDER: SourceType[] = [
   'direct_url',
 ];
 
-const KIDS: { id: string; name: string }[] = [
-  { id: PROFILE_IDS.MINA, name: 'Mina' },
-  { id: PROFILE_IDS.COM, name: 'Cốm' },
-];
-
 /** URL giả dùng làm chỗ trống cho playlist tự tạo — loại này không có 1 link duy nhất, ghép từ nhiều video. */
 const CUSTOM_PLAYLIST_URL = 'internal://custom-playlist';
 
 const emptyForm = { type: 'youtube_playlist' as SourceType, title: '', url: '', thumbnail: null as string | null };
-
-/** Nhãn hiển thị cho biết 1 nội dung dành cho bé nào — null = dùng chung cho cả 2 bé. */
-function profileBadge(profileId: string | null) {
-  if (!profileId) return '🐻🦊 Cả 2 bé';
-  const kid = KIDS.find((k) => k.id === profileId);
-  return `${PROFILE_EMOJI[profileId] ?? ''} ${kid?.name ?? ''}`.trim();
-}
 
 /**
  * AddSourceForm — form "Thêm nội dung" + danh mục nội dung đã thêm (sửa/xoá được),
@@ -66,11 +55,21 @@ function profileBadge(profileId: string | null) {
 export function AddSourceForm() {
   const { sources, loading, addSource, updateSource, removeSource } = useAllowedSources('all');
   const { labels, addLabel, renameLabel, removeLabel } = useContentLabels();
+  // Danh sách bé LẤY TỪ hồ sơ thật (khu Bố mẹ > Hồ sơ các bé), không còn gắn cứng Mina/Cốm
+  // trong code nữa — thêm bé mới ở đó là form này tự thấy ngay, không cần sửa code.
+  const { profiles } = useProfileContext();
   const { showToast } = useToast();
+
+  /** Nhãn hiển thị cho biết 1 nội dung dành cho bé nào — null = dùng chung cho TẤT CẢ bé. */
+  const profileBadge = (profileId: string | null) => {
+    if (!profileId) return '👨‍👩‍👧‍👦 Cả nhà';
+    const kid = profiles.find((p) => p.id === profileId);
+    return `${profileEmoji(kid)} ${kid?.name ?? ''}`.trim();
+  };
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
-  const [selectedKids, setSelectedKids] = useState<string[]>([PROFILE_IDS.MINA]);
+  const [selectedKids, setSelectedKids] = useState<string[]>(profiles[0] ? [profiles[0].id] : []);
   const [selectedLabelIds, setSelectedLabelIds] = useState<string[]>([]);
   const [urlHint, setUrlHint] = useState<{ text: string; ok: boolean } | null>(null);
   const [resolving, setResolving] = useState(false);
@@ -209,7 +208,7 @@ export function AddSourceForm() {
   const resetForm = () => {
     setEditingId(null);
     setForm(emptyForm);
-    setSelectedKids([PROFILE_IDS.MINA]);
+    setSelectedKids(profiles[0] ? [profiles[0].id] : []);
     setSelectedLabelIds([]);
     setUrlHint(null);
     setDraftItems([]);
@@ -219,7 +218,7 @@ export function AddSourceForm() {
   const startEdit = (s: AllowedSource) => {
     setEditingId(s.id);
     setForm({ type: s.type, title: s.title, url: s.url, thumbnail: s.thumbnail });
-    setSelectedKids(s.profile_id ? [s.profile_id] : [PROFILE_IDS.MINA, PROFILE_IDS.COM]);
+    setSelectedKids(s.profile_id ? [s.profile_id] : profiles.map((p) => p.id));
     setSelectedLabelIds(s.label_ids ?? []);
     setUrlHint(null);
     setDraftItems(s.type === 'custom_playlist' ? s.items : []);
@@ -284,11 +283,14 @@ export function AddSourceForm() {
       return;
     }
     if (selectedKids.length === 0) {
-      showToast('Chọn ít nhất 1 bé (hoặc cả 2) cho nội dung này.');
+      showToast('Chọn ít nhất 1 bé (hoặc cả nhà) cho nội dung này.');
       return;
     }
-    // Chọn cả 2 bé → lưu profile_id = null (dùng chung); chỉ chọn 1 bé → lưu id bé đó.
-    const profileId = selectedKids.length === KIDS.length ? null : selectedKids[0];
+    // Chọn ĐỦ TẤT CẢ bé hiện có → lưu profile_id = null (dùng chung cho cả nhà); chỉ chọn
+    // 1 bé → lưu id bé đó. LƯU Ý: nếu nhà có từ 3 bé trở lên, chỉ chọn được "1 bé" hoặc
+    // "cả nhà" — chưa hỗ trợ chọn 1 nhóm con (vd 2/3 bé) vì cơ sở dữ liệu hiện chỉ lưu 1
+    // profile_id (hoặc để trống = cả nhà), không lưu được danh sách nhiều bé cùng lúc.
+    const profileId = selectedKids.length >= profiles.length ? null : selectedKids[0];
     const payload = {
       profileId,
       type: form.type,
@@ -577,7 +579,7 @@ export function AddSourceForm() {
         <div className="form-row">
           <label>Dành cho bé</label>
           <div className="day-pills">
-            {KIDS.map((k) => (
+            {profiles.map((k) => (
               <div
                 key={k.id}
                 className={`day-pill ${selectedKids.includes(k.id) ? 'on' : ''}`}
@@ -585,12 +587,12 @@ export function AddSourceForm() {
                 tabIndex={0}
                 onClick={() => toggleKid(k.id)}
               >
-                {PROFILE_EMOJI[k.id]} {k.name}
+                {profileEmoji(k)} {k.name}
               </div>
             ))}
           </div>
           <div className="hint" style={{ opacity: 0.6, height: 'auto', marginTop: 6 }}>
-            Chọn cả 2 nếu nội dung phù hợp với cả hai bé.
+            Chọn hết tất cả bé nếu nội dung phù hợp với cả nhà.
           </div>
         </div>
 

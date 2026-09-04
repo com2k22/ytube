@@ -1,6 +1,6 @@
 import { useProfileContext } from '@/context/ProfileContext';
 import { useTimeRequests } from '@/hooks/useTimeRequests';
-import { PROFILE_EMOJI } from '@/constants';
+import { profileEmoji } from '@/constants';
 
 /** Các mức phút bố mẹ bấm 1 nút là cho luôn, khỏi phải gõ số. */
 const QUICK_MINUTES = [10, 15, 30];
@@ -36,7 +36,7 @@ export function TimeRequestCard() {
         return (
           <div className="request-row" key={req.id}>
             <div className="request-who">
-              <span className="request-emoji">{PROFILE_EMOJI[req.profile_id] ?? '🙂'}</span>
+              <span className="request-emoji">{profileEmoji(child)}</span>
               <div>
                 <div className="request-name">{child?.name ?? 'Bé'} xin thêm {req.requested_minutes} phút</div>
                 <div className="request-meta">

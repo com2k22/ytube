@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useProfileContext } from '@/context/ProfileContext';
-import { PROFILE_EMOJI } from '@/constants';
+import { profileEmoji } from '@/constants';
 
 interface Props {
   /**
@@ -55,7 +55,7 @@ export function ProfileSwitcher({ region, className }: Props) {
   return (
     <div className={`profile-switch ${className}`} ref={wrapRef}>
       <div data-region={region} tabIndex={0} className="profile-btn active" onClick={() => setOpen((o) => !o)}>
-        <span className="avatar">{PROFILE_EMOJI[activeProfile.id] ?? '🙂'}</span>
+        <span className="avatar">{profileEmoji(activeProfile)}</span>
         {/* .profile-name-text (KHÔNG dùng chung class .side-text với menu điều hướng): 2
             chỗ đặt cần ẩn/hiện tên theo quy luật khác nhau — dùng chung .side-text sẽ bị
             "dính" luôn cả kiểu chữ nhỏ xíu của thanh menu dưới đáy điện thoại, sai ý. */}
@@ -76,7 +76,7 @@ export function ProfileSwitcher({ region, className }: Props) {
                 setOpen(false);
               }}
             >
-              <span className="avatar">{PROFILE_EMOJI[p.id] ?? '🙂'}</span>
+              <span className="avatar">{profileEmoji(p)}</span>
               {p.name}
               {activeProfile.id === p.id && <span className="profile-check">✓</span>}
             </div>

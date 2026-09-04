@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useProfileContext } from '@/context/ProfileContext';
 import { useWeeklyReport, type ReportDay } from '@/hooks/useWeeklyReport';
-import { PROFILE_CHART_COLOR, PROFILE_EMOJI, SOURCE_TYPE_ICON } from '@/constants';
+import { profileChartColor, profileEmoji, SOURCE_TYPE_ICON } from '@/constants';
 
 /**
  * Làm tròn LÊN mốc cao nhất của trục dọc cho "chẵn đẹp" (10 / 15 / 30 / 60 phút...).
@@ -69,10 +69,10 @@ export function WeeklyReportTab() {
         {profiles.map((p) => (
           <div key={p.id} className="settings-card wr-total-card">
             <div className="wr-total-head">
-              <span className="wr-total-emoji">{PROFILE_EMOJI[p.id] ?? '🙂'}</span>
+              <span className="wr-total-emoji">{profileEmoji(p)}</span>
               <span className="wr-total-name">{p.name}</span>
             </div>
-            <div className="wr-total-value" style={{ color: PROFILE_CHART_COLOR[p.id] ?? 'var(--focus-color)' }}>
+            <div className="wr-total-value" style={{ color: profileChartColor(profiles, p.id) }}>
               {report.totalByProfile[p.id] ?? 0}
               <span className="wr-total-unit"> phút</span>
             </div>
@@ -88,8 +88,8 @@ export function WeeklyReportTab() {
         <div className="wr-legend">
           {profiles.map((p) => (
             <span key={p.id} className="wr-legend-item">
-              <span className="wr-legend-dot" style={{ background: PROFILE_CHART_COLOR[p.id] ?? 'var(--focus-color)' }} />
-              {PROFILE_EMOJI[p.id] ?? '🙂'} {p.name}
+              <span className="wr-legend-dot" style={{ background: profileChartColor(profiles, p.id) }} />
+              {profileEmoji(p)} {p.name}
             </span>
           ))}
           <span className="wr-legend-unit">đơn vị: phút</span>
@@ -121,7 +121,7 @@ export function WeeklyReportTab() {
                           // nhưng bằng 0" chứ không phải "thiếu dữ liệu".
                           style={{
                             height: minutes > 0 ? `${(minutes / axisMax) * 100}%` : '2px',
-                            background: PROFILE_CHART_COLOR[p.id] ?? 'var(--focus-color)',
+                            background: profileChartColor(profiles, p.id),
                           }}
                           title={`${p.name} · ${dayLabel(day)} · ${minutes} phút`}
                           data-region="preport"
@@ -171,7 +171,7 @@ export function WeeklyReportTab() {
                   <th>Ngày</th>
                   {profiles.map((p) => (
                     <th key={p.id}>
-                      {PROFILE_EMOJI[p.id] ?? '🙂'} {p.name}
+                      {profileEmoji(p)} {p.name}
                     </th>
                   ))}
                 </tr>
@@ -204,7 +204,7 @@ export function WeeklyReportTab() {
           return (
             <div key={p.id} className="settings-card wr-top-card">
               <h4>
-                {PROFILE_EMOJI[p.id] ?? '🙂'} {p.name} xem nhiều nhất
+                {profileEmoji(p)} {p.name} xem nhiều nhất
               </h4>
               {items.length === 0 ? (
                 <p className="wr-empty">Tuần này chưa có nội dung nào.</p>
