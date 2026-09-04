@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { LucideIcon } from 'lucide-react';
 
 /** Cầu nối tới trình phát thật (YouTube hoặc thẻ video thường) — mỗi trình phát tự cắm vào. */
 export interface PlayerAdapter {
@@ -14,6 +15,9 @@ export interface PlayerAdapter {
 export interface PanelAction {
   key: string;
   label: string;
+  /** Icon (lucide-react) đứng trước chữ — cùng bộ icon/kiểu nét với các icon ở Trang chủ
+      (section-title), thay cho icon emoji trước đây. */
+  icon: LucideIcon;
   disabled?: boolean;
   /** true = bấm xong vẫn giữ bảng điều khiển mở (vd nút bật/tắt phụ đề, để thấy chữ đổi). */
   keepOpen?: boolean;
@@ -230,9 +234,17 @@ export function useTvPlayerControls({
           // khác, xem useTvNavigation.ts) — không dừng khựng, không thoát ra ngoài lưới.
           if (plIdx + 1 < plCount) setPlaylistIndex(plIdx + 1);
         } else if (e.key === 'ArrowLeft') {
-          take(e);
-          // Đối xứng: đang ở đầu 1 hàng (không phải hàng đầu) thì lùi lên cuối hàng trên.
-          if (plIdx > 0) setPlaylistIndex(plIdx - 1);
+          if (plIdx === 0) {
+            // Đúng ô ĐẦU TIÊN của lưới (góc trên-trái) — giống hệt Task 3 ở pha "cơ bản"
+            // bên dưới: KHÔNG toàn màn hình thật sự thì nhường phím này cho
+            // useTvNavigation.ts mở menu bên trái (giống Trang chủ). Đang toàn màn hình thì
+            // vẫn chặn lại như cũ — menu lúc đó bị video che kín, có mở cũng không thấy gì.
+            if (document.fullscreenElement === wrapRef.current) take(e);
+          } else {
+            take(e);
+            // Đối xứng: đang ở đầu 1 hàng (không phải hàng đầu) thì lùi lên cuối hàng trên.
+            setPlaylistIndex(plIdx - 1);
+          }
         } else if (e.key === 'ArrowDown') {
           take(e);
           // Hàng cuối có thể thiếu ô (vd 7 video/3 cột → hàng cuối chỉ có 1 ô) — cộng thẳng
@@ -295,6 +307,13 @@ export function useTvPlayerControls({
 
         case 'ArrowRight':
         case 'ArrowLeft': {
+          // Chỉ tua khi đang XEM TOÀN MÀN HÌNH thật sự. Trước đây take(e) vô điều kiện ở đây
+          // luôn chặn đứng phím Trái/Phải — kể cả lúc KHÔNG toàn màn hình (khung video vẫn
+          // "cầm lái" bàn phím theo mặc định, xem inCharge() ở trên) — nên phím Trái không
+          // bao giờ lọt được xuống useTvNavigation.ts để mở menu trái ở góc trên-trái, khác
+          // hẳn hành vi ở Trang chủ. Không toàn màn hình → không tua, để phím rơi xuống cho
+          // useTvNavigation xử lý y như mọi trang khác (Trái = mở menu nếu đang ở góc trên-trái).
+          if (document.fullscreenElement !== wrapRef.current) break;
           take(e);
           if (holdRef.current?.key === e.key) return; // đang giữ rồi, bỏ qua sự kiện lặp
           clearHold();

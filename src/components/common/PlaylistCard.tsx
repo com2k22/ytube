@@ -15,10 +15,11 @@ interface Props {
   progressPercent?: number;
   /** Số cột của vùng điều hướng D-pad chứa thẻ này (dùng cho lưới nhiều hàng, cột tính động — xem useTvNavigation). */
   cols?: number;
-  /** Nhãn đã gán cho nội dung này (xem useContentLabels.ts) — hiện thành ô nhỏ màu, cùng
-      hàng với dòng "Đã xem.."/"Playlist"... Rỗng/không truyền = không hiện nhãn nào. Nhãn
-      "Ẩn" cố ý KHÔNG truyền vào đây — nội dung gán nhãn Ẩn không được render ra card nào cả
-      (lọc từ trước, xem HomePage.tsx), nên component này không cần tự né riêng nhãn đó. */
+  /** Nhãn đã gán cho nội dung này (xem useContentLabels.ts) — hiện thành CHỮ THƯỜNG, cùng
+      kiểu với "Playlist"/"Video lẻ".., nối tiếp trên CÙNG DÒNG với dòng "Đã xem.."/"Playlist"
+      bằng dấu phẩy, KHÔNG tô màu/làm nổi bật riêng. Rỗng/không truyền = không hiện nhãn nào.
+      Nhãn "Ẩn" cố ý KHÔNG truyền vào đây — nội dung gán nhãn Ẩn không được render ra card
+      nào cả (lọc từ trước, xem HomePage.tsx), nên component này không cần tự né riêng. */
   labels?: ContentLabel[];
   onClick: () => void;
 }
@@ -55,17 +56,7 @@ export function PlaylistCard({
         <div className="card-title">{title}</div>
       </div>
       <div className="card-sub">
-        {inProgress ? `Đã xem ${progressPercent}%` : sourceTypeLabel(type)}
-        {labels && labels.length > 0 && (
-          <span className="card-labels">
-            {labels.map((l) => (
-              <span key={l.id} className={`label-chip ${l.is_priority ? 'label-chip-priority' : ''}`}>
-                {l.is_priority ? '⭐ ' : ''}
-                {l.name}
-              </span>
-            ))}
-          </span>
-        )}
+        {[inProgress ? `Đã xem ${progressPercent}%` : sourceTypeLabel(type), ...(labels ?? []).map((l) => l.name)].join(', ')}
       </div>
     </div>
   );

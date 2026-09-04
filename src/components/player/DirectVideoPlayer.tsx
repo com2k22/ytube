@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import Hls from 'hls.js';
+import { SkipBack, SkipForward, Play, Pause, Captions } from 'lucide-react';
 import { useTvPlayerControls, type PanelAction } from '@/hooks/useTvPlayerControls';
 import { PlayerControlBar } from './PlayerControlBar';
 import { PlayerPlaylistDrawer } from './PlayerPlaylistDrawer';
@@ -163,12 +164,13 @@ export function DirectVideoPlayer({
 
   const hasTextTracks = (videoRef.current?.textTracks.length ?? 0) > 0;
   const actions: PanelAction[] = [
-    { key: 'prev', label: '⏮ Video trước', disabled: !hasPrev, onSelect: () => onPrev?.() },
-    { key: 'playpause', label: paused ? '▶ Phát tiếp' : '⏸ Tạm dừng', onSelect: togglePlay },
-    { key: 'next', label: '⏭ Video tiếp', disabled: !hasNext, onSelect: () => onNext?.() },
+    { key: 'prev', label: 'Video trước', icon: SkipBack, disabled: !hasPrev, onSelect: () => onPrev?.() },
+    { key: 'playpause', label: paused ? 'Phát tiếp' : 'Tạm dừng', icon: paused ? Play : Pause, onSelect: togglePlay },
+    { key: 'next', label: 'Video tiếp', icon: SkipForward, disabled: !hasNext, onSelect: () => onNext?.() },
     {
       key: 'cc',
-      label: captionsOn ? '💬 Phụ đề: BẬT' : '💬 Phụ đề: TẮT',
+      label: captionsOn ? 'Phụ đề: BẬT' : 'Phụ đề: TẮT',
+      icon: Captions,
       disabled: !hasTextTracks,
       keepOpen: true,
       onSelect: toggleCaptions,
@@ -200,7 +202,7 @@ export function DirectVideoPlayer({
       <WatchCountdownBadge />
       {centerIcon && (
         <div className="player-center-icon" aria-hidden="true">
-          {centerIcon === 'pause' ? '⏸' : '▶'}
+          {centerIcon === 'pause' ? <Pause /> : <Play />}
         </div>
       )}
       <PlayerControlBar open={panelOpen} actions={actions} activeIndex={panelIndex} seekLabel={seekLabel} />

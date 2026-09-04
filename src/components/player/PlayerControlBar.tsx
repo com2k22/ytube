@@ -33,6 +33,7 @@ export function PlayerControlBar({ open, actions, activeIndex, seekLabel }: Prop
               disabled={a.disabled}
               onClick={a.onSelect}
             >
+              <a.icon className="player-panel-icon" aria-hidden="true" />
               {a.label}
             </button>
           ))}
