@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ListVideo, Clapperboard, Tv, PlayCircle } from 'lucide-react';
 import { useProfileContext } from '@/context/ProfileContext';
@@ -6,17 +7,27 @@ import { useWatchProgress } from '@/hooks/useWatchProgress';
 import { useContentLabels } from '@/hooks/useContentLabels';
 import { PlaylistCard } from '@/components/common/PlaylistCard';
 import { extractVideoId, extractPlaylistId } from '@/utils/youtubeParser';
+import { fetchVideoInfo } from '@/lib/youtube';
 import type { AllowedSource, ContentLabel } from '@/types';
+
+/** Tối đa bao nhiêu video hiện trong khối "Tiếp tục xem" — xem giải thích đầy đủ ở
+    continuingVideos bên dưới. */
+const CONTINUE_LIMIT = 5;
 
 /** Trang chủ — 4 khu: Tiếp tục xem / Danh sách / Video đề xuất / Kênh yêu thích. */
 export function HomePage() {
   const { activeProfile } = useProfileContext();
   const { sources, loading } = useAllowedSources(activeProfile?.id ?? null);
-  const { summarizeSource } = useWatchProgress(activeProfile?.id ?? null);
+  const { rows: progressRows } = useWatchProgress(activeProfile?.id ?? null);
   const { labels: allLabels } = useContentLabels();
   const navigate = useNavigate();
-
-  if (!activeProfile) return null;
+  /** Cache tên thật + ảnh đại diện của từng VIDEO trong 1 playlist YouTube thật (không phải
+      playlist tự tạo) — cần gọi riêng YouTube Data API theo videoId vì playlist YouTube
+      không tải sẵn danh sách video ở Trang chủ (xem continuingRows/continuingVideos bên
+      dưới). Khai báo TRƯỚC return sớm — đây là hook, phải gọi đều mỗi lượt render. */
+  const [videoInfoCache, setVideoInfoCache] = useState<Record<string, { title: string; thumbnail: string | null } | null>>(
+    {}
+  );
 
   const hiddenLabelId = allLabels.find((l) => l.is_hidden)?.id ?? null;
   const priorityLabelId = allLabels.find((l) => l.is_priority)?.id ?? null;
@@ -40,11 +51,86 @@ export function HomePage() {
     .filter((s) => !isHidden(s));
   const channels = sources.filter((s) => s.type === 'youtube_channel').filter((s) => !isHidden(s));
 
-  const withProgress = playable.map((s) => ({ source: s, progress: summarizeSource(s.id) }));
-  const continuing = sortPriorityFirst(
-    withProgress.filter((x) => x.progress.inProgress),
-    (x) => x.source
-  );
+  /**
+   * "Tiếp tục xem" — NÂNG CẤP theo yêu cầu: hiện đúng từng VIDEO đang xem dở gần đây nhất
+   * (tối đa CONTINUE_LIMIT), KHÔNG còn gộp theo playlist nữa. Trước đây bấm vào 1 playlist ở
+   * đây chỉ biết "playlist này có xem dở", phải tự mở playlist rồi tìm lại đúng video — giờ
+   * mỗi thẻ ở đây LÀ đúng 1 video, bấm vào là vào thẳng video đó (đã tự tua đúng chỗ đang
+   * xem dở, xem PlayerPage.tsx). Trang danh sách video của playlist (bấm từ khối "Danh
+   * sách" bên dưới) vẫn giữ nguyên như cũ — mở ra để bé tự chọn video.
+   *
+   * Sắp theo lần xem gần nhất (updated_at, mới nhất trước), bỏ qua video mà nguồn của nó
+   * không còn trong whitelist nữa (đã xoá) hoặc đang bị gắn nhãn "Ẩn".
+   */
+  const continuingRows = useMemo(() => {
+    return progressRows
+      .filter((r) => r.progress_percent > 0 && r.progress_percent < 100)
+      .filter((r) => {
+        const src = sources.find((s) => s.id === r.source_id);
+        return !!src && !(hiddenLabelId && src.label_ids.includes(hiddenLabelId));
+      })
+      .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+      .slice(0, CONTINUE_LIMIT);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [progressRows, sources, hiddenLabelId]);
+
+  // Video thuộc playlist YouTube THẬT (không phải playlist tự tạo) — chưa biết tên/ảnh
+  // thật của đúng video đó (chỉ có tên/ảnh của cả playlist), phải tự dò riêng qua YouTube
+  // Data API theo videoId (giống cách AddSourceForm dò tiêu đề khi thêm nội dung).
+  useEffect(() => {
+    const missingIds = continuingRows
+      .map((r) => ({ r, src: sources.find((s) => s.id === r.source_id) }))
+      .filter(({ src, r }) => src?.type === 'youtube_playlist' && !(r.video_ref in videoInfoCache))
+      .map(({ r }) => r.video_ref);
+    if (missingIds.length === 0) return;
+    let cancelled = false;
+    Promise.all(missingIds.map((id) => fetchVideoInfo(id).then((info) => [id, info] as const))).then((results) => {
+      if (cancelled) return;
+      setVideoInfoCache((prev) => {
+        const next = { ...prev };
+        for (const [id, info] of results) next[id] = info;
+        return next;
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [continuingRows, sources, videoInfoCache]);
+
+  /** Dựng đủ thông tin hiển thị (tên/ảnh THẬT của đúng video, không phải của cả playlist)
+      + tham số điều hướng cho từng thẻ "Tiếp tục xem". */
+  const continuingVideos = continuingRows
+    .map((r) => {
+      const source = sources.find((s) => s.id === r.source_id);
+      if (!source) return null;
+      let title = source.title;
+      let thumbnail = source.thumbnail;
+      let videoParam = r.video_ref;
+      let directUrlParam: string | null = null;
+      let playlistId: string | null = null;
+
+      if (source.type === 'custom_playlist') {
+        const item = source.items.find((it) => it.videoId === r.video_ref);
+        if (item) {
+          title = item.title;
+          thumbnail = item.thumbnail;
+        }
+      } else if (source.type === 'youtube_playlist') {
+        playlistId = extractPlaylistId(source.url);
+        const info = videoInfoCache[r.video_ref];
+        if (info) {
+          title = info.title;
+          thumbnail = info.thumbnail;
+        }
+      } else if (source.type === 'direct_url') {
+        directUrlParam = source.url;
+      }
+      // youtube_video: video_ref đã đúng là videoId của chính source đó, title/thumbnail
+      // của source đã là của đúng video này rồi — không cần xử lý thêm.
+
+      return { row: r, source, title, thumbnail, videoParam, directUrlParam, playlistId };
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null);
 
   // Nội dung đang "xem dở" ở khối Tiếp tục xem VẪN hiện tiếp ở khối Playlist/Video đề xuất
   // bên dưới (không loại trừ) — để bé dễ tìm lại kể cả khi đã cuộn qua khối đầu.
@@ -71,26 +157,11 @@ export function HomePage() {
     (s) => s
   );
 
-  /**
-   * inProgressVideoRef: chỉ truyền khi mở từ khối "Tiếp tục xem" — videoId của đúng video
-   * đang xem dở trong playlist đó (xem useWatchProgress.ts: summarizeSource.latestVideoRef).
-   *
-   * Trước đây bấm playlist/playlist tự tạo ở "Tiếp tục xem" LUÔN mở trang danh sách video
-   * của playlist (không nhớ đang xem dở video nào) — bé phải tự tìm lại đúng video, và dù
-   * có tìm đúng thì trang phát cũng phát lại từ đầu (chưa tua tới chỗ cũ, xem PlayerPage.tsx
-   * mục "startSeconds"). Giờ mở thẳng đúng video đó VÀ tự tua tới chỗ đã dừng luôn.
-   */
-  const openSource = (source: AllowedSource, inProgressVideoRef?: string | null) => {
+  /** Mở 1 playlist/kênh/video từ khối "Danh sách"/"Video đề xuất" — GIỮ NGUYÊN như cũ:
+      playlist/playlist tự tạo mở trang danh sách video để bé tự chọn (không đoán hộ đang
+      xem dở video nào — xem khối "Tiếp tục xem" phía trên, giờ đã tách riêng theo video). */
+  const openSource = (source: AllowedSource) => {
     if (source.type === 'youtube_playlist' || source.type === 'custom_playlist') {
-      if (inProgressVideoRef) {
-        const p = new URLSearchParams({ sourceId: source.id, title: source.title, videoId: inProgressVideoRef });
-        if (source.type === 'youtube_playlist') {
-          const playlistId = extractPlaylistId(source.url);
-          if (playlistId) p.set('playlistId', playlistId);
-        }
-        navigate(`/player?${p.toString()}`);
-        return;
-      }
       navigate(`/playlist/${source.id}`);
       return;
     }
@@ -109,6 +180,18 @@ export function HomePage() {
     navigate(`/player?${params.toString()}`);
   };
 
+  /** Mở đúng 1 VIDEO từ khối "Tiếp tục xem" — vào thẳng video đó (đã tự tua tới chỗ đang
+      xem dở, xem PlayerPage.tsx mục startSeconds), không phải qua trang danh sách nữa. */
+  const openContinuingVideo = (entry: (typeof continuingVideos)[number]) => {
+    const params = new URLSearchParams({ sourceId: entry.source.id, title: entry.title });
+    if (entry.directUrlParam) params.set('directUrl', entry.directUrlParam);
+    else params.set('videoId', entry.videoParam);
+    if (entry.playlistId) params.set('playlistId', entry.playlistId);
+    navigate(`/player?${params.toString()}`);
+  };
+
+  if (!activeProfile) return null;
+
   return (
     <main className="main">
       <div className="greet">
@@ -124,26 +207,27 @@ export function HomePage() {
         </p>
       )}
 
-      {continuing.length > 0 && (
+      {continuingVideos.length > 0 && (
         // .section-block: bọc chung tiêu đề + hàng thẻ, để CSS ":focus-within" biết lúc nào
         // ô chọn đang nằm trong ĐÚNG khối này mà phóng to riêng dòng tiêu đề của khối đó —
         // xem .section-block:focus-within .section-title trong theme.css.
+        // Mỗi thẻ ở đây LÀ 1 VIDEO cụ thể (không phải cả playlist) — xem continuingVideos.
         <div className="section-block">
           <div className="section-title">
             <PlayCircle className="section-icon" aria-hidden="true" /> Tiếp tục xem
           </div>
           <div className="shelf shelf-cap3" style={{ marginBottom: 32 }}>
-            {continuing.map(({ source, progress }) => (
+            {continuingVideos.map((entry) => (
               <PlaylistCard
-                key={source.id}
-                title={source.title}
-                thumbnail={source.thumbnail}
-                type={source.type}
+                key={`${entry.source.id}:${entry.row.video_ref}`}
+                title={entry.title}
+                thumbnail={entry.thumbnail}
+                type="youtube_video"
                 region="continue"
                 inProgress
-                progressPercent={progress.percent}
-                labels={labelsOf(source)}
-                onClick={() => openSource(source, progress.latestVideoRef)}
+                progressPercent={entry.row.progress_percent}
+                labels={labelsOf(entry.source)}
+                onClick={() => openContinuingVideo(entry)}
               />
             ))}
           </div>

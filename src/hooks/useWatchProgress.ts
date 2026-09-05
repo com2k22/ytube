@@ -9,18 +9,34 @@ import type { WatchProgress } from '@/types';
  */
 export function useWatchProgress(profileId: string | null) {
   const [rows, setRows] = useState<WatchProgress[]>([]);
+  /**
+   * true = CHƯA tải xong lần đầu tiên. Quan trọng cho PlayerPage.tsx: video xem dở lần
+   * trước có tua đúng chỗ được hay không phụ thuộc vào rows đã có sẵn hay chưa lúc trình
+   * phát khởi tạo — nếu PlayerPage cứ render trình phát ngay (rows vẫn đang rỗng vì còn
+   * đợi Supabase trả về), trình phát sẽ khởi tạo với "tua tới giây 0" rồi KHÔNG BAO GIỜ tua
+   * lại nữa dù rows tải xong sau đó (trình phát chỉ đọc vị trí tua đúng 1 LẦN lúc khởi tạo).
+   * Đây chính là lỗi "đã lưu đúng giây trong cơ sở dữ liệu nhưng vẫn phát lại từ đầu" — nên
+   * PlayerPage phải đợi `loading = false` rồi mới cho trình phát khởi tạo.
+   */
+  const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    if (!profileId) return;
+    if (!profileId) {
+      setLoading(false);
+      return;
+    }
     const { data, error } = await supabase.from('watch_progress').select('*').eq('profile_id', profileId);
     if (error) {
       console.error('[Ytube] Không tải được tiến độ xem:', error.message);
+      setLoading(false);
       return;
     }
     setRows(data ?? []);
+    setLoading(false);
   }, [profileId]);
 
   useEffect(() => {
+    setLoading(true);
     refresh();
   }, [refresh]);
 
@@ -69,5 +85,5 @@ export function useWatchProgress(profileId: string | null) {
   const positionFor = (sourceId: string, videoRef: string) =>
     rows.find((r) => r.source_id === sourceId && r.video_ref === videoRef)?.position_seconds ?? 0;
 
-  return { rows, refresh, saveProgress, summarizeSource, progressFor, positionFor };
+  return { rows, loading, refresh, saveProgress, summarizeSource, progressFor, positionFor };
 }

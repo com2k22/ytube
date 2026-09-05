@@ -37,7 +37,7 @@ export function PlayerPage() {
   // phải chờ tải xong mới phát được video hiện tại, vì kind/ytVideoId/directUrl đã lấy
   // thẳng từ query string ở trên rồi).
   const { sources: allSources } = useAllowedSources(activeProfile?.id ?? null);
-  const { saveProgress, positionFor, progressFor } = useWatchProgress(activeProfile?.id ?? null);
+  const { saveProgress, positionFor, progressFor, loading: progressLoading } = useWatchProgress(activeProfile?.id ?? null);
   const { session, startSession, heartbeat } = useWatchSession(activeProfile?.id ?? null);
   const navigate = useNavigate();
   const startedRef = useRef(false);
@@ -179,6 +179,21 @@ export function PlayerPage() {
   const startSeconds = savedPercent > 0 && savedPercent < 97 && sourceId && ytVideoId ? positionFor(sourceId, ytVideoId) : 0;
 
   /**
+   * QUAN TRỌNG — lý do "đã lưu đúng giây nhưng vẫn phát lại từ đầu" trước đây:
+   * useWatchProgress tải "tiến độ xem" từ Supabase KHÔNG ĐỒNG BỘ (mất một nhịp mạng), còn
+   * trình phát (SafeYouTubePlayer/DirectVideoPlayer) chỉ đọc startSeconds ĐÚNG 1 LẦN lúc mới
+   * khởi tạo rồi thôi — không tự tua lại nếu startSeconds đổi giá trị sau đó. Nếu cho trình
+   * phát khởi tạo ngay (như trước đây, để giữ "cử chỉ bấm" cho autoplay/toàn màn hình), lúc
+   * đó rows còn rỗng nên startSeconds luôn là 0 → tua sai (tua về đầu) mãi mãi cho video đó,
+   * dù đúng số giây đã có sẵn trong cơ sở dữ liệu từ trước.
+   *
+   * Cách sửa: đợi đúng 1 nhịp (progressLoading = false) rồi mới cho trình phát khởi tạo —
+   * chỉ chậm thêm ~1 lượt gọi Supabase (thường dưới nửa giây), vẫn còn trong khoảng trình
+   * duyệt cho phép tự toàn màn hình/tự phát sau cử chỉ bấm của bé.
+   */
+  const progressReady = !sourceId || !ytVideoId || !progressLoading;
+
+  /**
    * Chuyển sang video khác — TRONG CÙNG playlist (playlistVideos), hoặc sang 1 video lẻ
    * KHÁC HẲN trong whitelist (looseVideos, khi đang xem video lẻ và bé chọn video lẻ khác
    * qua danh sách bấm-Xuống).
@@ -249,7 +264,7 @@ export function PlayerPage() {
         ← Quay lại
       </button>
 
-      {kind === 'youtube' && ytVideoId && (
+      {kind === 'youtube' && ytVideoId && progressReady && (
         <SafeYouTubePlayer
           videoId={ytVideoId}
           title={title}
@@ -265,7 +280,7 @@ export function PlayerPage() {
           onSelectVideo={goToVideo}
         />
       )}
-      {kind === 'direct' && directUrl && (
+      {kind === 'direct' && directUrl && progressReady && (
         <DirectVideoPlayer
           url={directUrl}
           title={title}
@@ -281,7 +296,7 @@ export function PlayerPage() {
           onSelectVideo={goToVideo}
         />
       )}
-      {!kind && <p style={{ opacity: 0.6 }}>Đang tải video...</p>}
+      {(!kind || !progressReady) && <p style={{ opacity: 0.6 }}>Đang tải video...</p>}
 
       {/* Thanh đếm ngược tự chuyển video kế tiếp — luôn kèm nút dừng, để bé/bố mẹ chủ động
           ở lại nếu không muốn xem tiếp. */}
