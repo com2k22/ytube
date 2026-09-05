@@ -45,9 +45,6 @@ export function ChangePinCard() {
   return (
     <div className="settings-card" style={{ maxWidth: 420 }}>
       <h4><KeyRound className="icon icon-lead" aria-hidden="true" /> Đổi mã PIN phụ huynh</h4>
-      <p style={{ fontSize: 12.5, opacity: 0.65, margin: '-6px 0 16px' }}>
-        Cần nhập đúng mã PIN hiện tại trước khi đổi.
-      </p>
 
       <div className="form-row">
         <label>Mã PIN hiện tại</label>

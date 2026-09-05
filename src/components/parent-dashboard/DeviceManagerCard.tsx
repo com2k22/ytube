@@ -48,10 +48,7 @@ export function DeviceManagerCard() {
   return (
     <div className="settings-card" style={{ marginTop: 20 }}>
       <h4><KeyRound className="icon icon-lead" aria-hidden="true" /> Thiết bị đã đăng nhập Khu Bố mẹ</h4>
-      <p style={{ opacity: 0.65, margin: '-6px 0 16px', fontSize: 12.5, lineHeight: 1.5 }}>
-        Đăng xuất 1 thiết bị thì thiết bị đó không vào được Khu Bố mẹ nữa (vẫn xem phim bình
-        thường — muốn chặn xem phim thì dùng mục "Thiết bị đã ghép xem nội dung" bên dưới).
-      </p>
+      <p style={{ opacity: 0.65, margin: '-6px 0 16px', fontSize: 12.5 }}>Đăng xuất = hết vào được Khu Bố mẹ.</p>
 
       {loading ? (
         <p style={{ opacity: 0.6 }}>Đang tải...</p>

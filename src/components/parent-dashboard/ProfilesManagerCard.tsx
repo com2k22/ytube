@@ -97,9 +97,6 @@ export function ProfilesManagerCard() {
       <div className="col col-list">
       <div className="settings-card">
         <h4><Baby className="icon icon-lead" aria-hidden="true" /> Hồ sơ các bé</h4>
-        <p style={{ opacity: 0.65, margin: '-6px 0 16px', fontSize: 12.5, lineHeight: 1.5 }}>
-          Thêm/bớt/đổi tên hồ sơ bé.
-        </p>
 
         {profiles.map((p) => (
           <div key={p.id} className="added-item" style={{ marginBottom: 8 }}>

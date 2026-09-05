@@ -67,9 +67,7 @@ export function BackupExportCard() {
   return (
     <div className="settings-card" style={{ marginTop: 20 }}>
       <h4><Save className="icon icon-lead" aria-hidden="true" /> Sao lưu cấu hình</h4>
-      <p style={{ opacity: 0.65, margin: '-6px 0 16px', fontSize: 12.5, lineHeight: 1.5 }}>
-        Tải file chứa hồ sơ, nội dung và giờ giấc hiện tại — phòng khi đổi TV hoặc cài lại app.
-      </p>
+      <p style={{ opacity: 0.65, margin: '-6px 0 16px', fontSize: 12.5 }}>Tải file cấu hình về máy.</p>
       <button
         className="add-window-btn"
         data-region="pbackup"

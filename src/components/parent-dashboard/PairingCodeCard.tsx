@@ -54,10 +54,7 @@ export function PairingCodeCard() {
   return (
     <div className="settings-card" style={{ marginTop: 20 }}>
       <h4><Link2 className="icon icon-lead" aria-hidden="true" /> Ghép TV mới</h4>
-      <p style={{ opacity: 0.65, margin: '-6px 0 16px', fontSize: 12.5, lineHeight: 1.5 }}>
-        Tạo mã ở đây, rồi sang TV mới chọn "Ghép bằng mã từ điện thoại" và gõ đúng mã này. TV
-        đó xem được nội dung nhưng không vào được Khu vực Bố mẹ.
-      </p>
+      <p style={{ opacity: 0.65, margin: '-6px 0 16px', fontSize: 12.5 }}>Tạo mã, nhập trên TV mới để ghép.</p>
 
       {code && !expired && (
         <div

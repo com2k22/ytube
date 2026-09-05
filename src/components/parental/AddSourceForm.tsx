@@ -319,9 +319,6 @@ export function AddSourceForm() {
       <div className="col col-form">
       <div className="settings-card">
         <h4><Tag className="icon icon-lead" aria-hidden="true" /> Quản lý nhãn</h4>
-        <p style={{ fontSize: 12.5, opacity: 0.65, margin: '-8px 0 16px' }}>
-          Gán nhãn để dễ phân loại nội dung.
-        </p>
         <div className="added-list">
           {labels.map((l) => (
             <div className="added-item" key={l.id} style={{ justifyContent: 'space-between' }}>
@@ -419,9 +416,7 @@ export function AddSourceForm() {
             </>
           )}
         </h4>
-        <p style={{ fontSize: 12.5, opacity: 0.65, margin: '-8px 0 16px' }}>
-          Chỉ nội dung trong danh sách này bé mới xem được.
-        </p>
+        <p style={{ fontSize: 12.5, opacity: 0.65, margin: '-8px 0 16px' }}>Bé chỉ xem được nội dung trong danh sách này.</p>
 
         <div className="form-row">
           <label>Loại nguồn</label>
@@ -489,9 +484,7 @@ export function AddSourceForm() {
 
             {existingVideos.length > 0 && (
               <>
-                <div className="hint" style={{ opacity: 0.6, height: 'auto', margin: '0 0 6px' }}>
-                  Chọn nhanh từ video đơn lẻ đã có sẵn trong danh sách:
-                </div>
+                <div className="hint" style={{ opacity: 0.6, height: 'auto', margin: '0 0 6px' }}>Video có sẵn:</div>
                 <div className="added-list" style={{ marginBottom: 14 }}>
                   {existingVideos.map((v) => {
                     const id = extractVideoId(v.url);
@@ -518,9 +511,7 @@ export function AddSourceForm() {
                     );
                   })}
                 </div>
-                <div className="hint" style={{ opacity: 0.6, height: 'auto', margin: '0 0 6px' }}>
-                  Hoặc dán link video YouTube mới:
-                </div>
+                <div className="hint" style={{ opacity: 0.6, height: 'auto', margin: '0 0 6px' }}>Hoặc dán link mới:</div>
               </>
             )}
 
@@ -555,9 +546,7 @@ export function AddSourceForm() {
               <p style={{ fontSize: 12.5, opacity: 0.55 }}>Chưa ghép video nào.</p>
             )}
             {draftItems.length > 1 && (
-              <div className="hint" style={{ opacity: 0.6, height: 'auto', margin: '0 0 6px' }}>
-                Dùng nút mũi tên để sắp thứ tự phát.
-              </div>
+              <div className="hint" style={{ opacity: 0.6, height: 'auto', margin: '0 0 6px' }}>Kéo thứ tự bằng nút mũi tên.</div>
             )}
             <div className="added-list">
               {draftItems.map((it, i) => (

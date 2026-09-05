@@ -55,9 +55,7 @@ export function PushSetupCard() {
   return (
     <div className="settings-card">
       <h4><Bell className="icon icon-lead" aria-hidden="true" /> Thông báo trên máy này</h4>
-      <p style={{ fontSize: 12.5, opacity: 0.7, margin: '-8px 0 14px' }}>
-        Báo ngay khi bé xin thêm giờ. Mỗi máy phải tự bật riêng.
-      </p>
+      <p style={{ fontSize: 12.5, opacity: 0.7, margin: '-8px 0 14px' }}>Bật riêng từng máy.</p>
 
       {!supported && <div className="hint bad-text" style={{ height: 'auto' }}>Máy này không hỗ trợ thông báo đẩy.</div>}
 

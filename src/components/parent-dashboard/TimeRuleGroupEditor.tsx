@@ -64,9 +64,7 @@ export function TimeRuleGroupEditor() {
       <div className="section-title" style={{ fontSize: 17, marginTop: 6, display: 'flex', alignItems: 'center' }}>
         <CalendarDays className="icon icon-lead" aria-hidden="true" /> Cấu hình theo nhóm ngày
       </div>
-      <p style={{ fontSize: 12.5, opacity: 0.6, margin: '-8px 0 16px', maxWidth: 560 }}>
-        Áp dụng chung cho cả 2 bé. Mỗi nhóm ngày có khung giờ và thời lượng xem riêng.
-      </p>
+      <p style={{ fontSize: 12.5, opacity: 0.6, margin: '-8px 0 16px', maxWidth: 560 }}>Áp dụng chung cho cả 2 bé.</p>
 
       {draft.map((g, gi) => (
         <div className="settings-card" key={g.id}>
