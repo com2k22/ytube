@@ -819,13 +819,14 @@ body {
 [data-tv] .added-item { padding: 12px 16px; border-radius: 14px; margin-bottom: 9px; }
 
 /* --- Màn hình chặn ngoài giờ xem (bé nhìn từ xa, cần to rõ nhất) --- */
-[data-tv] .block-card { width: 820px; padding: 64px 56px; border-radius: 40px; }
-[data-tv] .block-emoji { font-size: 140px; }
-/* Chữ to hơn hẳn bản trước (44px → 52px, 27px → 32px): chữ trong khung này giờ đã rút gọn
-   (xem BlockScreen.tsx), nên to thêm vẫn không bị tràn khung, dễ đọc từ xa hơn nhiều. */
-[data-tv] .block-card h2 { font-size: 52px; margin: 0 0 22px; font-weight: 900; }
-[data-tv] .block-card p { font-size: 32px; margin: 0 0 28px; }
-[data-tv] .block-card .submit-btn { font-size: 26px; padding: 22px; }
+[data-tv] .block-card { width: 960px; padding: 76px 64px; border-radius: 44px; }
+[data-tv] .block-emoji { font-size: 168px; }
+/* Chữ to hơn hẳn bản trước: đã bỏ nút "VÂNG, con hiểu rồi" khỏi màn hình thật (xem
+   BlockScreen.tsx) nên khung dư chỗ, tăng cỡ chữ hết mức cho dễ đọc từ xa. */
+[data-tv] .block-card h2 { font-size: 62px; margin: 0 0 26px; font-weight: 900; }
+[data-tv] .block-card p { font-size: 38px; margin: 0 0 32px; }
+[data-tv] .block-card .submit-btn { font-size: 30px; padding: 26px; }
+[data-tv] .block-card .add-window-btn { font-size: 24px; padding: 20px 30px; }
 
 /* ====================================================================================
    GIAO DIỆN ĐIỆN THOẠI (màn hình hẹp dưới 760px)
@@ -1365,7 +1366,7 @@ body {
 
 [data-tv] .break-count { font-size: 92px; }
 [data-tv] .break-tips { font-size: 21px; }
-[data-tv] .block-ask-status { font-size: 22px; padding: 18px 24px; }
+[data-tv] .block-ask-status { font-size: 26px; padding: 20px 26px; }
 [data-tv] .request-emoji { font-size: 40px; }
 [data-tv] .request-name { font-size: 22px; }
 [data-tv] .request-meta { font-size: 18px; }

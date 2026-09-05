@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 
 export type BlockMode = 'outside_window' | 'daily_limit';
 
@@ -51,8 +51,8 @@ function playGentleChime() {
  *  - 'outside_window': chưa đến khung giờ được phép xem.
  *  - 'daily_limit'   : đúng khung giờ nhưng đã xem hết tổng thời gian của hôm nay.
  *
- * Quan trọng: bé KHÔNG có cách nào tự đóng màn hình này — nút "VÂNG, con hiểu rồi" chỉ là
- * xác nhận đã đọc. Chỉ bố mẹ mới thoát được, đều cần mã PIN:
+ * Quan trọng: bé KHÔNG có cách nào tự đóng màn hình này (đã bỏ hẳn nút xác nhận). Chỉ bố mẹ
+ * mới thoát được, đều cần mã PIN:
  *  - "Cho xem ngay": mở khoá TẠM, hết hiệu lực khi tắt app.
  *  - "Bố mẹ bấm vào đây": vào hẳn khu Bố mẹ — nút này CHỈ hiện trên ĐIỆN THOẠI (ẩn trên
  *    TV bằng CSS .block-parent-gate-mobile). Trên TV, muốn vào khu Bố mẹ thì đi qua nút
@@ -70,7 +70,6 @@ export function BlockScreen({
   requestMinutes = 15,
   isPreview,
 }: Props) {
-  const [acknowledged, setAcknowledged] = useState(false);
   const isDailyLimit = mode === 'daily_limit';
 
   useEffect(() => {
@@ -122,14 +121,14 @@ export function BlockScreen({
           </div>
         )}
 
-        <button
-          className="submit-btn"
-          data-region="block"
-          tabIndex={0}
-          onClick={() => (isPreview ? onOpenParentGate() : setAcknowledged(true))}
-        >
-          {isPreview ? 'Đóng xem thử' : acknowledged ? '💛 Con đã hiểu rồi' : 'VÂNG, con hiểu rồi'}
-        </button>
+        {/* Màn hình thật (không phải xem thử) KHÔNG có nút tự đóng — bé không thể tự tắt,
+            chỉ bố mẹ mới thoát được (xem 2 nút bên dưới). Bản "xem thử" từ trang Bố mẹ thì
+            cần 1 nút để đóng lại. */}
+        {isPreview && (
+          <button className="submit-btn" data-region="block" tabIndex={0} onClick={onOpenParentGate}>
+            Đóng xem thử
+          </button>
+        )}
 
         {!isPreview && (
           <div className="block-parent-actions">
