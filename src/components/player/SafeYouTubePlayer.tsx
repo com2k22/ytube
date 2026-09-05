@@ -35,8 +35,12 @@ function loadYouTubeApi(): Promise<void> {
 interface Props {
   videoId: string;
   title: string;
-  /** Gọi định kỳ (mỗi ~5s) với % đã xem (0-100) — dùng để lưu "tiếp tục xem". */
-  onProgress?: (percent: number) => void;
+  /** Gọi định kỳ (mỗi ~5s) với % đã xem (0-100) VÀ số giây hiện tại — dùng để lưu "tiếp tục
+      xem" (số giây để lần sau tua tới đúng chỗ, xem PlayerPage.tsx). */
+  onProgress?: (percent: number, seconds: number) => void;
+  /** Vị trí xem dở lần trước (giây) — tua tới đây ngay khi mở video, để "Tiếp tục xem" phát
+      đúng chỗ đã dừng thay vì phát lại từ đầu. 0/undefined = phát từ đầu như bình thường. */
+  startSeconds?: number;
   /** Gọi khi video phát xong — dùng cho "xem xong phiên rồi tắt" / tự chuyển video kế tiếp. */
   onEnded?: () => void;
   /** true khi video được mở từ trong 1 playlist — tự phát + tự vào chế độ toàn màn hình. */
@@ -67,6 +71,7 @@ export function SafeYouTubePlayer({
   videoId,
   title,
   onProgress,
+  startSeconds,
   onEnded,
   autoFullscreen,
   onPrev,
@@ -175,6 +180,9 @@ export function SafeYouTubePlayer({
           iv_load_policy: 3,
           playsinline: 1,
           autoplay: autoFullscreen ? 1 : 0,
+          // Tua tới đúng chỗ đã xem dở lần trước ("Tiếp tục xem") — PlayerPage.tsx đã tự
+          // bỏ qua (truyền 0) nếu video này chưa xem dở hoặc đã xem gần xong.
+          start: Math.max(0, Math.floor(startSeconds ?? 0)),
           // cc_load_policy: 0 = KHÔNG chủ động bật phụ đề. Lưu ý: YouTube không có tham số
           // nào ép TẮT hẳn phụ đề — chỉ có tham số ép BẬT (đặt 1). Khi để 0, YouTube vẫn có
           // thể tự bật lại theo thói quen xem trước đó của thiết bị. Vì vậy còn phải gỡ hẳn
@@ -197,7 +205,7 @@ export function SafeYouTubePlayer({
               if (!p?.getDuration) return;
               const duration = p.getDuration();
               const current = p.getCurrentTime();
-              if (duration > 0) onProgressRef.current?.(Math.min(100, (current / duration) * 100));
+              if (duration > 0) onProgressRef.current?.(Math.min(100, (current / duration) * 100), current);
             }, 5000);
           },
           onStateChange: (e: any) => {
@@ -218,7 +226,7 @@ export function SafeYouTubePlayer({
               playerRef.current?.unMute?.();
             }
             if (e.data === S.ENDED) {
-              onProgressRef.current?.(100);
+              onProgressRef.current?.(100, 0);
               onEndedRef.current?.();
             }
           },

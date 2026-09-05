@@ -24,7 +24,9 @@ export function useWatchProgress(profileId: string | null) {
     refresh();
   }, [refresh]);
 
-  const saveProgress = async (sourceId: string, videoRef: string, percent: number) => {
+  /** positionSeconds — vị trí xem dở tính bằng giây, để lần sau tua trình phát tới đúng
+      chỗ (xem supabase/016_watch_progress_position.sql). */
+  const saveProgress = async (sourceId: string, videoRef: string, percent: number, positionSeconds: number) => {
     if (!profileId) return;
     const { error } = await supabase
       .from('watch_progress')
@@ -34,6 +36,7 @@ export function useWatchProgress(profileId: string | null) {
           source_id: sourceId,
           video_ref: videoRef,
           progress_percent: Math.max(0, Math.min(100, Math.round(percent))),
+          position_seconds: Math.max(0, Math.round(positionSeconds)),
           updated_at: new Date().toISOString(),
         },
         { onConflict: 'profile_id,source_id,video_ref' }
@@ -42,17 +45,29 @@ export function useWatchProgress(profileId: string | null) {
     else refresh();
   };
 
-  /** Tóm tắt tiến độ của cả 1 playlist: có đang xem dở không, % của video xem dở gần nhất. */
+  /** Tóm tắt tiến độ của cả 1 playlist: có đang xem dở không, % và số giây của video xem dở
+      gần nhất (latestPositionSeconds — để mở đúng video đó VÀ tua tới đúng chỗ luôn). */
   const summarizeSource = (sourceId: string) => {
     const forSource = rows
       .filter((r) => r.source_id === sourceId && r.progress_percent > 0 && r.progress_percent < 100)
       .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
-    if (forSource.length === 0) return { inProgress: false, percent: 0, latestVideoRef: null as string | null };
-    return { inProgress: true, percent: forSource[0].progress_percent, latestVideoRef: forSource[0].video_ref };
+    if (forSource.length === 0) {
+      return { inProgress: false, percent: 0, latestVideoRef: null as string | null, latestPositionSeconds: 0 };
+    }
+    return {
+      inProgress: true,
+      percent: forSource[0].progress_percent,
+      latestVideoRef: forSource[0].video_ref,
+      latestPositionSeconds: forSource[0].position_seconds,
+    };
   };
 
   const progressFor = (sourceId: string, videoRef: string) =>
     rows.find((r) => r.source_id === sourceId && r.video_ref === videoRef)?.progress_percent ?? 0;
 
-  return { rows, refresh, saveProgress, summarizeSource, progressFor };
+  /** Vị trí xem dở (giây) của đúng 1 video — dùng để tua trình phát khi mở lại. */
+  const positionFor = (sourceId: string, videoRef: string) =>
+    rows.find((r) => r.source_id === sourceId && r.video_ref === videoRef)?.position_seconds ?? 0;
+
+  return { rows, refresh, saveProgress, summarizeSource, progressFor, positionFor };
 }

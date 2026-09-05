@@ -5,7 +5,7 @@ import { useAllowedSources } from '@/hooks/useAllowedSources';
 import { useWatchProgress } from '@/hooks/useWatchProgress';
 import { useContentLabels } from '@/hooks/useContentLabels';
 import { PlaylistCard } from '@/components/common/PlaylistCard';
-import { extractVideoId } from '@/utils/youtubeParser';
+import { extractVideoId, extractPlaylistId } from '@/utils/youtubeParser';
 import type { AllowedSource, ContentLabel } from '@/types';
 
 /** Trang chủ — 4 khu: Tiếp tục xem / Danh sách / Video đề xuất / Kênh yêu thích. */
@@ -71,8 +71,26 @@ export function HomePage() {
     (s) => s
   );
 
-  const openSource = (source: AllowedSource) => {
+  /**
+   * inProgressVideoRef: chỉ truyền khi mở từ khối "Tiếp tục xem" — videoId của đúng video
+   * đang xem dở trong playlist đó (xem useWatchProgress.ts: summarizeSource.latestVideoRef).
+   *
+   * Trước đây bấm playlist/playlist tự tạo ở "Tiếp tục xem" LUÔN mở trang danh sách video
+   * của playlist (không nhớ đang xem dở video nào) — bé phải tự tìm lại đúng video, và dù
+   * có tìm đúng thì trang phát cũng phát lại từ đầu (chưa tua tới chỗ cũ, xem PlayerPage.tsx
+   * mục "startSeconds"). Giờ mở thẳng đúng video đó VÀ tự tua tới chỗ đã dừng luôn.
+   */
+  const openSource = (source: AllowedSource, inProgressVideoRef?: string | null) => {
     if (source.type === 'youtube_playlist' || source.type === 'custom_playlist') {
+      if (inProgressVideoRef) {
+        const p = new URLSearchParams({ sourceId: source.id, title: source.title, videoId: inProgressVideoRef });
+        if (source.type === 'youtube_playlist') {
+          const playlistId = extractPlaylistId(source.url);
+          if (playlistId) p.set('playlistId', playlistId);
+        }
+        navigate(`/player?${p.toString()}`);
+        return;
+      }
       navigate(`/playlist/${source.id}`);
       return;
     }
@@ -125,7 +143,7 @@ export function HomePage() {
                 inProgress
                 progressPercent={progress.percent}
                 labels={labelsOf(source)}
-                onClick={() => openSource(source)}
+                onClick={() => openSource(source, progress.latestVideoRef)}
               />
             ))}
           </div>

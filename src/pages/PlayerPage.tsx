@@ -37,7 +37,7 @@ export function PlayerPage() {
   // phải chờ tải xong mới phát được video hiện tại, vì kind/ytVideoId/directUrl đã lấy
   // thẳng từ query string ở trên rồi).
   const { sources: allSources } = useAllowedSources(activeProfile?.id ?? null);
-  const { saveProgress } = useWatchProgress(activeProfile?.id ?? null);
+  const { saveProgress, positionFor, progressFor } = useWatchProgress(activeProfile?.id ?? null);
   const { session, startSession, heartbeat } = useWatchSession(activeProfile?.id ?? null);
   const navigate = useNavigate();
   const startedRef = useRef(false);
@@ -164,10 +164,19 @@ export function PlayerPage() {
   }, []);
   useWatchStretchTicker(windowVisible);
 
-  const handleProgress = (percent: number) => {
+  const handleProgress = (percent: number, seconds: number) => {
     heartbeat(Math.round(percent * 6)); // ước lượng thô — xem README mục "Giới hạn đã biết"
-    if (sourceId && ytVideoId) saveProgress(sourceId, ytVideoId, percent);
+    if (sourceId && ytVideoId) saveProgress(sourceId, ytVideoId, percent, seconds);
   };
+
+  /**
+   * Vị trí (giây) để tua tới khi mở video này — nhờ đó "Tiếp tục xem" thật sự phát tiếp
+   * đúng chỗ đã dừng, thay vì lúc nào cũng phát lại từ đầu (xem useWatchProgress.ts).
+   * Bỏ qua (coi như 0 = phát từ đầu) khi: chưa có tiến độ lưu, hoặc đã xem gần xong rồi
+   * (≥ 97%) — lúc đó phát lại từ đầu hợp lý hơn là tua gần tới cuối.
+   */
+  const savedPercent = sourceId && ytVideoId ? progressFor(sourceId, ytVideoId) : 0;
+  const startSeconds = savedPercent > 0 && savedPercent < 97 && sourceId && ytVideoId ? positionFor(sourceId, ytVideoId) : 0;
 
   /**
    * Chuyển sang video khác — TRONG CÙNG playlist (playlistVideos), hoặc sang 1 video lẻ
@@ -245,6 +254,7 @@ export function PlayerPage() {
           videoId={ytVideoId}
           title={title}
           onProgress={handleProgress}
+          startSeconds={startSeconds}
           onEnded={handleEnded}
           autoFullscreen={autoFullscreen}
           onPrev={() => prevVideo && goToVideo(prevVideo)}
@@ -260,6 +270,7 @@ export function PlayerPage() {
           url={directUrl}
           title={title}
           onProgress={handleProgress}
+          startSeconds={startSeconds}
           onEnded={handleEnded}
           autoFullscreen={autoFullscreen}
           onPrev={() => prevVideo && goToVideo(prevVideo)}

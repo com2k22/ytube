@@ -112,6 +112,9 @@ export interface WatchProgress {
   source_id: string;
   video_ref: string;
   progress_percent: number;
+  /** Vị trí xem dở tính bằng GIÂY — dùng để tua trình phát tới đúng chỗ khi mở lại video
+      (xem supabase/016_watch_progress_position.sql). Dòng lưu từ trước khi có cột này = 0. */
+  position_seconds: number;
   updated_at: string;
 }
 
