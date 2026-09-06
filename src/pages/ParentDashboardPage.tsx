@@ -17,6 +17,7 @@ import { DeviceManagerCard } from '@/components/parent-dashboard/DeviceManagerCa
 import { ContentDeviceManagerCard } from '@/components/parent-dashboard/ContentDeviceManagerCard';
 import { BackupExportCard } from '@/components/parent-dashboard/BackupExportCard';
 import { PairingCodeCard } from '@/components/parent-dashboard/PairingCodeCard';
+import { HomeBackgroundCard } from '@/components/parent-dashboard/HomeBackgroundCard';
 import { useFamilyAuth } from '@/hooks/useFamilyAuth';
 
 type Tab = 'time' | 'content' | 'kids' | 'report' | 'account';
@@ -171,6 +172,7 @@ export function ParentDashboardPage() {
                 <DeviceManagerCard />
                 <ContentDeviceManagerCard />
                 <PairingCodeCard />
+                <HomeBackgroundCard />
                 <BackupExportCard />
                 <div>
                   <div className="section-title" style={{ marginTop: 0, display: 'flex', alignItems: 'center' }}>

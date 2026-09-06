@@ -1554,3 +1554,160 @@ body {
   :root:not([data-tv]) .parent-page .settings-card { padding: 24px 26px; }
   :root:not([data-tv]) .parent-page .greet { font-size: 26px; }
 }
+
+/* =====================================================================
+   HUY HIỆU "GIỮ ĐÚNG GIỜ XEM N NGÀY LIÊN TIẾP" (StreakBadge.tsx)
+   ===================================================================== */
+.streak-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 18px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 14px;
+  color: #ffb02e;
+  background: rgba(255, 176, 46, 0.14);
+  border: 1px solid rgba(255, 176, 46, 0.35);
+  width: fit-content;
+}
+[data-tv] .streak-badge { font-size: 26px; padding: 14px 26px; gap: 12px; margin: 16px 0 26px; }
+
+/* =====================================================================
+   HÌNH NỀN TRANG CHỦ THEO MÙA/DỊP LỄ (backgroundThemes.ts + useHomeBackground.ts)
+   =====================================================================
+   Cách hoạt động: Layout.tsx gắn thuộc tính data-bg-theme="<id>" lên .layout CHỈ KHI đang
+   ở Trang chủ ("/") — nhờ đó mọi rule dưới đây (nhắm theo [data-bg-theme='...']) tự động
+   KHÔNG áp dụng ở trang phát video hay khu Bố mẹ, dù CSS này không cần biết gì về route.
+
+   Mọi hình nền chỉ thêm background-image (hoạ tiết chấm màu alpha RẤT thấp, 0.04–0.12) —
+   CỐ Ý không đụng tới background-color gốc của .sidebar/.topbar/.main (khai ở phần "THEME 1:
+   DARK TV" phía trên) — nhờ vậy hình nền chỉ là 1 lớp ánh màu mờ phía sau, thẻ video/chữ
+   vẫn rõ như cũ 100%, không ảnh hưởng mắt bé. Cùng độ đặc/độ lớn (background-size) dùng
+   chung cho cả 3 nơi để đồng bộ hoạ tiết giữa menu và nội dung. */
+[data-bg-theme] .sidebar,
+[data-bg-theme] .topbar,
+[data-bg-theme] .main {
+  background-repeat: repeat;
+  transition: background-image 0.4s ease;
+}
+
+[data-bg-theme='xuan'] .sidebar,
+[data-bg-theme='xuan'] .topbar,
+[data-bg-theme='xuan'] .main {
+  background-image:
+    radial-gradient(circle at 15% 25%, rgba(255, 182, 213, 0.12) 0 7px, transparent 8px),
+    radial-gradient(circle at 70% 65%, rgba(178, 255, 190, 0.1) 0 6px, transparent 7px),
+    radial-gradient(circle at 40% 85%, rgba(255, 240, 180, 0.08) 0 5px, transparent 6px),
+    linear-gradient(180deg, rgba(255, 182, 213, 0.05), rgba(178, 255, 190, 0.05));
+  background-size: 210px 210px, 260px 260px, 190px 190px, 100% 100%;
+}
+
+[data-bg-theme='ha'] .sidebar,
+[data-bg-theme='ha'] .topbar,
+[data-bg-theme='ha'] .main {
+  background-image:
+    radial-gradient(circle at 80% 15%, rgba(255, 221, 110, 0.14) 0 10px, transparent 11px),
+    radial-gradient(circle at 20% 70%, rgba(120, 210, 255, 0.1) 0 7px, transparent 8px),
+    linear-gradient(180deg, rgba(120, 210, 255, 0.06), rgba(255, 221, 110, 0.05));
+  background-size: 320px 320px, 220px 220px, 100% 100%;
+}
+
+[data-bg-theme='thu'] .sidebar,
+[data-bg-theme='thu'] .topbar,
+[data-bg-theme='thu'] .main {
+  background-image:
+    radial-gradient(circle at 25% 30%, rgba(230, 150, 70, 0.12) 0 7px, transparent 8px),
+    radial-gradient(circle at 75% 60%, rgba(210, 110, 60, 0.1) 0 6px, transparent 7px),
+    radial-gradient(circle at 50% 90%, rgba(240, 190, 90, 0.08) 0 5px, transparent 6px),
+    linear-gradient(180deg, rgba(210, 110, 60, 0.06), rgba(240, 190, 90, 0.05));
+  background-size: 230px 230px, 270px 270px, 200px 200px, 100% 100%;
+}
+
+[data-bg-theme='dong'] .sidebar,
+[data-bg-theme='dong'] .topbar,
+[data-bg-theme='dong'] .main {
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(220, 240, 255, 0.12) 0 4px, transparent 5px),
+    radial-gradient(circle at 65% 50%, rgba(220, 240, 255, 0.1) 0 3px, transparent 4px),
+    radial-gradient(circle at 40% 80%, rgba(220, 240, 255, 0.09) 0 4px, transparent 5px),
+    linear-gradient(180deg, rgba(120, 170, 255, 0.06), rgba(220, 240, 255, 0.04));
+  background-size: 160px 160px, 140px 140px, 180px 180px, 100% 100%;
+}
+
+[data-bg-theme='trungthu'] .sidebar,
+[data-bg-theme='trungthu'] .topbar,
+[data-bg-theme='trungthu'] .main {
+  background-image:
+    radial-gradient(circle at 82% 18%, rgba(255, 226, 150, 0.16) 0 26px, transparent 27px),
+    radial-gradient(circle at 25% 65%, rgba(255, 176, 90, 0.1) 0 8px, transparent 9px),
+    radial-gradient(circle at 55% 90%, rgba(180, 120, 220, 0.08) 0 6px, transparent 7px),
+    linear-gradient(180deg, rgba(90, 60, 140, 0.07), rgba(255, 176, 90, 0.05));
+  background-size: 100% 100%, 240px 240px, 200px 200px, 100% 100%;
+}
+
+[data-bg-theme='giangsinh'] .sidebar,
+[data-bg-theme='giangsinh'] .topbar,
+[data-bg-theme='giangsinh'] .main {
+  background-image:
+    radial-gradient(circle at 18% 22%, rgba(255, 255, 255, 0.1) 0 4px, transparent 5px),
+    radial-gradient(circle at 60% 55%, rgba(255, 255, 255, 0.08) 0 3px, transparent 4px),
+    radial-gradient(circle at 40% 85%, rgba(120, 220, 150, 0.08) 0 6px, transparent 7px),
+    linear-gradient(180deg, rgba(200, 60, 70, 0.06), rgba(70, 150, 90, 0.06));
+  background-size: 170px 170px, 150px 150px, 220px 220px, 100% 100%;
+}
+
+[data-bg-theme='tet'] .sidebar,
+[data-bg-theme='tet'] .topbar,
+[data-bg-theme='tet'] .main {
+  background-image:
+    radial-gradient(circle at 20% 25%, rgba(255, 214, 100, 0.14) 0 8px, transparent 9px),
+    radial-gradient(circle at 70% 60%, rgba(255, 214, 100, 0.1) 0 6px, transparent 7px),
+    radial-gradient(circle at 45% 88%, rgba(255, 120, 120, 0.08) 0 6px, transparent 7px),
+    linear-gradient(180deg, rgba(200, 40, 50, 0.07), rgba(255, 214, 100, 0.05));
+  background-size: 220px 220px, 260px 260px, 200px 200px, 100% 100%;
+}
+
+/* --- Lưới chọn hình nền trong HomeBackgroundCard.tsx (khu Bố mẹ > Tài khoản) --- */
+.bg-theme-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+.bg-theme-pick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 84px;
+  cursor: pointer;
+  font-size: 12px;
+  text-align: center;
+  opacity: 0.75;
+}
+.bg-theme-pick.on,
+.bg-theme-pick:hover { opacity: 1; }
+.bg-swatch {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  background: #1b1c22;
+  border: 2px solid #262731;
+}
+.bg-theme-pick.on .bg-swatch { border-color: #7c9cff; box-shadow: 0 0 0 3px rgba(124, 156, 255, 0.25); }
+.bg-swatch--default { color: #c7c9d1; }
+.bg-swatch--xuan { background: linear-gradient(135deg, #3a2b35, #2b3a2f), radial-gradient(circle, rgba(255,182,213,0.5) 0 8px, transparent 9px) 15% 25%/30px 30px; }
+.bg-swatch--ha { background: linear-gradient(135deg, #2b3540, #3a331e); }
+.bg-swatch--thu { background: linear-gradient(135deg, #3a2a1c, #2f2015); }
+.bg-swatch--dong { background: linear-gradient(135deg, #202b3a, #182230); }
+.bg-swatch--trungthu { background: linear-gradient(135deg, #2a2140, #3a2c15); }
+.bg-swatch--giangsinh { background: linear-gradient(135deg, #2a1518, #14251a); }
+.bg-swatch--tet { background: linear-gradient(135deg, #2a1416, #3a2c12); }
+
+[data-tv] .bg-theme-pick { width: 140px; font-size: 20px; gap: 10px; }
+[data-tv] .bg-swatch { width: 110px; height: 110px; font-size: 40px; border-radius: 26px; }

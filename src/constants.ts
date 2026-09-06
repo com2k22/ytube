@@ -17,7 +17,18 @@ export function profileEmoji(profile: { avatar?: string | null } | null | undefi
 
 // Bộ emoji có sẵn để chọn khi thêm bé mới / đổi emoji — gõ emoji bằng điều khiển TV rất
 // bất tiện nên cho chọn từ danh sách dựng sẵn thay vì gõ tự do.
-export const PROFILE_EMOJI_PRESETS = ['🐵', '🦄', '🐻', '🐰', '🐱', '🐶', '🦁', '🐼', '🦊', '🐧', '🐸', '🐯'];
+// Xếp theo NHÓM 6 emoji/hàng (khớp đúng số cột "pkidemoji" khai trong Layout.tsx) để lưới
+// chọn luôn đều hàng, không lẻ ô ở cuối: 2 hàng đầu là bộ cũ (giữ nguyên thứ tự để hồ sơ đã
+// tạo từ trước không bị đổi icon), các hàng sau là thú thêm mới + vài icon vui không phải
+// con vật, cho bé thích thứ khác vẫn có lựa chọn.
+export const PROFILE_EMOJI_PRESETS = [
+  '🐵', '🦄', '🐻', '🐰', '🐱', '🐶',
+  '🦁', '🐼', '🦊', '🐧', '🐸', '🐯',
+  '🐨', '🐹', '🐭', '🐷', '🐮', '🐔',
+  '🐤', '🐢', '🦋', '🐙', '🐳', '🦉',
+  '🐝', '🦒', '🐘', '🐬', '🦔', '🐴',
+  '🌟', '🎈', '🌈', '🚀', '⚽', '👑',
+];
 
 // Gmail chủ gia đình — phải khớp đúng với owner_email trong bảng "families"
 // (supabase/011_family_auth.sql). Dùng để tự điền sẵn ô email ở màn hình "đăng nhập bằng

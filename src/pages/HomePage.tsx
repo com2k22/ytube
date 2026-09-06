@@ -6,6 +6,7 @@ import { useAllowedSources } from '@/hooks/useAllowedSources';
 import { useWatchProgress } from '@/hooks/useWatchProgress';
 import { useContentLabels } from '@/hooks/useContentLabels';
 import { PlaylistCard } from '@/components/common/PlaylistCard';
+import { StreakBadge } from '@/components/common/StreakBadge';
 import { extractVideoId, extractPlaylistId } from '@/utils/youtubeParser';
 import { fetchVideoInfo } from '@/lib/youtube';
 import type { AllowedSource, ContentLabel } from '@/types';
@@ -210,6 +211,10 @@ export function HomePage() {
       <div className="greet">
         Xin chào, <span className="accent">{activeProfile.name}</span> 👋
       </div>
+
+      {/* Huy hiệu nhỏ "giữ đúng giờ xem N ngày liên tiếp" — tự ẩn khi bé chưa giữ được ngày
+          nào hoặc gia đình chưa đặt lịch giờ xem (xem StreakBadge.tsx). */}
+      <StreakBadge profileId={activeProfile.id} />
 
       {loading && <p style={{ opacity: 0.6 }}>Đang tải nội dung...</p>}
 

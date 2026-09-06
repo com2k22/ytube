@@ -15,6 +15,7 @@ import { useTimeRequests, DEFAULT_REQUEST_MINUTES } from '@/hooks/useTimeRequest
 import { useFamilyAuth } from '@/hooks/useFamilyAuth';
 import { useFamilyDevices } from '@/hooks/useFamilyDevices';
 import { useFamilyContentDevices } from '@/hooks/useFamilyContentDevices';
+import { useHomeBackground } from '@/hooks/useHomeBackground';
 import { useProfileContext } from '@/context/ProfileContext';
 import { notifyParentAboutRequest } from '@/lib/push';
 import { isSupabaseConfigured } from '@/lib/supabaseClient';
@@ -85,6 +86,9 @@ const SECTION_COLS = {
   pbackup: 1,
   // 'ppair' = 1 cột: nút "Tạo mã ghép" trong PairingCodeCard.
   ppair: 1,
+  // 'pbg' = 3 cột: lưới chọn hình nền Trang chủ trong HomeBackgroundCard.tsx (mỗi ô 1 hình
+  // nền + tên), xếp lưới ngang giống 'pkidemoji'.
+  pbg: 3,
 };
 
 /**
@@ -144,6 +148,13 @@ export function Layout() {
       if (location.pathname !== '/') navigate(-1);
     },
   });
+
+  // Hình nền Trang chủ theo mùa/dịp lễ (xem useHomeBackground.ts) — CỐ Ý chỉ áp dụng đúng
+  // lúc đang ở Trang chủ ("/"), KHÔNG áp dụng khi đang phát video hay đang ở khu Bố mẹ, để
+  // không ảnh hưởng mắt bé lúc xem phim và không đụng tới layout khu Bố mẹ đã tinh chỉnh
+  // riêng (xem theme.css phần "HÌNH NỀN TRANG CHỦ THEO MÙA/DỊP LỄ").
+  const { backgroundId: homeBackgroundId } = useHomeBackground();
+  const homeBgTheme = location.pathname === '/' ? homeBackgroundId : null;
 
   const gate = useTimeGate();
   const { unlocked, grant } = useTempUnlock();
@@ -227,7 +238,7 @@ export function Layout() {
   }, [location.pathname, pinOpen, showGoogleGate, showBlockScreen, showBreakScreen, needsFamilySetup, resetFocus]);
 
   return (
-    <div className="layout" ref={layoutRef}>
+    <div className="layout" ref={layoutRef} data-bg-theme={homeBgTheme ?? undefined}>
       {!isSupabaseConfigured && (
         <div
           style={{
