@@ -74,13 +74,17 @@ export function HomePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [progressRows, sources, hiddenLabelId]);
 
-  // Video thuộc playlist YouTube THẬT (không phải playlist tự tạo) — chưa biết tên/ảnh
-  // thật của đúng video đó (chỉ có tên/ảnh của cả playlist), phải tự dò riêng qua YouTube
-  // Data API theo videoId (giống cách AddSourceForm dò tiêu đề khi thêm nội dung).
+  // Video thuộc playlist YouTube THẬT hoặc video "mượn" từ 1 kênh whitelist (KHÔNG phải
+  // playlist tự tạo) — chưa biết tên/ảnh thật của đúng video đó (chỉ có tên/ảnh của cả
+  // playlist/kênh), phải tự dò riêng qua YouTube Data API theo videoId (giống cách
+  // AddSourceForm dò tiêu đề khi thêm nội dung).
   useEffect(() => {
     const missingIds = continuingRows
       .map((r) => ({ r, src: sources.find((s) => s.id === r.source_id) }))
-      .filter(({ src, r }) => src?.type === 'youtube_playlist' && !(r.video_ref in videoInfoCache))
+      .filter(
+        ({ src, r }) =>
+          (src?.type === 'youtube_playlist' || src?.type === 'youtube_channel') && !(r.video_ref in videoInfoCache)
+      )
       .map(({ r }) => r.video_ref);
     if (missingIds.length === 0) return;
     let cancelled = false;
@@ -117,6 +121,15 @@ export function HomePage() {
         }
       } else if (source.type === 'youtube_playlist') {
         playlistId = extractPlaylistId(source.url);
+        const info = videoInfoCache[r.video_ref];
+        if (info) {
+          title = info.title;
+          thumbnail = info.thumbnail;
+        }
+      } else if (source.type === 'youtube_channel') {
+        // Video "mượn" từ 1 playlist của kênh — không có playlistId cố định lưu sẵn theo
+        // video (chỉ có sourceId của kênh), nên mở lại như 1 video lẻ (vẫn tua đúng chỗ
+        // đang xem dở bình thường, chỉ không kèm "video tiếp theo trong playlist").
         const info = videoInfoCache[r.video_ref];
         if (info) {
           title = info.title;

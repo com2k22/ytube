@@ -12,8 +12,11 @@ interface Props {
   /** id playlist THẬT trên YouTube — null cho playlist tự tạo (custom_playlist) hoặc khi
    * không áp dụng; dùng để trang phát video tải tiếp "video tiếp theo" qua API YouTube. */
   playlistId?: string | null;
-  /** id trong bảng allowed_sources — null nếu playlist này chỉ "mượn" từ 1 kênh whitelist,
-   * trường hợp đó bỏ qua theo dõi tiến độ (continue-watching) cho đơn giản. */
+  /** id trong bảng allowed_sources dùng làm CHỖ LƯU tiến độ xem (continue-watching) —
+   * playlist/video riêng thì dùng đúng id của chính nó; playlist "mượn" từ 1 kênh whitelist
+   * (không có dòng whitelist riêng) thì dùng ĐÚNG id của dòng "Kênh yêu thích" đó (xem
+   * ChannelPlaylistPage.tsx) — vẫn thoả khoá ngoại của watch_progress mà không cần thêm dữ
+   * liệu gì mới. null = không áp dụng, bỏ qua theo dõi tiến độ. */
   progressSourceId: string | null;
   onBack: () => void;
 }
