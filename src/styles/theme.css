@@ -1693,25 +1693,6 @@ body {
 }
 
 /* =====================================================================
-   HUY HIỆU "GIỮ ĐÚNG GIỜ XEM N NGÀY LIÊN TIẾP" (StreakBadge.tsx)
-   ===================================================================== */
-.streak-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin: 10px 0 18px;
-  padding: 8px 16px;
-  border-radius: 999px;
-  font-weight: 800;
-  font-size: 14px;
-  color: #ffb02e;
-  background: rgba(255, 176, 46, 0.14);
-  border: 1px solid rgba(255, 176, 46, 0.35);
-  width: fit-content;
-}
-[data-tv] .streak-badge { font-size: 26px; padding: 14px 26px; gap: 12px; margin: 16px 0 26px; }
-
-/* =====================================================================
    HÌNH NỀN TRANG CHỦ THEO MÙA/DỊP LỄ (backgroundThemes.ts + useHomeBackground.ts)
    =====================================================================
    Cách hoạt động: Layout.tsx gắn thuộc tính data-bg-theme="<id>" lên .layout CHỈ KHI đang
