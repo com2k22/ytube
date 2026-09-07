@@ -1639,9 +1639,8 @@ body {
   :root:not([data-tv]) .main:not(.parent-page) { padding: 20px 24px 50px; min-width: 0; }
 
   /* --- .shelf-cap3 (dùng cho 3 khối "Tiếp tục xem"/"Danh sách"/"Video đề xuất" ở Trang
-     chủ): bỏ mức trần cỡ pixel cũ (tính riêng cho máy tính) — cả 2 kiểu bên dưới (lưới cho
-     chuột, cuộn ngang cho cảm ứng) đều tự lấp kín đúng 3 cột full bề ngang, không cần trần
-     nữa. --- */
+     chủ): bỏ mức trần cỡ pixel cũ (tính riêng cho máy tính) — khối lưới 3 cột bên dưới tự
+     lấp kín đúng 3 cột full bề ngang, không cần trần nữa. --- */
   :root:not([data-tv]) .main:not(.parent-page) .shelf-cap3 { max-width: none; }
 
   /* --- Trang Kênh / danh sách video playlist (.grid3): mặc định đã là 3 cột co giãn
@@ -1656,20 +1655,12 @@ body {
 
 /* =====================================================================
    3 khối "Tiếp tục xem" / "Danh sách" / "Video đề xuất" ở Trang chủ (≥701px, không phải
-   TV) — TÁCH RIÊNG 2 KIỂU theo cách người dùng THAO TÁC (chuột hay chạm), dùng đúng tính
-   năng CSS chuẩn cho việc này — media feature "pointer" — KHÔNG phải đoán qua User-Agent:
-     • (pointer: fine)   = có chuột/trackpad chính xác  → MÁY TÍNH/LAPTOP.
-     • (pointer: coarse) = chỉ điều khiển bằng ngón tay  → IPAD/TABLET CẦM CHẠM.
-   (Nếu 1 chiếc iPad có gắn thêm chuột/bàn phím rời thì trình duyệt tự báo "fine" — lúc đó
-   xử lý kiểu máy tính CŨNG hợp lý, vì người dùng đang thao tác bằng chuột thật.)
-
-   Máy tính: xuống hàng dưới khi nhiều hơn 3 video (thuận cuộn dọc bằng chuột/trackpad).
-   iPad/tablet: giữ ĐÚNG 1 hàng, nhiều hơn 3 video thì VUỐT SANG NGANG mới thấy tiếp (thuận
-   thao tác vuốt bằng ngón tay hơn là cuộn dọc cả trang) — cả 2 kiểu đều lấp kín đúng 3 cột
-   full bề ngang màn hình, không chừa khoảng đen thừa. Cố ý CHỪA RIÊNG channel-shelf (hàng
-   kênh yêu thích) ở cả 2 kiểu — hàng đó là dải avatar tròn, luôn cuộn ngang như cũ.
+   TV, tức iPad/tablet/máy tính) — ĐỔI LẠI dùng CHUNG 1 kiểu cho cả 3 loại màn hình này
+   (bỏ hẳn ý định tách riêng theo chuột/chạm ở bản trước — đã đổi ý): LƯỚI 3 CỘT CO GIÃN,
+   nhiều hơn 3 thì tự xuống hàng dưới, KHÔNG cuộn ngang. Cố ý CHỪA RIÊNG channel-shelf
+   (hàng kênh yêu thích) — hàng đó là dải avatar tròn, vẫn cuộn ngang như cũ.
    ===================================================================== */
-@media (min-width: 701px) and (pointer: fine) {
+@media (min-width: 701px) {
   :root:not([data-tv]) .main:not(.parent-page) .shelf:not(.channel-shelf) {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -1681,21 +1672,14 @@ body {
     width: auto;
     min-width: 0;
   }
-}
 
-@media (min-width: 701px) and (pointer: coarse) {
-  :root:not([data-tv]) .main:not(.parent-page) .shelf:not(.channel-shelf) {
-    display: flex;
-    flex-wrap: nowrap;
-    gap: 28px;
-    overflow-x: auto;
-  }
-  /* Cỡ mỗi thẻ = đúng 1/3 bề ngang sau khi trừ 2 khoảng cách giữa 3 thẻ — LUÔN hiện đúng
-     3 thẻ lấp kín màn hình, thẻ thứ 4 trở đi nằm ngoài, vuốt sang ngang mới thấy. */
-  :root:not([data-tv]) .main:not(.parent-page) .shelf:not(.channel-shelf) .card {
-    flex: 0 0 calc((100% - 2 * 28px) / 3);
-    width: auto;
-    min-width: 0;
+  /* --- Riêng khối "Tiếp tục xem" (đánh dấu bằng class "shelf-continue" — xem
+     HomePage.tsx): CHỈ hiện tối đa 3 video, ĐÚNG 1 hàng, không xuống hàng, không cuộn
+     ngang — video thứ 4 trở đi (nếu có) ẩn hẳn đi. ":nth-child" đếm theo đúng thứ tự
+     thẻ thật trong HTML (không tính theo thẻ nào đang ẩn/hiện) nên luôn đúng dù có bao
+     nhiêu video "đang xem" đi nữa. */
+  :root:not([data-tv]) .main:not(.parent-page) .shelf-continue.shelf > .card:nth-child(n + 4) {
+    display: none;
   }
 }
 

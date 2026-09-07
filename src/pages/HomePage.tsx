@@ -230,11 +230,15 @@ export function HomePage() {
         // ô chọn đang nằm trong ĐÚNG khối này mà phóng to riêng dòng tiêu đề của khối đó —
         // xem .section-block:focus-within .section-title trong theme.css.
         // Mỗi thẻ ở đây LÀ 1 VIDEO cụ thể (không phải cả playlist) — xem continuingVideos.
+        // "shelf-continue" — đánh dấu riêng khối này (khác "Danh sách"/"Video đề xuất")
+        // để CSS giới hạn riêng khối này chỉ hiện tối đa 3 video/1 hàng trên iPad/tablet/
+        // máy tính (xem ".shelf-continue" trong theme.css) — 2 khối kia vẫn xuống hàng
+        // bình thường khi nhiều hơn 3.
         <div className="section-block">
           <div className="section-title">
             <PlayCircle className="section-icon" aria-hidden="true" /> Tiếp tục xem
           </div>
-          <div className="shelf shelf-cap3" style={{ marginBottom: 32 }}>
+          <div className="shelf shelf-cap3 shelf-continue" style={{ marginBottom: 32 }}>
             {continuingVideos.map((entry) => (
               <PlaylistCard
                 key={`${entry.source.id}:${entry.row.video_ref}`}
