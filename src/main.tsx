@@ -48,6 +48,36 @@ if (isTvScreen()) {
   document.documentElement.setAttribute('data-tv', '1');
 }
 
+/**
+ * Bật "chế độ iPad" — menu trái thu gọn thành dải icon (ẩn chữ), header gọn hơn, và cỡ
+ * thẻ video/khoảng cách thu nhỏ vừa đủ để LUÔN thấy đúng 3 thẻ/hàng không cần cuộn ngang
+ * (xem khối "CHẾ ĐỘ IPAD" trong theme.css). CHỈ áp dụng cho iPad — máy tính, điện thoại,
+ * TV giữ nguyên y hệt như cũ.
+ *
+ * CỐ Ý nhận diện theo THIẾT BỊ THẬT (giống hệt cách làm isTvScreen ở trên), KHÔNG theo bề
+ * ngang cửa sổ: nếu dùng kiểu "bề ngang ≤ Xpx thì tính là iPad", 1 cửa sổ trình duyệt trên
+ * máy tính lỡ kéo hẹp lại cũng bị tính nhầm thành iPad, đổi giao diện oan uổng.
+ *
+ * 2 cách nhận biết, cần cả 2 vì iPadOS (từ bản 13) mặc định gửi User-Agent giống hệt máy
+ * Mac thật (do bật sẵn "Yêu cầu trang web dành cho máy tính"):
+ *  1. User-Agent có chữ "iPad" — đúng với iPadOS cũ hơn, hoặc khi người dùng tắt tuỳ chọn
+ *     "Yêu cầu trang web dành cho máy tính" trong Safari.
+ *  2. Dự phòng cho iPadOS mới: platform báo "MacIntel" (giống Mac) NHƯNG có cảm ứng nhiều
+ *     điểm chạm (maxTouchPoints > 1) — máy Mac thật (chuột/trackpad) không có đặc điểm này.
+ */
+function isIpadScreen(): boolean {
+  try {
+    if (/ipad/i.test(navigator.userAgent)) return true;
+    return navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+  } catch {
+    return false;
+  }
+}
+
+if (!isTvScreen() && isIpadScreen()) {
+  document.documentElement.setAttribute('data-ipad', '1');
+}
+
 /*
   Đăng ký phần chạy ngầm (service worker) — bắt buộc phải có thì ĐIỆN THOẠI mới nhận được
   thông báo đẩy lúc app đã đóng.

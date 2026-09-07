@@ -243,6 +243,92 @@ Cách này không cần cài thêm gì, không có "giới hạn 50 tiếng" hay
 cả — mỗi lần bạn cập nhật code, chỉ cần deploy lại trên Vercel, mở lại app trên
 iPad là thấy bản mới ngay (không cần cài lại).
 
+### Bước G — Đóng gói `.apk` dùng CHUNG cho điện thoại Android & Android TV
+
+Bước F ở trên (PWA) đã đủ dùng cho hầu hết trường hợp trên điện thoại/máy tính bảng —
+chỉ làm Bước G này nếu muốn có hẳn 1 file `.apk` để cài như app thật (vd: TV Android
+không hỗ trợ kiểu "Thêm vào màn hình chính" như điện thoại).
+
+Nguyên lý giống HỆT Bước E (webOS): file `.apk` chỉ là 1 lớp vỏ mỏng mở link Vercel
+qua `https://`, KHÔNG nhúng code app vào trong — nhờ vậy video YouTube phát bình
+thường (không bị lỗi kiểu "Lỗi 153" như cách đóng gói cũ), và mỗi lần sửa code chỉ
+cần deploy lại Vercel là điện thoại/TV tự có bản mới, KHÔNG cần đóng gói `.apk` lại.
+
+**G.1 — Tạo file `.apk` bằng PWABuilder (miễn phí, làm ngay trên trình duyệt máy tính,
+không cần cài phần mềm gì)**
+
+1. Vào https://www.pwabuilder.com bằng trình duyệt máy tính.
+2. Dán link Vercel của bạn vào ô tìm kiếm, bấm **Start**.
+3. Đợi vài giây — PWABuilder tự kiểm tra 3 mục (Manifest / Service Worker / HTTPS).
+   App này đã có sẵn cả 3 (đã chuẩn bị từ Bước F) nên thường thấy dấu ✅ hết, không
+   cần sửa gì thêm.
+4. Bấm **Package For Stores** → chọn thẻ **Android**.
+5. Điền các mục hiện ra:
+   - **Package ID**: gõ `com.ytube.minacom` (giống tên app webOS cho đồng bộ, không
+     bắt buộc phải trùng).
+   - **App name**: để mặc định "Ytube" (tự lấy từ manifest có sẵn).
+   - **Signing key**: chọn **"Create new"** để PWABuilder tự tạo giúp. Bấm tải file
+     khoá đó về máy và **CẤT KỸ, đừng làm mất** — lần sau muốn cập nhật icon/tên app
+     (đóng gói `.apk` mới) mà không có đúng file khoá này thì máy sẽ coi là 1 app
+     hoàn toàn khác, không cài đè lên bản cũ được, phải gỡ bản cũ đi cài lại từ đầu.
+   - **Fallback Behavior**: chọn **"Web View"** (KHÔNG chọn "Custom Tabs"). Đây là
+     lựa chọn quan trọng nhất — giúp app tự mang theo trình duyệt riêng bên trong,
+     chạy được cả trên Android TV (phần lớn TV Android KHÔNG có sẵn trình duyệt
+     Chrome cài riêng như điện thoại, chọn "Custom Tabs" sẽ không mở được trên TV).
+6. Bấm **Generate** → tải về 1 file `.zip`.
+7. Giải nén ra, tìm file đuôi `.apk` bên trong (thường nằm trong thư mục dạng
+   `app-release-signed`) — đây chính là file sẽ cài lên điện thoại và TV.
+
+**G.2 — Cài lên điện thoại Android**
+
+1. Chuyển file `.apk` vào điện thoại (gửi qua Zalo/Email cho chính mình, dây cáp,
+   hoặc Google Drive rồi tải về trên điện thoại).
+2. Mở file đó trên điện thoại — nếu máy hỏi "Cho phép cài từ nguồn này", bấm
+   Cho phép/Cài đặt.
+3. Xong sẽ có icon Ytube trên màn hình điện thoại — bấm vào mở full màn hình y như
+   app thật, tự khoá thẳng vào Khu vực Bố mẹ giống hệt bên iPhone.
+
+**G.3 — Cài lên Android TV**
+
+Android TV không có cách "mở file cài" dễ như điện thoại, chọn 1 trong 2 cách:
+
+*Cách A — dễ nhất, không cần máy tính:*
+1. Trên Android TV, vào kho ứng dụng (Play Store/CH Play), tìm và cài app miễn phí
+   **"Downloader"** (biểu tượng màu vàng, của AFTVnews) — TV Android/Google TV nào
+   cũng có sẵn trên kho.
+2. Tải file `.apk` lên Google Drive, bấm chia sẻ để lấy link tải trực tiếp (hoặc bất
+   kỳ dịch vụ chia sẻ file nào có link tải thẳng).
+3. Mở app "Downloader" trên TV, gõ đúng link đó vào ô, bấm tải — Downloader tự hỏi
+   "Cài đặt", bấm Cài đặt là xong.
+
+*Cách B — dùng máy tính, giống hệt cách cài webOS bằng lệnh (`adb` thay cho `ares`):*
+1. Trên TV: vào **Cài đặt > Giới thiệu** (About), bấm liên tục vào **"Số bản dựng"**
+   (Build number) vài lần để mở **Tuỳ chọn nhà phát triển**, vào đó bật
+   **"Gỡ lỗi USB qua mạng"** (Network debugging) — TV hiện ra 1 địa chỉ IP.
+2. Trên máy tính, tải **"Android SDK Platform Tools"** (tìm trên Google, có bản
+   Windows), giải nén ra 1 thư mục.
+3. Mở Command Prompt tại đúng thư mục đó, gõ:
+   ```
+   adb connect <IP-của-TV>:5555
+   adb install duong-dan-toi-file.apk
+   ```
+
+Lưu ý: vì đây là app đóng gói kiểu điện thoại, TV có thể KHÔNG hiện icon ở hàng
+Launcher chính — mở mục **"Ứng dụng đã cài"** (Apps) trong Cài đặt TV để tìm và mở
+lần đầu.
+
+**Cập nhật app sau này**: giống hệt webOS — sửa code chỉ cần deploy lại Vercel,
+KHÔNG cần đóng gói `.apk` lại. Chỉ khi đổi icon/tên app mới cần làm lại G.1 (nhớ
+dùng ĐÚNG file signing key cũ để cài đè được lên bản đang có).
+
+**Vài lỗi hay gặp:**
+- **"App not installed" khi cài trên điện thoại**: máy có thể đã có 1 bản Ytube
+  khác cài từ trước với chữ ký khác nhau — gỡ bản cũ rồi cài lại.
+- **Mở app thấy toàn màn hình trắng**: TV/điện thoại không có mạng, hoặc link Vercel
+  chưa đúng — thử mở đúng link đó bằng trình duyệt xem có ra app không.
+- **Cài xong trên Android TV mà không thấy icon đâu**: mở **"Ứng dụng đã cài"**
+  trong Cài đặt TV để tìm — kiểu cài này thường không tự lên hàng Launcher chính.
+
 ## 4. Giới hạn hiện tại (được chọn có chủ đích để giữ mọi thứ đơn giản, miễn phí)
 
 - **PIN mặc định**: `1234` — vào tab "🔑 Đổi PIN" trong khu Bố mẹ để đổi ngay sau khi
