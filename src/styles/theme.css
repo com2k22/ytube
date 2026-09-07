@@ -1561,49 +1561,98 @@ body {
 }
 
 /* =====================================================================
-   CHẾ ĐỘ IPAD — menu trái ẩn chữ (chỉ còn icon), header gọn hơn, thẻ video/khoảng cách thu
-   nhỏ vừa đủ để LUÔN thấy đúng 3 thẻ/hàng ở khối "Tiếp tục xem"/"Danh sách"/"Video đề xuất"
-   mà không phải cuộn ngang mới thấy hết. Gắn theo thuộc tính [data-ipad] (nhận diện THIẾT
-   BỊ, không theo bề ngang cửa sổ — xem main.tsx) nên KHÔNG đụng gì tới máy tính/điện
-   thoại/TV, kể cả khi cửa sổ máy tính bị kéo hẹp trùng đúng bề ngang 1 chiếc iPad.
+   CHẾ ĐỘ MÀN HÌNH NGANG (iPad / tablet / máy tính) — menu trái ẩn chữ (chỉ còn icon),
+   header gọn hơn, và các khối thẻ video ở Trang chủ đổi thành LƯỚI 3 CỘT CO GIÃN (tự to/
+   nhỏ lấp kín bề ngang màn hình, không còn cỡ thẻ cố định + cuộn ngang như bản máy tính).
 
-   Vì sao phải thu nhỏ CẢ card lẫn khoảng cách (không chỉ menu): menu trái từ 248px xuống
-   ~76px chỉ cứu được ~170px — vẫn chưa đủ chỗ cho 3 thẻ cỡ 310px (cỡ máy tính) trên màn
-   hình iPad hẹp nhất (iPad mini đứng dọc, 744px). Phải giảm thêm cỡ thẻ mới vừa khít.
+   ĐỔI CÁCH NHẬN DIỆN so với bản trước: bản trước dò iPad qua User-Agent (thiết bị thật,
+   xem lịch sử ở main.tsx), nhưng máy tính thì không có "thiết bị" đặc trưng nào để dò —
+   nay đổi sang dò theo BỀ NGANG CỬA SỔ (`@media (min-width: 701px)`), áp dụng chung cho cả
+   iPad/tablet/máy tính. Không lo trùng với điện thoại thật: điện thoại thật (bề ngang
+   ≤700px) đã bị code JS khoá thẳng về trang Bố mẹ TRƯỚC khi các CSS này kịp render (xem
+   enforcePhoneParentOnly trong Layout.tsx + isPhoneScreen trong screenSize.ts) — dù mở
+   bằng cách nào (trình duyệt, PWA cài vào màn hình chính, hay app .apk đóng gói), nên
+   "≥701px" ở khối này chắc chắn không phải điện thoại thật.
+
+   Toàn bộ khối này CHỦ Ý dùng ":root:not([data-tv])" cho mọi luật + ".main:not(.parent-page)"
+   ở những luật liên quan tới nội dung, để:
+    • KHÔNG đụng gì tới [data-tv] — TV giữ nguyên y hệt như cũ.
+    • KHÔNG đụng gì tới trang Bố mẹ (.parent-page) — trang đó giữ nguyên y hệt như cũ,
+      dùng riêng 2 khối "≤760px"/"≥1000px" đã có từ trước.
    ===================================================================== */
-[data-ipad] {
-  --card-w: 198px;
-  --shelf-gap: 16px;
-}
+@media (min-width: 701px) {
+  /* --- Menu trái: thu gọn thành dải icon, phong cách giống TV nhưng cỡ vừa tay chạm/
+     chuột (không to như bên TV, vốn tính cho ngồi xa 3-4m bấm điều khiển). Có cộng thêm
+     env(safe-area-inset-top) vào khoảng đệm trên cùng — TRƯỚC ĐÂY chỉ .topbar có khoảng
+     đệm an toàn này, .sidebar thì không, nên trên iPad cài vào màn hình chính (thanh
+     trạng thái trong suốt, đè lên nội dung) icon đầu tiên (avatar hồ sơ) bị lấn lên thanh
+     trạng thái — nay thêm vào đây để tránh lặp lại lỗi đó. */
+  :root:not([data-tv]) .sidebar {
+    width: 88px;
+    padding: calc(14px + env(safe-area-inset-top, 0px)) 10px 14px;
+  }
+  :root:not([data-tv]) .side-item {
+    width: 58px; height: 58px; padding: 0; margin: 0 auto 10px;
+    justify-content: center; gap: 0; border-radius: 16px;
+  }
+  :root:not([data-tv]) .side-icon { font-size: 22px; line-height: 1; }
+  :root:not([data-tv]) .side-text { display: none; }
+  :root:not([data-tv]) .sidebar-deco { display: none; }
+  :root:not([data-tv]) .sidebar-profile .profile-btn {
+    width: 58px; height: 58px; padding: 0; margin: 0 auto 10px;
+    justify-content: center; gap: 0; border-radius: 16px;
+  }
+  :root:not([data-tv]) .sidebar-profile .avatar { width: 36px; height: 36px; font-size: 19px; }
+  :root:not([data-tv]) .sidebar-profile .profile-name-text,
+  :root:not([data-tv]) .sidebar-profile .profile-caret { display: none; }
+  :root:not([data-tv]) .sidebar-profile .profile-menu { top: 0; left: 100%; right: auto; margin-left: 12px; }
 
-/* --- Menu trái: thu gọn thành dải icon, giống hệt cách làm cho TV/điện thoại (chỉ khác
-   kích cỡ, chọn to hơn TV 1 chút cho vừa tay chạm) --- */
-[data-ipad] .sidebar { width: 76px; padding: 14px 8px; }
-[data-ipad] .side-item {
-  width: 54px; height: 54px; padding: 0; margin: 0 auto 10px;
-  justify-content: center; gap: 0; border-radius: 16px;
-}
-[data-ipad] .side-icon { font-size: 22px; line-height: 1; }
-[data-ipad] .side-text { display: none; }
-[data-ipad] .sidebar-deco { display: none; }
-[data-ipad] .sidebar-profile .profile-btn {
-  width: 54px; height: 54px; padding: 0; margin: 0 auto 10px;
-  justify-content: center; gap: 0; border-radius: 16px;
-}
-[data-ipad] .sidebar-profile .avatar { width: 34px; height: 34px; font-size: 18px; }
-[data-ipad] .sidebar-profile .profile-name-text,
-[data-ipad] .sidebar-profile .profile-caret { display: none; }
-[data-ipad] .sidebar-profile .profile-menu { top: 0; left: 100%; right: auto; margin-left: 12px; }
+  /* --- Header gọn hơn (không ẩn chữ "Ytube", chỉ giảm chiều cao gốc). Khai lại rõ cả
+     padding (không chỉ height): vùng bề ngang 701-760px (vd iPad mini đứng dọc, 744px)
+     trùng với khối "≤760px" phía trên — khối đó vốn tính riêng cho ĐIỆN THOẠI, tắt hẳn
+     khoảng đệm an toàn (padding:0) và ẩn chữ "Ytube" (.brand font-size:0) — nếu không
+     khai lại ở đây thì 2 luật đó vẫn "lọt" vào đúng dải bề ngang này, làm chữ header lại
+     đè lên thanh trạng thái + mất chữ "Ytube". */
+  :root:not([data-tv]) .topbar {
+    height: calc(64px + env(safe-area-inset-top, 0px));
+    padding: env(safe-area-inset-top, 0px) 20px 0;
+  }
+  :root:not([data-tv]) .brand { font-size: 26px; padding: 0; justify-content: flex-start; gap: 9px; }
+  :root:not([data-tv]) .logo-badge { width: 44px; height: 31px; border-radius: 10px; }
 
-/* --- Header gọn hơn (không ẩn chữ "Ytube", chỉ giảm chiều cao/khoảng đệm) --- */
-[data-ipad] .topbar { height: calc(60px + env(safe-area-inset-top, 0px)); padding: env(safe-area-inset-top, 0px) 16px 0; }
-[data-ipad] .main { padding: 16px 18px 50px; }
+  /* --- min-width: 0 — BẮT BUỘC phải có: .main là 1 ô flex (xem .layout{display:flex}),
+     mặc định ô flex không tự co nhỏ hơn nội dung bên trong nó dù có set padding gì đi
+     nữa. Bản trước THIẾU dòng này (dù bên TV, dòng ~605, đã có sẵn) — đây chính là
+     nguyên nhân "trang chính bị tràn trang" trên iPad thật: khối .shelf cuộn ngang bên
+     trong vẫn đẩy .main rộng ra quá khổ màn hình, sinh thanh cuộn ngang cho CẢ TRANG. */
+  :root:not([data-tv]) .main:not(.parent-page) { padding: 20px 24px 50px; min-width: 0; }
 
-/* --- Ép luôn 3 cột cho các trang danh sách (trang Kênh, danh sách video playlist) — mặc
-   định (xem .grid3 ở trên) đã là 3 cột co giãn theo bề rộng nên hầu hết iPad không cần sửa
-   gì, CHỈ riêng iPad mini đứng dọc (744px) đang bị khối "≤760px" phía trên ép về 1 cột
-   (vốn dành cho điện thoại) — ghi đè lại đúng 3 cột cho mọi iPad. */
-[data-ipad] .grid3 { grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  /* --- 3 khối "Tiếp tục xem" / "Danh sách" / "Video đề xuất" ở Trang chủ: đổi từ 1 hàng
+     cuộn ngang cỡ thẻ CỐ ĐỊNH (bản máy tính cũ) sang LƯỚI 3 CỘT CO GIÃN — thẻ tự to/nhỏ
+     theo đúng bề ngang đang có, lấp kín hết chiều ngang (không chừa khoảng đen thừa, cũng
+     không bị bóp méo), nhiều hơn 3 cái thì tự xuống hàng dưới, KHÔNG cần cuộn ngang nữa.
+     Cố ý CHỪA RIÊNG channel-shelf (hàng kênh yêu thích) — hàng đó là dải avatar tròn, vẫn
+     nên cuộn ngang như cũ, không phải kiểu lưới. */
+  :root:not([data-tv]) .main:not(.parent-page) .shelf:not(.channel-shelf) {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    overflow: visible;
+  }
+  :root:not([data-tv]) .main:not(.parent-page) .shelf:not(.channel-shelf) .card {
+    flex: none;
+    width: auto;
+    min-width: 0;
+  }
+  :root:not([data-tv]) .main:not(.parent-page) .shelf-cap3 { max-width: none; }
+
+  /* --- Trang Kênh / danh sách video playlist (.grid3): mặc định đã là 3 cột co giãn
+     theo bề rộng nên hầu hết không cần sửa gì, CHỈ riêng vùng 701-760px (vd iPad mini
+     đứng dọc, 744px) đang bị khối "≤760px" phía trên (dòng ~889, vốn tính cho điện
+     thoại) ép về 1 cột — ghi đè lại đúng 3 cột. Đặt SAU khối đó trong file nên thắng
+     được (CSS cùng độ ưu tiên thì luật đứng sau thắng), không cần tăng độ ưu tiên. */
+  :root:not([data-tv]) .main:not(.parent-page) .grid3 { grid-template-columns: repeat(3, 1fr); gap: 20px; }
+}
 
 /* =====================================================================
    HUY HIỆU "GIỮ ĐÚNG GIỜ XEM N NGÀY LIÊN TIẾP" (StreakBadge.tsx)
