@@ -436,11 +436,22 @@ body {
 
 /* ============ PARENT DASHBOARD (quản lý thời gian) ============ */
 .parent-tabs { display: flex; gap: 10px; margin: 20px 0 26px; }
-.tab-btn { border: none; cursor: pointer; padding: 12px 20px; border-radius: 14px; font-weight: 800; font-size: 15px; }
+/* display: inline-flex + white-space: nowrap — BẮT BUỘC phải có: nút này chỉ là 1 thẻ
+   <button> chứa 2 <span> (icon + chữ, xem ParentDashboardPage.tsx), mặc định trình duyệt
+   xếp chúng theo dòng chữ bình thường — hễ nút bị ép hẹp lại (vd cột dọc 230px ở khối
+   "≥1000px" bên dưới) là icon/chữ có thể bị tách xuống 2 dòng ("Hồ sơ bé" xuống dòng giữa
+   chừng). inline-flex ép icon+chữ luôn nằm chung 1 hàng ngang, nowrap ép chữ không tự
+   xuống dòng dù nút có bị hẹp — đúng lỗi bạn thấy ở "Thời gian/Nội dung/Hồ sơ bé/Báo
+   cáo/Tài khoản". */
+.tab-btn {
+  border: none; cursor: pointer; padding: 12px 20px; border-radius: 14px;
+  font-weight: 800; font-size: 15px;
+  display: inline-flex; align-items: center; white-space: nowrap;
+}
 /* icon + chữ tách riêng 2 thẻ span (xem ParentDashboardPage.tsx) thay vì gộp chung 1 chuỗi
    — mặc định (máy tính/TV/iPad) chỉ cần khoảng cách nhỏ để đọc liền như 1 cụm "⏰ Thời
    gian"; điện thoại xếp lại thành icon trên/chữ dưới, xem khối "THANH MENU DƯỚI ĐÁY". */
-.tab-btn-icon { margin-right: 7px; }
+.tab-btn-icon { margin-right: 7px; display: inline-flex; align-items: center; }
 
 .mini-profiles { display: flex; gap: 10px; margin-bottom: 22px; }
 .mini-profile-btn { padding: 9px 18px; border-radius: 999px; font-weight: 700; font-size: 14px; cursor: pointer; border: 2px solid transparent; }
@@ -1627,16 +1638,42 @@ body {
      trong vẫn đẩy .main rộng ra quá khổ màn hình, sinh thanh cuộn ngang cho CẢ TRANG. */
   :root:not([data-tv]) .main:not(.parent-page) { padding: 20px 24px 50px; min-width: 0; }
 
-  /* --- 3 khối "Tiếp tục xem" / "Danh sách" / "Video đề xuất" ở Trang chủ: đổi từ 1 hàng
-     cuộn ngang cỡ thẻ CỐ ĐỊNH (bản máy tính cũ) sang LƯỚI 3 CỘT CO GIÃN — thẻ tự to/nhỏ
-     theo đúng bề ngang đang có, lấp kín hết chiều ngang (không chừa khoảng đen thừa, cũng
-     không bị bóp méo), nhiều hơn 3 cái thì tự xuống hàng dưới, KHÔNG cần cuộn ngang nữa.
-     Cố ý CHỪA RIÊNG channel-shelf (hàng kênh yêu thích) — hàng đó là dải avatar tròn, vẫn
-     nên cuộn ngang như cũ, không phải kiểu lưới. */
+  /* --- .shelf-cap3 (dùng cho 3 khối "Tiếp tục xem"/"Danh sách"/"Video đề xuất" ở Trang
+     chủ): bỏ mức trần cỡ pixel cũ (tính riêng cho máy tính) — cả 2 kiểu bên dưới (lưới cho
+     chuột, cuộn ngang cho cảm ứng) đều tự lấp kín đúng 3 cột full bề ngang, không cần trần
+     nữa. --- */
+  :root:not([data-tv]) .main:not(.parent-page) .shelf-cap3 { max-width: none; }
+
+  /* --- Trang Kênh / danh sách video playlist (.grid3): mặc định đã là 3 cột co giãn
+     theo bề rộng nên hầu hết không cần sửa gì, CHỈ riêng vùng 701-760px (vd iPad mini
+     đứng dọc, 744px) đang bị khối "≤760px" phía trên (dòng ~889, vốn tính cho điện
+     thoại) ép về 1 cột — ghi đè lại đúng 3 cột. Đặt SAU khối đó trong file nên thắng
+     được (CSS cùng độ ưu tiên thì luật đứng sau thắng), không cần tăng độ ưu tiên.
+     Gap tăng lên 28px (bằng đúng khoảng cách bản máy tính gốc) — thẻ co lại một chút,
+     khoảng cách giữa các thẻ rộng rãi hơn, mà vẫn lấp kín đúng 3 cột full bề ngang. */
+  :root:not([data-tv]) .main:not(.parent-page) .grid3 { grid-template-columns: repeat(3, 1fr); gap: 28px; }
+}
+
+/* =====================================================================
+   3 khối "Tiếp tục xem" / "Danh sách" / "Video đề xuất" ở Trang chủ (≥701px, không phải
+   TV) — TÁCH RIÊNG 2 KIỂU theo cách người dùng THAO TÁC (chuột hay chạm), dùng đúng tính
+   năng CSS chuẩn cho việc này — media feature "pointer" — KHÔNG phải đoán qua User-Agent:
+     • (pointer: fine)   = có chuột/trackpad chính xác  → MÁY TÍNH/LAPTOP.
+     • (pointer: coarse) = chỉ điều khiển bằng ngón tay  → IPAD/TABLET CẦM CHẠM.
+   (Nếu 1 chiếc iPad có gắn thêm chuột/bàn phím rời thì trình duyệt tự báo "fine" — lúc đó
+   xử lý kiểu máy tính CŨNG hợp lý, vì người dùng đang thao tác bằng chuột thật.)
+
+   Máy tính: xuống hàng dưới khi nhiều hơn 3 video (thuận cuộn dọc bằng chuột/trackpad).
+   iPad/tablet: giữ ĐÚNG 1 hàng, nhiều hơn 3 video thì VUỐT SANG NGANG mới thấy tiếp (thuận
+   thao tác vuốt bằng ngón tay hơn là cuộn dọc cả trang) — cả 2 kiểu đều lấp kín đúng 3 cột
+   full bề ngang màn hình, không chừa khoảng đen thừa. Cố ý CHỪA RIÊNG channel-shelf (hàng
+   kênh yêu thích) ở cả 2 kiểu — hàng đó là dải avatar tròn, luôn cuộn ngang như cũ.
+   ===================================================================== */
+@media (min-width: 701px) and (pointer: fine) {
   :root:not([data-tv]) .main:not(.parent-page) .shelf:not(.channel-shelf) {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
+    gap: 28px;
     overflow: visible;
   }
   :root:not([data-tv]) .main:not(.parent-page) .shelf:not(.channel-shelf) .card {
@@ -1644,14 +1681,22 @@ body {
     width: auto;
     min-width: 0;
   }
-  :root:not([data-tv]) .main:not(.parent-page) .shelf-cap3 { max-width: none; }
+}
 
-  /* --- Trang Kênh / danh sách video playlist (.grid3): mặc định đã là 3 cột co giãn
-     theo bề rộng nên hầu hết không cần sửa gì, CHỈ riêng vùng 701-760px (vd iPad mini
-     đứng dọc, 744px) đang bị khối "≤760px" phía trên (dòng ~889, vốn tính cho điện
-     thoại) ép về 1 cột — ghi đè lại đúng 3 cột. Đặt SAU khối đó trong file nên thắng
-     được (CSS cùng độ ưu tiên thì luật đứng sau thắng), không cần tăng độ ưu tiên. */
-  :root:not([data-tv]) .main:not(.parent-page) .grid3 { grid-template-columns: repeat(3, 1fr); gap: 20px; }
+@media (min-width: 701px) and (pointer: coarse) {
+  :root:not([data-tv]) .main:not(.parent-page) .shelf:not(.channel-shelf) {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 28px;
+    overflow-x: auto;
+  }
+  /* Cỡ mỗi thẻ = đúng 1/3 bề ngang sau khi trừ 2 khoảng cách giữa 3 thẻ — LUÔN hiện đúng
+     3 thẻ lấp kín màn hình, thẻ thứ 4 trở đi nằm ngoài, vuốt sang ngang mới thấy. */
+  :root:not([data-tv]) .main:not(.parent-page) .shelf:not(.channel-shelf) .card {
+    flex: 0 0 calc((100% - 2 * 28px) / 3);
+    width: auto;
+    min-width: 0;
+  }
 }
 
 /* =====================================================================
