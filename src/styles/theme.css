@@ -1631,11 +1631,20 @@ body {
   :root:not([data-tv]) .brand { font-size: 26px; padding: 0; justify-content: flex-start; gap: 9px; }
   :root:not([data-tv]) .logo-badge { width: 44px; height: 31px; border-radius: 10px; }
 
-  /* --- min-width: 0 — BẮT BUỘC phải có: .main là 1 ô flex (xem .layout{display:flex}),
-     mặc định ô flex không tự co nhỏ hơn nội dung bên trong nó dù có set padding gì đi
-     nữa. Bản trước THIẾU dòng này (dù bên TV, dòng ~605, đã có sẵn) — đây chính là
-     nguyên nhân "trang chính bị tràn trang" trên iPad thật: khối .shelf cuộn ngang bên
-     trong vẫn đẩy .main rộng ra quá khổ màn hình, sinh thanh cuộn ngang cho CẢ TRANG. */
+  /* --- min-width: 0 — BẮT BUỘC phải có, ở CẢ 2 CHỖ dưới đây:
+       1) .content-col — khối bọc ngoài .topbar + .main (xem Layout.tsx), chính là ô flex
+          THẬT SỰ nằm trong .layout (.layout{display:flex}). Mặc định 1 ô flex không tự co
+          nhỏ hơn phần nội dung rộng nhất bên trong nó — kể cả khi nội dung đó (vd hàng
+          "Kênh yêu thích" cuộn ngang) vẫn tự cuộn ổn bên trong, trình duyệt vẫn tính nó
+          vào "bề rộng tối thiểu cần có" của .content-col, rồi đẩy PHÌNH CẢ TRANG ra ngang.
+          Bên TV (dòng ~615) và điện thoại (dòng ~891) đã khai từ trước, bản trước cho
+          iPad/tablet/máy tính lại QUÊN mất dòng cho .content-col — đây chính xác là
+          nguyên nhân lỗi "hồ sơ có nhiều Kênh yêu thích hơn thì Trang chủ bị tràn trang,
+          3 cột phình to khỏi màn hình" (hồ sơ nào có hàng kênh dài hơn mới lộ ra, hồ sơ có
+          ít kênh thì không sao — đã dựng lại đúng lỗi này để xác nhận trước khi sửa).
+       2) .main — để CHÍNH các khối bên trong .main (lưới 3 cột, hàng thẻ...) cũng không bị
+          ép rộng thêm dù (1) đã sửa. */
+  :root:not([data-tv]) .content-col { min-width: 0; }
   :root:not([data-tv]) .main:not(.parent-page) { padding: 20px 24px 50px; min-width: 0; }
 
   /* --- .shelf-cap3 (dùng cho 3 khối "Tiếp tục xem"/"Danh sách"/"Video đề xuất" ở Trang
