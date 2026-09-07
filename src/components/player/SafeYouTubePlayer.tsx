@@ -180,9 +180,9 @@ export function SafeYouTubePlayer({
           iv_load_policy: 3,
           playsinline: 1,
           autoplay: autoFullscreen ? 1 : 0,
-          // Tua tới đúng chỗ đã xem dở lần trước ("Tiếp tục xem") — PlayerPage.tsx đã tự
-          // bỏ qua (truyền 0) nếu video này chưa xem dở hoặc đã xem gần xong.
-          start: Math.max(0, Math.floor(startSeconds ?? 0)),
+          // KHÔNG dùng "start" ở đây nữa (xem lý do trong onReady bên dưới) — video luôn
+          // được YouTube nạp bình thường từ giây 0, việc tua tới chỗ xem dở làm SAU, bằng
+          // seekTo() thật, khi player đã sẵn sàng.
           // cc_load_policy: 0 = KHÔNG chủ động bật phụ đề. Lưu ý: YouTube không có tham số
           // nào ép TẮT hẳn phụ đề — chỉ có tham số ép BẬT (đặt 1). Khi để 0, YouTube vẫn có
           // thể tự bật lại theo thói quen xem trước đó của thiết bị. Vì vậy còn phải gỡ hẳn
@@ -192,6 +192,21 @@ export function SafeYouTubePlayer({
         events: {
           onReady: () => {
             hideCaptions();
+            // Tua tới đúng chỗ đã xem dở lần trước ("Tiếp tục xem") — PlayerPage.tsx đã tự
+            // bỏ qua (truyền 0) nếu video này chưa xem dở hoặc đã xem gần xong.
+            //
+            // QUAN TRỌNG — vì sao gọi seekTo() Ở ĐÂY thay vì dùng tham số "start" trên URL
+            // (cách làm cũ): tham số "start" bắt YouTube phải TỰ ĐỆM (buffer) từ đầu file
+            // cho tới đúng giây đó rồi mới cho phát khung hình đầu tiên — trên mạng/máy yếu
+            // (đúng như trường hợp iPad được báo) bước đệm-trước-khi-phát này có thể rất
+            // chậm hoặc treo hẳn (màn hình cứ hiện "Đang tải video..." mãi không hết), vì
+            // trình duyệt phải tải xong 1 đoạn dữ liệu lớn TRƯỚC KHI cho biết video đã sẵn
+            // sàng. Ngược lại seekTo() gọi SAU khi player đã báo onReady sẽ cho video được
+            // nạp bình thường từ giây 0 trước (nhanh, giống hệt video mới chưa xem dở),
+            // rồi mới nhảy tới đúng giây cần xem — y hệt cơ chế khi bấm tua tay (vốn vẫn
+            // luôn nhanh, vì cũng gọi seekTo() sau khi player đã chạy).
+            const resumeAt = Math.max(0, Math.floor(startSeconds ?? 0));
+            if (resumeAt > 0) playerRef.current?.seekTo?.(resumeAt, true);
             if (autoFullscreen) {
               // Trình duyệt luôn cho phép tự phát nếu video đang TẮT TIẾNG — nên chủ động
               // tắt tiếng rồi tự bấm play qua API (đáng tin cậy hơn nhiều so với chỉ dựa
