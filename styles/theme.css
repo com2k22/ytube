@@ -1,0 +1,1763 @@
+/*
+  Toàn bộ style theo theme của app được gom ở đây, dùng thuộc tính data-theme trên thẻ
+  <html> (do ThemeContext set) để chuyển đổi giữa 2 theme: "dark" (Dark TV) và "chibi"
+  (Chibi Cute). Đây là bản chuyển thể trực tiếp từ file demo đã được bạn duyệt, giữ
+  nguyên toàn bộ tên class để dễ đối chiếu.
+*/
+
+:root {
+  --radius: 20px;
+  /* Độ rộng 1 thẻ video/playlist và khoảng cách giữa các thẻ — khai báo 1 chỗ ở đây để
+     chế độ TV (cuối file) chỉ cần đổi 2 biến này là mọi khối thẻ tự to lên đồng loạt,
+     kể cả lưới "Playlist đề xuất" ở Trang chủ (xem HomePage.tsx). */
+  /* Giảm nhẹ + giãn khoảng cách hơn bản trước (340/22) — đỡ rối mắt hơn khi các thẻ san
+     sát nhau. Cỡ chữ tiêu đề thẻ (.card-title) KHÔNG phụ thuộc 2 biến này (là px cố định
+     riêng, xem bên dưới) nên không hề nhỏ đi. */
+  --card-w: 310px;
+  --shelf-gap: 28px;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+/* Cuộn DỌC mượt mà (giống hệt cuộn NGANG của .shelf bên dưới) — chỉ cần khai báo CSS này,
+   mọi lệnh window.scrollBy/scrollTo (kể cả trong useTvNavigation.ts) tự động chạy có hiệu
+   ứng trượt thay vì nhảy giật cục. */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: ui-rounded, 'Segoe UI', Roboto, system-ui, sans-serif;
+  transition: background 0.35s ease, color 0.35s ease;
+  min-height: 100vh;
+  overflow-x: hidden;
+  margin: 0;
+}
+
+/* Trên TV: ưu tiên Roboto trước — đúng font chữ app YouTube trên TV dùng. webOS có sẵn
+   Roboto ở máy (không cần tải font ngoài), nên xếp lên đầu là trình duyệt TV dùng ngay,
+   không phải chờ mạng hay tải font web nào cả. Không đổi font ở bản điện thoại/máy tính,
+   giữ nguyên ui-rounded mềm mại như trước — đây là thay đổi CHỈ RIÊNG cho chế độ TV. */
+[data-tv] body,
+[data-tv] {
+  font-family: Roboto, 'Segoe UI', ui-rounded, system-ui, sans-serif;
+}
+
+/* ============ THEME 1: DARK TV ============ */
+/* --focus-color: màu viền sáng đánh dấu ô đang được chọn bằng điều khiển TV. Khai báo
+   thành biến để chế độ TV vẽ được viền đó quanh riêng phần ẢNH của thẻ (giống app
+   YouTube trên TV) mà không phải viết lại 2 lần cho 2 theme. */
+:root,
+[data-theme='dark'] {
+  --focus-color: #7c9cff;
+  /* Màu các bé trên biểu đồ "Báo cáo tuần" — bản cho nền TỐI (sáng hơn để nổi trên nền
+     đen). Gán theo THỨ TỰ tạo hồ sơ (bé 1 = --chart-1, bé 2 = --chart-2...), không gắn
+     theo tên — xem profileChartColor() trong src/constants.ts. 2 màu đầu (xanh dương +
+     cam) đã kiểm tra là phân biệt được với người mù màu; đừng đổi tuỳ ý. 2 màu sau dự
+     phòng cho khi có thêm bé thứ 3/4. */
+  --chart-1: #3987e5;
+  --chart-2: #d95926;
+  --chart-3: #7cd992;
+  --chart-4: #d97cd9;
+}
+[data-theme='dark'] body,
+body {
+  background: #0e0f13;
+  color: #f2f3f5;
+}
+[data-theme='dark'] .sidebar { background: #16171d; border-right: 1px solid #23242c; }
+[data-theme='dark'] .topbar { background: #16171d; border-bottom: 1px solid #23242c; }
+[data-theme='dark'] .card { background: #1b1c22; border: 1px solid #262731; }
+[data-theme='dark'] .card-thumb { background: linear-gradient(135deg, #3a3f8f, #8f3a6a); }
+[data-theme='dark'] .side-item { color: #c7c9d1; }
+[data-theme='dark'] .side-item.active { background: #2a2c38; color: #fff; }
+[data-theme='dark'] .accent { color: #7c9cff; }
+[data-theme='dark'] .brand { color: #fff; }
+[data-theme='dark'] .tv-focused {
+  outline: 4px solid #7c9cff;
+  box-shadow: 0 0 0 7px rgba(124, 156, 255, 0.25), 0 12px 28px rgba(0, 0, 0, 0.5);
+}
+[data-theme='dark'] .progress-fill { background: #7c9cff; }
+[data-theme='dark'] .watching-badge { background: #7c9cff; color: #0e0f13; }
+[data-theme='dark'] .channel-avatar { background: #23242c; border: 2px solid #2a2c38; }
+[data-theme='dark'] .back-btn { background: #23242c; color: #f2f3f5; }
+[data-theme='dark'] .tab-btn { background: #1b1c22; color: #c7c9d1; }
+[data-theme='dark'] .tab-btn.active { background: #7c9cff; color: #0e0f13; }
+[data-theme='dark'] .mini-profile-btn { background: #1b1c22; color: #c7c9d1; }
+[data-theme='dark'] .mini-profile-btn.active { border-color: #7c9cff; color: #fff; }
+[data-theme='dark'] .settings-card { background: #1b1c22; border: 1px solid #262731; }
+[data-theme='dark'] .settings-row input,
+[data-theme='dark'] .form-row select,
+[data-theme='dark'] .form-row input,
+[data-theme='dark'] .window-row input[type='time'] {
+  background: #0e0f13; color: #f2f3f5; border-color: #2a2c38;
+}
+[data-theme='dark'] .day-pill { background: #23242c; color: #c7c9d1; }
+[data-theme='dark'] .day-pill.on { background: #7c9cff; color: #0e0f13; }
+[data-theme='dark'] .add-window-btn { background: #23242c; color: #f2f3f5; }
+[data-theme='dark'] .block-card { background: #1b1c22; border: 2px solid #2a2c38; }
+[data-theme='dark'] .theme-toggle,
+[data-theme='dark'] .lock-btn { background: #23242c; color: #f2f3f5; }
+[data-theme='dark'] .profile-btn.active { border-color: #7c9cff; background: #1e2030; }
+[data-theme='dark'] .profile-menu { background: #1b1c22; border: 1px solid #2a2c38; }
+[data-theme='dark'] .profile-menu-item { background: #23242c; color: #f2f3f5; }
+[data-theme='dark'] .profile-menu-item.active { border-color: #7c9cff; background: #1e2030; }
+[data-theme='dark'] .avatar { background: #2a2c38; }
+[data-theme='dark'] .toast { background: #7c9cff; color: #0e0f13; }
+[data-theme='dark'] .key { background: #23242c; color: #f2f3f5; }
+[data-theme='dark'] .modal { background: #1b1c22; border: 1px solid #2a2c38; }
+[data-theme='dark'] .added-item { background: #0e0f13; }
+[data-theme='dark'] .ok { background: #1e3a2a; color: #7cffa0; }
+[data-theme='dark'] .no { background: #3a1e22; color: #ff8f9c; }
+[data-theme='dark'] .submit-btn { background: #7c9cff; color: #0e0f13; }
+
+/* ============ THEME 2: CHIBI CUTE (hồng, đáng yêu, nền dịu mắt) ============ */
+[data-theme='chibi'] {
+  --focus-color: #ff9fc4;
+  /* Bản cho nền SÁNG — đậm hơn một chút để cột không bị "chìm" vào nền hồng nhạt. */
+  --chart-1: #2a78d6;
+  --chart-2: #eb6834;
+  --chart-3: #2fa360;
+  --chart-4: #b23fb2;
+}
+[data-theme='chibi'] body,
+[data-theme='chibi'] {
+  background: linear-gradient(180deg, #fff8fb 0%, #ffeef5 100%);
+  color: #7a4a63;
+}
+/* Nền ĐẶC hoàn toàn (trước đây là #ffffffcc — trắng mờ 80%). Vì thanh trên cùng và menu
+   trái luôn dính tại chỗ khi cuộn, để nền mờ thì nội dung phía dưới trôi qua sẽ HIỆN LỜ MỜ
+   XUYÊN QUA, nhìn như ảnh video bị chồng đè lên nhau — đúng lỗi đã gặp ở Trang chủ. */
+[data-theme='chibi'] .sidebar { background: #fff7fb; border-right: 3px dashed #ffb6d5; }
+[data-theme='chibi'] .topbar { background: #fff7fb; border-bottom: 3px dashed #ffb6d5; }
+[data-theme='chibi'] .card { background: #fffbfd; border: 3px solid #ffd6ea; border-radius: 26px; }
+[data-theme='chibi'] .card-thumb {
+  background: linear-gradient(135deg, #ffd6ea, #e8d6ff);
+  border-radius: 23px 23px 0 0;
+}
+[data-theme='chibi'] .card .card-thumb::after {
+  content: '🎀'; position: absolute; top: 6px; right: 8px; font-size: 18px;
+}
+[data-theme='chibi'] .side-item { color: #9a6b85; border-radius: 16px; font-weight: 700; }
+[data-theme='chibi'] .side-item.active { background: #ffe0ee; color: #ff5c9e; }
+[data-theme='chibi'] .accent { color: #ff5c9e; }
+[data-theme='chibi'] .brand { color: #ff5c9e; }
+[data-theme='chibi'] .tv-focused {
+  outline: 4px solid #ff9fc4;
+  box-shadow: 0 0 0 8px rgba(255, 159, 196, 0.35), 0 14px 26px rgba(255, 150, 190, 0.35);
+  transform: translateY(-2px) scale(1.03);
+}
+[data-theme='chibi'] .progress-fill { background: #ff5c9e; }
+[data-theme='chibi'] .watching-badge { background: #ff5c9e; color: #fff; }
+[data-theme='chibi'] .channel-avatar { background: #ffe0ee; border: 3px solid #ffb6d5; }
+[data-theme='chibi'] .back-btn { background: #fff0f6; color: #ff5c9e; font-weight: 800; }
+[data-theme='chibi'] .section-title { font-weight: 900; }
+[data-theme='chibi'] .tab-btn { background: #fff0f6; color: #c2447a; }
+[data-theme='chibi'] .tab-btn.active { background: #ff5c9e; color: #fff; }
+[data-theme='chibi'] .mini-profile-btn { background: #fff0f6; color: #c2447a; }
+[data-theme='chibi'] .mini-profile-btn.active { border-color: #ff5c9e; color: #ff5c9e; }
+[data-theme='chibi'] .settings-card { background: #fffbfd; border: 3px solid #ffd6ea; }
+[data-theme='chibi'] .settings-row input,
+[data-theme='chibi'] .form-row select,
+[data-theme='chibi'] .form-row input,
+[data-theme='chibi'] .window-row input[type='time'] {
+  background: #fffaf9; color: #5b4636; border-color: #ffd1e6;
+}
+[data-theme='chibi'] .day-pill { background: #fff0f6; color: #c2447a; }
+[data-theme='chibi'] .day-pill.on { background: #ff5c9e; color: #fff; }
+[data-theme='chibi'] .add-window-btn { background: #fff0f6; color: #ff5c9e; }
+[data-theme='chibi'] .block-card { background: #fff; border: 4px solid #ffd1e6; }
+[data-theme='chibi'] .theme-toggle,
+[data-theme='chibi'] .lock-btn { background: #fff0f6; color: #ff5c9e; }
+[data-theme='chibi'] .profile-btn.active { border-color: #ff9fc4; background: #fff0f6; }
+[data-theme='chibi'] .profile-menu { background: #fff7fb; border: 3px solid #ffd6ea; }
+[data-theme='chibi'] .profile-menu-item { background: #fff0f6; color: #c2447a; }
+[data-theme='chibi'] .profile-menu-item.active { border-color: #ff9fc4; color: #ff5c9e; }
+[data-theme='chibi'] .avatar { background: #ffe0ee; }
+[data-theme='chibi'] .toast { background: #ff9fc4; color: #fff; }
+[data-theme='chibi'] .key { background: #fff0f6; color: #ff5c9e; }
+[data-theme='chibi'] .modal { background: #fff; border: 3px solid #ffd1e6; }
+[data-theme='chibi'] .added-item { background: #fff0f6; }
+[data-theme='chibi'] .ok { background: #e3ffe9; color: #2a9a4a; }
+[data-theme='chibi'] .no { background: #ffe3e6; color: #c24444; }
+[data-theme='chibi'] .submit-btn { background: #ff5c9e; color: #fff; }
+
+/* Trái tim / bông hoa bay lơ lửng ở vùng trống bên dưới sidebar (cả 2 theme) */
+.sidebar-deco { position: relative; flex: 1; margin-top: 14px; overflow: hidden; pointer-events: none; }
+.deco { position: absolute; font-size: 22px; opacity: 0.28; animation: floatDeco 5s ease-in-out infinite; }
+[data-theme='chibi'] .deco { opacity: 0.55; }
+.deco.d1 { top: 6%; left: 22%; font-size: 26px; animation-delay: 0s; }
+.deco.d2 { top: 28%; left: 58%; font-size: 18px; animation-delay: 1.3s; }
+.deco.d3 { top: 52%; left: 14%; font-size: 22px; animation-delay: 0.6s; }
+.deco.d4 { top: 72%; left: 48%; font-size: 24px; animation-delay: 2s; }
+.deco.d5 { top: 88%; left: 24%; font-size: 16px; animation-delay: 1.8s; }
+@keyframes floatDeco {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-14px) rotate(8deg); }
+}
+
+.layout { display: flex; min-height: 100vh; }
+
+/* Logo — giờ sống trong .topbar (trước đây ở đầu .sidebar, đã đổi chỗ với nút chọn hồ sơ,
+   xem TopBar.tsx/Sidebar.tsx). Bỏ hết padding cũ vốn tính cho vị trí cũ trong sidebar —
+   .topbar đã tự căn giữa theo chiều dọc rồi (align-items: center), thêm padding vào đây
+   chỉ làm nó lệch không cần thiết. */
+.brand { font-size: 26px; font-weight: 900; display: flex; align-items: center; gap: 9px; }
+.logo-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 44px; height: 31px; background: #e02020; color: #fff; border-radius: 10px;
+  flex-shrink: 0;
+}
+/* Tam giác play — ĐỒNG BỘ đúng màu đỏ (#e02020) + tỉ lệ tam giác với bộ icon app (xem
+   scripts/gen-icons.py). Sizing bằng % nên tự to/nhỏ theo đúng khung .logo-badge ở mọi
+   breakpoint (TV/máy tính/tablet bên dưới), không cần khai lại font-size riêng từng nơi
+   như hồi còn dùng ký tự "▶". */
+.logo-badge-icon { width: 46%; height: 46%; fill: #fff; flex-shrink: 0; }
+
+/* justify-content: flex-end — thanh trên cùng giờ chỉ còn nút chọn hồ sơ, đặt ở GÓC PHẢI.
+   padding-top: env(safe-area-inset-top) — trên iPhone có "tai thỏ"/viên thuốc đục lỗ,
+   thanh trạng thái (giờ, pin, sóng) của iOS đè lên ngay phần trên màn hình. Khai báo an
+   toàn này cộng thêm khoảng đệm đúng bằng chiều cao vùng đó (0px trên máy không có, tự
+   webkit tính) để nút chọn hồ sơ không bao giờ bị che nữa. Cộng luôn vào height để chiều
+   cao thanh không bị bóp lại. */
+.topbar {
+  position: sticky; top: 0; z-index: 20;
+  height: calc(86px + env(safe-area-inset-top, 0px));
+  padding: env(safe-area-inset-top, 0px) 20px 0;
+  display: flex; align-items: center; justify-content: flex-end;
+  box-sizing: border-box;
+}
+.profiles { display: flex; gap: 12px; align-items: center; }
+
+/* --- Nút chọn hồ sơ + danh sách xổ xuống ---
+   Dùng chung cho 2 chỗ đặt (component ProfileSwitcher.tsx): .sidebar-profile (đầu dải menu
+   bên trái — TV/máy tính/iPad, hiện MẶC ĐỊNH) và .topbar-profile (góc phải thanh trên cùng
+   — CHỈ điện thoại, ẩn mặc định). Mỗi bề ngang màn hình chỉ hiện đúng 1 cái — đảo lại ở
+   khối "THANH MENU DƯỚI ĐÁY" cuối file (≤700px, xem theme.css). */
+.sidebar-profile { display: block; margin-bottom: 10px; }
+.topbar-profile { display: none; }
+
+.profile-switch { position: relative; }
+.profile-caret { margin-left: 4px; font-size: 0.8em; opacity: 0.7; transition: transform 0.15s ease; }
+.profile-caret.up { transform: rotate(180deg); }
+.profile-menu {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 60;
+  min-width: 100%; padding: 8px; border-radius: 18px;
+  display: flex; flex-direction: column; gap: 6px;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.45);
+}
+/* Bản trong Sidebar: dải menu quá hẹp để xổ danh sách XUỐNG DƯỚI như bản thanh ngang cũ —
+   chữ tên hồ sơ sẽ bị cắt cụt vì min-width chỉ bằng đúng bề ngang cái nút hẹp đó. Xổ SANG
+   PHẢI, tràn ra ngoài dải menu, vào đúng khoảng trống của cột nội dung. */
+.sidebar-profile .profile-menu { top: 0; left: 100%; right: auto; margin-left: 12px; }
+.profile-menu-item {
+  display: flex; align-items: center; gap: 10px; white-space: nowrap;
+  padding: 10px 18px 10px 10px; border-radius: 999px; cursor: pointer;
+  font-weight: 700; font-size: 17px; border: 3px solid transparent;
+}
+.profile-check { margin-left: auto; padding-left: 10px; }
+.profile-btn {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 20px 8px 8px; border-radius: 999px; border: 3px solid transparent;
+  cursor: pointer; font-weight: 700; font-size: 17px; background: transparent; color: inherit;
+}
+.avatar { width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+
+.top-actions { display: flex; gap: 12px; align-items: center; }
+.theme-toggle, .lock-btn {
+  border: none; cursor: pointer; padding: 12px 18px; border-radius: 14px;
+  font-weight: 700; font-size: 14.5px; display: flex; align-items: center; gap: 7px;
+}
+
+/* position: sticky + height 100vh — menu trái luôn dính trên màn hình khi cuộn nội dung.
+   Cần thiết vì 2 nút chức năng (Giao diện / Bố mẹ) nằm ở ĐÁY menu: không có dòng này,
+   trang càng dài thì 2 nút đó càng bị đẩy xuống tít dưới, cuộn mãi mới thấy. */
+.sidebar {
+  width: 248px;
+  flex-shrink: 0;
+  padding: 12px 14px 18px;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  height: 100vh;
+  box-sizing: border-box;
+}
+/* 2 nút chức năng ở đáy menu (Giao diện / Bố mẹ) — nhạt hơn chút để nhóm menu chính
+   ở trên vẫn là phần nổi bật nhất. */
+.side-action { opacity: 0.88; }
+
+/* Cắt bớt tên dài thành "..." — dùng ở danh sách nội dung trong khu Bố mẹ. Khai báo bằng
+   class (thay vì maxWidth cứng trong JSX) để trên điện thoại rút lại được cho vừa màn hình. */
+.ellip { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px; }
+.side-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px 18px; margin-bottom: 8px; border-radius: 14px;
+  cursor: pointer; font-size: 17.5px; font-weight: 700; border: 3px solid transparent;
+}
+/* Icon menu giờ là SVG (lucide-react), không còn emoji — nhờ vậy mới tô màu được theo
+   trạng thái .side-item / .side-item.active (xem 2 dòng đó ở khối theme dark phía trên).
+   Cỡ tính theo "em" (tương đối với font-size chữ bên cạnh) để tự động to/nhỏ đúng theo
+   từng khối TV/điện thoại bên dưới mà không cần khai riêng từng nơi. */
+.side-icon-svg { width: 1.35em; height: 1.35em; flex-shrink: 0; stroke-width: 2.2; }
+
+.main { flex: 1; padding: 24px 30px 60px; }
+.greet { font-size: 22px; font-weight: 800; margin: 4px 0 22px; }
+.section-title {
+  font-size: 20px; font-weight: 800; margin: 0 0 16px;
+  display: inline-block;
+}
+/* Nổi bật icon+tên của 4 khối Trang chủ (Tiếp tục xem / Danh sách / Video đề xuất / Kênh
+   yêu thích) — BAN ĐẦU làm hiệu ứng phóng to khi đưa mũi tên vào khối (":focus-within"),
+   nhưng bị phản hồi là "mỏi mắt" (hiệu ứng động cứ phóng to/nhỏ liên tục khi dò từng khối).
+   Đổi sang tăng size + đậm chữ CỐ ĐỊNH (không phụ thuộc focus) cho riêng 4 khối này — dùng
+   ".section-block .section-title" (không phải ".section-title" trơn) để KHÔNG ảnh hưởng tới
+   các trang khác đang dùng chung class "section-title" mà không bọc trong .section-block
+   (vd trang Kênh/Playlist). */
+.section-block .section-title { font-size: 24px; font-weight: 900; }
+/* Icon SVG cạnh tiêu đề khu (Danh sách / Video đề xuất / Kênh yêu thích) — cùng kiểu icon
+   recolor-được như menu bên trái, thay cho emoji cũ (📂🎬📺) không tô màu lại được. Cỡ
+   theo "em" nên tự to/nhỏ đúng theo section-title ở từng chế độ (TV/điện thoại) bên dưới. */
+/* display: inline-block — BẮT BUỘC phải khai rõ. Tailwind (base/Preflight, xem index.css)
+   đặt sẵn "svg { display: block; }" cho MỌI thẻ svg trong toàn app; icon SVG này lọt vào
+   giữa dòng chữ tiêu đề mà bị "block" thì nó tự nhảy xuống MỘT DÒNG RIÊNG, đẩy chữ xuống
+   dòng dưới — đúng lỗi "icon và tên không nằm cùng hàng". inline-block thì vẫn giữ được
+   width/height/vertical-align đã khai như bình thường, mà lại nằm chung dòng với chữ. */
+.section-icon {
+  display: inline-block;
+  width: 0.85em; height: 0.85em; vertical-align: -0.1em; margin-right: 8px; stroke-width: 2.4;
+}
+
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
+
+.shelf { display: flex; gap: var(--shelf-gap); overflow-x: auto; padding-bottom: 10px; scroll-behavior: smooth; scrollbar-width: none; }
+.shelf::-webkit-scrollbar { display: none; }
+.shelf .card { flex: 0 0 var(--card-w); }
+
+/* Chỉ hiện tối đa 3 thẻ/hàng trước khi phải cuộn ngang (dùng cho "Tiếp tục xem" và
+   "Video đề xuất") — giới hạn độ rộng đúng bằng 3 thẻ + 2 khoảng cách giữa chúng. */
+.shelf-cap3 { max-width: calc(3 * var(--card-w) + 2 * var(--shelf-gap)); }
+
+/* box-sizing: border-box — tính viền vào trong bề rộng đã khai báo. Thiếu dòng này thì
+   viền của thẻ (2px, riêng theme Chibi là 3px) bị CỘNG THÊM ra ngoài, làm mỗi hàng rộng
+   hơn dự tính vài pixel và thẻ thứ 3 bị cắt cụt mép phải. */
+.card { box-sizing: border-box; border-radius: var(--radius); overflow: hidden; cursor: pointer; border: 2px solid transparent; }
+.card-thumb { aspect-ratio: 16 / 9; display: flex; align-items: center; justify-content: center; font-size: 46px; position: relative; }
+.duration { position: absolute; top: 8px; right: 8px; background: rgba(0, 0, 0, 0.65); color: #fff; font-size: 12.5px; padding: 3px 8px; border-radius: 7px; font-weight: 700; }
+.watching-badge { position: absolute; top: 8px; left: 8px; font-size: 11.5px; font-weight: 800; padding: 3px 9px; border-radius: 999px; }
+.progress-wrap { position: absolute; left: 8px; right: 8px; bottom: 8px; height: 7px; background: rgba(255, 255, 255, 0.4); border-radius: 999px; overflow: hidden; }
+.progress-fill { height: 100%; }
+/* card-highlight bọc RIÊNG ảnh (.card-thumb) + tên video (.card-title) — đây là phần được
+   đóng khung nền trắng khi chọn (xem [data-tv] .card.tv-focused bên dưới). .card-sub ("Đã
+   xem.."/"Playlist"...) CỐ Ý nằm NGOÀI, là con trực tiếp của .card, không bị bọc theo. */
+.card-title {
+  padding: 14px 16px 0; font-size: 17px; font-weight: 800; line-height: 1.3;
+  /* Tên quá dài chỉ hiện tối đa 2 dòng, thừa thì cắt bớt + hiện dấu "..." */
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  /* min-height = ĐÚNG 2 dòng (line-height 1.3 × 2 dòng = 2.6em, tính theo font-size của
+     chính ô này nên tự đúng ở mọi cỡ chữ, không cần khai riêng cho từng breakpoint) — LUÔN
+     chừa sẵn chỗ cho đủ 2 dòng dù tên chỉ dài 1 dòng. Trước đây không có dòng này: tên 1
+     dòng thì khối card-title thấp hơn hẳn tên 2 dòng, kéo theo khung bọc nền trắng
+     (.card-highlight) cũng thấp/cao khác nhau giữa các thẻ cùng hàng → dòng "Playlist.."
+     bên dưới mỗi thẻ bị lệch, không thẳng hàng với nhau (đúng lỗi bạn thấy ở mục Danh sách
+     khi 1 playlist tên ngắn đứng cạnh 2 playlist tên dài). */
+  min-height: 2.6em;
+}
+/* Nhãn (Học tập/Giải trí/Ưu tiên...) nối thẳng vào CUỐI chữ "Đã xem.."/"Playlist".. bằng
+   dấu phẩy, CÙNG kiểu chữ, không tô màu/làm nổi bật riêng (xem PlaylistCard.tsx — ghép hết
+   thành 1 chuỗi rồi mới hiện, nên không cần class riêng cho nhãn nữa). */
+.card-sub { font-size: 13.5px; opacity: 0.65; padding: 5px 16px 18px; }
+
+.channel-shelf .channel-item {
+  box-sizing: border-box;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  width: 128px; flex: 0 0 auto; cursor: pointer; border-radius: 20px; padding: 10px 6px; border: 3px solid transparent;
+}
+.channel-avatar { width: 96px; height: 96px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 40px; }
+/* Cỡ chữ tên kênh BẰNG ĐÚNG cỡ chữ tên video (.card-title) — 17px bản web/mobile,
+   36px bản TV (xem [data-tv] .channel-name bên dưới) — nhất quán trong toàn app. */
+.channel-name {
+  font-size: 17px; font-weight: 800; text-align: center; line-height: 1.3;
+  /* Tên kênh quá dài chỉ hiện tối đa 2 dòng, thừa thì cắt bớt + hiện dấu "..." (giống tên video). */
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+
+.back-btn { border: none; cursor: pointer; padding: 12px 20px; border-radius: 14px; font-weight: 700; font-size: 15px; }
+
+.player-wrap { position: relative; width: 100%; max-width: 920px; border-radius: 22px; overflow: hidden; aspect-ratio: 16 / 9; background: #000; margin: 18px 0 16px; }
+.player-wrap iframe { width: 100%; height: 100%; border: 0; display: block; }
+.player-note-text { font-size: 12.5px; opacity: 0.6; margin: 0 0 14px; max-width: 640px; }
+
+.toast {
+  position: fixed; left: 50%; top: 24px; transform: translateX(-50%) translateY(-20px);
+  padding: 12px 20px; border-radius: 12px; font-weight: 700; font-size: 14px;
+  opacity: 0; pointer-events: none; transition: all 0.25s ease; z-index: 50;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.player-note { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; font-size: 11.5px; }
+.player-note span { padding: 3px 9px; border-radius: 999px; font-weight: 700; }
+
+.overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.55); display: none; align-items: center; justify-content: center; z-index: 100; }
+.overlay.show { display: flex; }
+.modal { width: 340px; border-radius: 22px; padding: 26px; text-align: center; position: relative; }
+.modal h3 { margin: 0 0 6px; font-size: 17px; }
+.modal p.sub { font-size: 12.5px; opacity: 0.65; margin: 0 0 18px; }
+.pin-dots { display: flex; gap: 12px; justify-content: center; margin-bottom: 18px; }
+.pin-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid currentColor; }
+.pin-dot.filled { background: currentColor; }
+.keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 6px; }
+.key { padding: 14px 0; border-radius: 12px; border: none; font-size: 16px; font-weight: 700; cursor: pointer; }
+.key.wide { font-size: 12px; }
+.err { color: #ff8f9c; font-size: 12.5px; font-weight: 700; height: 16px; margin-top: 8px; }
+.shake { animation: shake 0.35s; }
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-8px); }
+  75% { transform: translateX(8px); }
+}
+.close-x { position: absolute; top: 14px; right: 16px; border: none; background: transparent; font-size: 18px; cursor: pointer; color: inherit; opacity: 0.6; }
+
+.form-row { text-align: left; margin-bottom: 12px; }
+.form-row label { font-size: 12px; font-weight: 700; display: block; margin-bottom: 5px; opacity: 0.75; }
+.form-row select, .form-row input { width: 100%; padding: 10px 12px; border-radius: 10px; font-size: 13.5px; border: 2px solid transparent; outline: none; }
+.hint { font-size: 11px; margin-top: 4px; height: 14px; }
+.hint.ok-text { color: #3aa35c; }
+.hint.bad-text { color: #e05a5a; }
+.submit-btn { width: 100%; padding: 12px; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; font-size: 14px; margin-top: 4px; }
+
+.added-list { text-align: left; margin-top: 14px; font-size: 12.5px; }
+.added-item { padding: 8px 10px; border-radius: 10px; margin-bottom: 6px; display: flex; gap: 8px; align-items: center; }
+
+/* ============ PARENT DASHBOARD (quản lý thời gian) ============ */
+.parent-tabs { display: flex; gap: 10px; margin: 20px 0 26px; }
+.tab-btn { border: none; cursor: pointer; padding: 12px 20px; border-radius: 14px; font-weight: 800; font-size: 15px; }
+/* icon + chữ tách riêng 2 thẻ span (xem ParentDashboardPage.tsx) thay vì gộp chung 1 chuỗi
+   — mặc định (máy tính/TV/iPad) chỉ cần khoảng cách nhỏ để đọc liền như 1 cụm "⏰ Thời
+   gian"; điện thoại xếp lại thành icon trên/chữ dưới, xem khối "THANH MENU DƯỚI ĐÁY". */
+.tab-btn-icon { margin-right: 7px; }
+
+.mini-profiles { display: flex; gap: 10px; margin-bottom: 22px; }
+.mini-profile-btn { padding: 9px 18px; border-radius: 999px; font-weight: 700; font-size: 14px; cursor: pointer; border: 2px solid transparent; }
+
+.settings-card { border-radius: 20px; padding: 20px 22px; margin-bottom: 20px; max-width: 640px; }
+.settings-card h4 { margin: 0 0 14px; font-size: 16px; font-weight: 800; display: flex; align-items: center; }
+/* .icon — icon hiện đại (lucide-react, SVG) thay cho emoji trong khu Bố mẹ (h4, nút, tab).
+   Cỡ = 1em nên TỰ ĐỘNG to/nhỏ theo đúng font-size chỗ đặt nó (kể cả trên TV, điện thoại...)
+   — không cần khai riêng cho từng breakpoint như trước giờ vẫn làm cho .icon-btn/.tab-btn.
+   stroke ăn theo currentColor (mặc định của lucide-react) nên cũng tự đổi màu theo chữ. */
+.icon { width: 1em; height: 1em; flex-shrink: 0; vertical-align: -0.15em; }
+/* .icon-lead — icon đứng TRƯỚC 1 nhãn chữ (h4, nút có chữ) — chừa khoảng cách bên phải.
+   Icon đứng MỘT MÌNH trong nút tròn nhỏ (.icon-btn) thì KHÔNG dùng class này. */
+.icon-lead { margin-right: 7px; }
+.settings-row { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+.settings-row label { font-size: 13.5px; font-weight: 700; opacity: 0.8; min-width: 170px; }
+.settings-row span { font-size: 13px; opacity: 0.65; }
+.settings-row input[type='number'] { padding: 9px 12px; border-radius: 10px; font-size: 14px; border: 2px solid transparent; width: 100px; }
+
+.day-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+.day-pill { padding: 9px 14px; border-radius: 999px; font-weight: 800; font-size: 13px; cursor: pointer; border: 2px solid transparent; opacity: 0.4; }
+.day-pill.on { opacity: 1; }
+
+.window-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.window-row input[type='time'] { padding: 8px 10px; border-radius: 10px; font-size: 13.5px; border: 2px solid transparent; }
+.arrow-sep { opacity: 0.5; font-weight: 700; }
+.icon-btn { border: none; background: transparent; cursor: pointer; font-size: 16px; opacity: 0.6; }
+.add-window-btn { border: none; cursor: pointer; padding: 9px 16px; border-radius: 12px; font-weight: 700; font-size: 13px; margin-top: 4px; }
+
+.session-live { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-size: 14px; }
+.live-dot { width: 10px; height: 10px; border-radius: 50%; background: #ff4d4d; animation: pulseDot 1.4s ease-in-out infinite; flex-shrink: 0; }
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.stop-btn { border: none; cursor: pointer; padding: 11px 18px; border-radius: 12px; font-weight: 800; font-size: 13.5px; background: #e05a5a; color: #fff; }
+
+.block-card { width: 560px; max-width: 94vw; border-radius: 32px; padding: 48px 40px; text-align: center; position: relative; }
+.block-emoji { font-size: 104px; margin-bottom: 16px; }
+.block-card h2 { font-size: 30px; margin: 0 0 16px; }
+.block-card p { font-size: 19px; line-height: 1.7; opacity: 0.88; margin: 0 0 20px; }
+.block-card .submit-btn { font-size: 18px; padding: 16px; }
+
+
+/* ====================================================================================
+   CHẾ ĐỘ TV — dựng lại theo đúng tỉ lệ & bố cục của app YouTube trên TV LG (webOS)
+   ------------------------------------------------------------------------------------
+   Chỉ có hiệu lực khi thẻ <html> có thuộc tính data-tv (do src/main.tsx tự gắn khi phát
+   hiện đang chạy trên TV). Bản mở trên điện thoại/máy tính KHÔNG bị ảnh hưởng gì.
+
+   3 đặc điểm chính chép theo YouTube TV:
+   1. Menu trái thu lại thành 1 DẢI ICON hẹp (132px). Khi bấm điều khiển sang menu, dải
+      này tự bung rộng ra và hiện lại chữ, ĐÈ LÊN nội dung chứ không đẩy nội dung sang
+      ngang (nhờ vậy các hàng video không bị giật/nhảy chỗ mỗi lần chọn menu).
+   2. Ảnh video RẤT TO — 700px, tức ~36% bề ngang màn hình, đúng như YouTube. Mỗi hàng
+      hiện 2 thẻ trọn vẹn + thẻ thứ 3 ló ra một phần, ngầm báo "còn nữa, kéo tiếp đi".
+   3. Thẻ KHÔNG còn khung hộp — chỉ còn ảnh bo góc, chữ nằm thẳng trên nền trang; viền
+      sáng đánh dấu ô đang chọn ôm quanh riêng phần ảnh. Đây là điểm làm giao diện trông
+      thoáng và "giống app TV xịn" nhất.
+   ==================================================================================== */
+[data-tv] {
+  --radius: 18px;
+  /* Giảm nhẹ (700→620) + giãn khoảng cách hơn (34→46) — bớt rối mắt, chữ tiêu đề thẻ
+     (.card-title, xem [data-tv] .card-title bên dưới) vẫn giữ nguyên 36px như cũ. */
+  --card-w: 620px;
+  --shelf-gap: 46px;
+  /* Giảm từ 132px xuống 104px (yêu cầu "giảm độ rộng menu trái") — icon/nút bên trong
+     cũng thu nhỏ theo (72px → 60px, xem [data-tv] .side-item và .sidebar-profile bên
+     dưới) để vẫn nằm cân đối, không bị chật/đụng mép dải. */
+  --rail-w: 104px;
+}
+
+/* --- Menu trái: dải icon, bung ra đè lên nội dung khi được chọn --- */
+[data-tv] .layout { position: relative; }
+/* Ô trống giữ đúng chỗ cho dải icon. Nhờ nó mà sidebar bên dưới có thể "bay" lên trên
+   (position: absolute) để bung rộng mà không xô lệch phần nội dung bên phải. */
+[data-tv] .layout::before { content: ''; flex: 0 0 var(--rail-w); }
+/* position: fixed (thay vì sticky như bản web) — dải icon bám cứng theo màn hình TV,
+   luôn thấy được kể cả khi cuộn nội dung xuống rất sâu, và khi bung rộng thì ĐÈ LÊN nội
+   dung chứ không đẩy nội dung sang ngang. Ô trống ::before ở trên đã giữ sẵn chỗ 132px
+   nên phần nội dung bên phải vẫn nằm đúng vị trí. */
+[data-tv] .sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  height: auto;
+  align-self: auto;
+  width: var(--rail-w);
+  z-index: 40;
+  padding: 26px 8px;
+  /* Trước là "hidden" (thời còn kiểu tự bung rộng, giờ đã bỏ — xem chú thích bên dưới).
+     Đổi sang "visible": bảng chọn hồ sơ giờ xổ SANG PHẢI, tràn ra khỏi bề ngang 132px của
+     dải này — để "hidden" thì bảng đó bị cắt cụt/biến mất hoàn toàn. */
+  overflow: visible;
+  transition: width 0.18s ease;
+}
+/* Nút chọn hồ sơ (ProfileSwitcher đặt trong Sidebar) giờ là mục ĐẦU TIÊN của dải icon, nên
+   phải có kích thước giống hệt các nút menu bên dưới (.side-item, xem bên dưới) — xổ hàng
+   thẳng cột mới trông cân đối, không phải "1 nút to kỳ lạ rồi mới tới dải icon". */
+[data-tv] .sidebar-profile .profile-btn {
+  width: 60px; height: 60px; padding: 0; margin: 0 auto 12px;
+  justify-content: center; gap: 0; border-radius: 18px; border-width: 3px;
+}
+[data-tv] .sidebar-profile .avatar { width: 38px; height: 38px; font-size: 20px; }
+/* Tên hồ sơ + mũi tên xổ xuống: ẩn trên dải icon hẹp, giống mọi chữ khác trong menu này
+   (xem [data-tv] .side-text ngay dưới) — chỉ còn đúng avatar, bấm vào vẫn mở được bảng. */
+[data-tv] .sidebar-profile .profile-name-text,
+[data-tv] .sidebar-profile .profile-caret { display: none; }
+/* Bảng chọn hồ sơ xổ SANG PHẢI dải icon (không xổ xuống dưới): [data-tv] .profile-menu ở
+   dưới có khai riêng "top", phải viết CỤ THỂ HƠN (3 lớp chọn thay vì 2) ở đây mới thắng. */
+[data-tv] .sidebar-profile .profile-menu { top: 0; left: 100%; right: auto; margin-left: 14px; }
+
+/* Logo — giờ nằm trong .topbar, không còn trong .sidebar nữa (xem TopBar.tsx). To hơn hẳn
+   bản trước (badge 48×34 → 70×50) theo yêu cầu, kèm lại chữ "Ytube" đứng sau icon. */
+[data-tv] .brand { font-size: 40px; }
+[data-tv] .logo-badge { width: 70px; height: 50px; border-radius: 16px; }
+
+/* Menu trái LUÔN thu gọn thành dải icon — không bung ra nữa, kể cả khi đang chọn vào nó.
+   (Bản trước có kiểu tự bung rộng khi chọn; bỏ đi cho màn hình đứng yên, không xê dịch.)
+   Vì vậy icon phải tự nói lên được mục đó là gì — xem NAV_ITEMS trong Sidebar.tsx. */
+[data-tv] .side-item {
+  width: 60px;
+  height: 60px;
+  padding: 0;
+  margin: 0 auto 12px;
+  justify-content: center;
+  gap: 0;
+  border-radius: 18px;
+  white-space: nowrap;
+  border-width: 3px;
+}
+[data-tv] .side-icon { font-size: 26px; line-height: 1; }
+[data-tv] .side-text { display: none; }
+/* Dải icon hẹp thì mấy hình trang trí trông rối mắt — ẩn hẳn đi cho sạch. Dùng visibility
+   chứ không phải display: none, để khối này vẫn giữ vai trò "lò xo" đẩy 2 nút Giao diện /
+   Bố mẹ xuống sát đáy màn hình. */
+[data-tv] .sidebar-deco { visibility: hidden; }
+
+/* --- Cột nội dung bên phải ---
+   min-width: 0 là bắt buộc: thiếu nó thì hàng thẻ dài sẽ ĐẨY PHÌNH cả trang ra ngang
+   thay vì cuộn ngang gọn bên trong hàng đó. */
+/* Menu bên trái + thanh trên cùng: CÙNG MÀU NỀN với trang (không có dải màu/viền tách
+   riêng) — đúng như ảnh app YouTube TV thật bạn gửi.
+   ⚠️ SỬA LỖI "kéo lên trên thì thanh trên cùng bị đè vào nội dung": bản trước dùng đúng
+   nghĩa đen "background: transparent" (trong suốt thật sự) — nghe có vẻ đúng ý "cùng màu
+   nền" nhưng KHÔNG PHẢI. .topbar dùng position: sticky, luôn dính ở mép trên màn hình
+   trong lúc trang cuộn; nó chỉ CHE ĐƯỢC chữ/thẻ cuộn ngang qua bên dưới nếu có nền ĐẶC. Để
+   trong suốt thật thì nội dung cuộn lên vẫn hiện xuyên qua, chồng lên đúng chỗ logo/tên hồ
+   sơ — đúng như ảnh bạn chụp. Sửa đúng gốc: dùng màu ĐẶC #0e0f13 (y hệt màu nền body ở đầu
+   file) — nhìn vẫn "vô hình" như trong suốt (vì trùng màu tuyệt đối với nền trang), nhưng
+   giờ là 1 lớp ĐẶC thật sự nên che đúng nội dung cuộn qua bên dưới, không còn đè/lộ chữ.
+   Áp dụng cho cả .sidebar (fixed, đứng yên khi cuộn) cho nhất quán, dù ít khi lộ lỗi tương
+   tự vì cột nội dung không cuộn NGANG vào phần diện tích của nó. */
+[data-tv][data-theme='dark'] .sidebar,
+[data-tv][data-theme='dark'] .topbar {
+  background: #0e0f13;
+  border: none;
+}
+
+[data-tv] .content-col { min-width: 0; }
+[data-tv] .main { min-width: 0; padding: 30px 44px 90px; }
+[data-tv] .greet { font-size: 40px; font-weight: 900; margin: 4px 0 30px; }
+[data-tv] .section-title { font-size: 34px; font-weight: 900; margin: 0 0 20px; opacity: 1; }
+/* Trên TV, 4 khối Trang chủ tăng thêm size nữa (to hơn cả .section-title thường ở trên) —
+   thay cho hiệu ứng phóng to khi focus đã bỏ, xem giải thích ở ".section-block .section-title"
+   phía đầu file. */
+[data-tv] .section-block .section-title { font-size: 40px; }
+[data-tv] .back-btn { font-size: 26px; font-weight: 800; padding: 20px 32px; border-radius: 20px; }
+
+/* --- Thanh trên cùng ---
+   Giờ chỉ còn logo, căn PHẢI (nút chọn hồ sơ đã dời sang Sidebar) — padding-trái 32px
+   trước đây không còn ý nghĩa gì (chẳng còn nội dung căn trái nữa), bỏ luôn cho gọn. */
+[data-tv] .topbar { height: 118px; padding: 0 44px; }
+[data-tv] .profiles { gap: 18px; }
+[data-tv] .profile-btn { font-size: 28px; font-weight: 800; padding: 12px 30px 12px 12px; border-width: 4px; }
+[data-tv] .profile-menu { border-radius: 24px; padding: 12px; gap: 10px; top: calc(100% + 10px); }
+[data-tv] .profile-menu-item { font-size: 28px; font-weight: 800; padding: 12px 30px 12px 12px; border-width: 4px; gap: 14px; }
+[data-tv] .profile-menu-item .avatar { width: 64px; height: 64px; font-size: 34px; }
+[data-tv] .avatar { width: 64px; height: 64px; font-size: 34px; }
+[data-tv] .top-actions { gap: 18px; }
+[data-tv] .theme-toggle,
+[data-tv] .lock-btn { font-size: 22px; padding: 18px 28px; border-radius: 20px; gap: 10px; }
+
+/* --- Hàng thẻ: bỏ giới hạn 3 thẻ của bản web.
+   Trên TV, hàng thẻ cứ chiếm trọn bề ngang còn lại và tự cắt ở mép phải — nhờ vậy thẻ
+   kế tiếp ló ra một phần đúng kiểu YouTube. --- */
+[data-tv] .shelf-cap3 { max-width: none; }
+
+/* Hàng thẻ bị "cắt gọn" ở mép (vì có cuộn ngang), nên phải chừa sẵn 12px lề bên trong —
+   nếu không, viền sáng của ô đang chọn (vốn vẽ LÒI RA ngoài thẻ) sẽ bị cắt cụt ở mép
+   trái và mép trên. Lùi margin -12px để bù lại, giữ thẻ đứng đúng vị trí cũ. */
+[data-tv] .shelf { padding: 12px 0 20px 12px; margin-left: -12px; }
+
+/* --- Thẻ video/playlist: bỏ khung hộp, chỉ còn ảnh + chữ (giống YouTube) --- */
+[data-tv] .card { background: transparent; border: none; overflow: visible; border-radius: 0; }
+[data-tv] .card-thumb { border-radius: var(--radius); overflow: hidden; font-size: 76px; }
+/* card-highlight: vùng bọc ảnh + tên video khi được chọn. Padding/kích thước ở đây LUÔN
+   CỐ ĐỊNH — có mặt SẴN dù đang chọn hay không, focus CHỈ đổi màu nền (transparent → trắng)
+   chứ không đổi kích thước gì cả. Làm vậy để tránh hiệu ứng phóng to/thu nhỏ khi dí ô chọn
+   qua lại (nhìn nhấp nháy to-nhỏ liên tục rất mỏi mắt) — chỉ đổi màu là đủ nổi bật rồi. */
+[data-tv] .card-highlight { padding: 10px; border-radius: 22px; background: transparent; }
+/* Chữ to & đậm hẳn: ngồi cách TV 3-4m thì nét chữ mảnh rất khó đọc, tăng độ đậm giúp
+   dễ đọc hơn cả tăng cỡ chữ. Dòng phụ cũng bớt mờ đi (0.6 → 0.75) cho rõ. */
+/* min-height cũng đổi theo line-height riêng bản TV (1.26 thay vì 1.3) — 2 dòng = 2.52em. */
+[data-tv] .card-title { padding: 16px 6px 0; font-size: 36px; font-weight: 900; line-height: 1.26; min-height: 2.52em; }
+[data-tv] .card-sub { font-size: 26px; font-weight: 700; padding: 8px 16px 0; opacity: 0.75; }
+/* Thời lượng nằm GÓC DƯỚI PHẢI của ảnh (đúng như YouTube), thay vì góc trên phải —
+   vừa quen mắt hơn, vừa tránh đè lên chiếc nơ 🎀 của theme Chibi ở góc trên phải. */
+[data-tv] .duration { font-size: 22px; font-weight: 800; padding: 6px 14px; border-radius: 10px; top: auto; bottom: 16px; right: 14px; }
+[data-tv] .watching-badge { font-size: 21px; font-weight: 800; padding: 6px 16px; top: 14px; left: 14px; }
+/* Thanh tiến độ xem chạy sát mép dưới cùng của ảnh, kéo hết bề ngang — giống YouTube. */
+[data-tv] .progress-wrap { height: 8px; left: 0; right: 0; bottom: 0; border-radius: 0; }
+[data-tv] .card .card-thumb::after { top: 12px; right: 14px; font-size: 30px; }
+
+/* Video đang được chọn: BẢN THÂN card-highlight (đã có sẵn kích thước cố định ở trên) đổi
+   nền sang TRẮNG, tên video đổi sang chữ ĐEN — chỉ đổi màu, không đổi size/vị trí gì, nên
+   không có hiệu ứng phóng to/nhỏ. Dòng "Đã xem.."/"Playlist".. (.card-sub) nằm NGOÀI
+   card-highlight nên giữ nguyên màu chữ trắng như cũ, không bị bọc theo. */
+[data-tv] .card.tv-focused { outline: none; box-shadow: none; transform: none; }
+[data-tv] .card.tv-focused .card-highlight { background: #fff; }
+[data-tv] .card.tv-focused .card-title { color: #14151a; }
+[data-tv] .tv-focused { outline-width: 6px; }
+
+/* --- Hàng kênh yêu thích --- */
+/* Cùng nguyên tắc "kích thước cố định, chỉ đổi màu" như thẻ video ở trên — border 3px
+   (khai ở .channel-shelf .channel-item, dòng ~349) vốn đã LUÔN chiếm sẵn chỗ (kể cả lúc
+   trong suốt), nên bọc nền trắng vào chỉ đổi màu, không đẩy layout nhảy kích thước. */
+[data-tv] .channel-shelf .channel-item { width: 220px; padding: 16px 8px; border-radius: 28px; }
+[data-tv] .channel-avatar { width: 160px; height: 160px; font-size: 66px; }
+[data-tv] .channel-name { font-size: 36px; font-weight: 900; }
+
+/* Kênh đang được chọn: cùng kiểu bọc nền TRẮNG như thẻ video ở trên (đồng bộ toàn app) —
+   ghi đè lại viền màu chung của .tv-focused (dòng ngay dưới) bằng nền trắng, tên kênh
+   chuyển sang màu đen. Chỉ đổi màu nền/chữ, KHÔNG đổi padding/kích thước. */
+[data-tv] .channel-item.tv-focused {
+  outline: none; box-shadow: none;
+  background: #fff;
+  border-color: transparent;
+}
+[data-tv] .channel-item.tv-focused .channel-name { color: #14151a; }
+
+/* Chừa khoảng an toàn khi cuộn tới ô đang chọn.
+   Thanh trên cùng (cao 118px) luôn dính tại chỗ, nên nếu không khai báo dòng này, trình
+   duyệt sẽ cuộn sao cho ô chọn "vừa đủ lọt màn hình" — mà phần trên của ô thì lại nằm
+   NGAY DƯỚI thanh đó, tức là bị che khuất. scroll-margin-top báo cho trình duyệt biết
+   phải chừa sẵn 160px phía trên. */
+[data-tv] .card,
+[data-tv] .channel-item,
+[data-tv] .back-btn,
+[data-tv] .player-wrap,
+[data-tv] .tab-btn,
+[data-tv] .mini-profile-btn { scroll-margin-top: 160px; scroll-margin-bottom: 48px; }
+
+/* Khung video khi đang TOÀN MÀN HÌNH thì bỏ hẳn viền sáng chọn — lúc đó chỉ có mỗi video
+   trên màn hình, vẽ thêm viền chỉ tổ vướng mắt. */
+[data-tv] .player-wrap.tv-focused { outline-offset: -6px; }
+.player-wrap:fullscreen { outline: none !important; box-shadow: none !important; }
+
+/* --- Trang phát video --- */
+[data-tv] .player-wrap { max-width: 1500px; border-radius: 24px; }
+[data-tv] .player-note-text { font-size: 19px; max-width: 1000px; }
+[data-tv] .player-note { font-size: 18px; gap: 12px; }
+[data-tv] .player-note span { padding: 5px 14px; }
+
+/* --- Thông báo nổi (toast) --- */
+[data-tv] .toast { font-size: 21px; padding: 18px 30px; border-radius: 18px; top: 34px; }
+
+/* --- Bảng nhập mã PIN --- */
+[data-tv] .modal { width: 470px; padding: 36px; border-radius: 30px; }
+[data-tv] .modal h3 { font-size: 26px; margin: 0 0 10px; }
+[data-tv] .modal p.sub { font-size: 19px; margin: 0 0 24px; }
+[data-tv] .pin-dot { width: 22px; height: 22px; }
+[data-tv] .keypad { gap: 14px; }
+[data-tv] .key { font-size: 27px; padding: 22px 0; border-radius: 16px; }
+[data-tv] .key.wide { font-size: 19px; }
+/* Bàn phím "Ghép mã TV" (GoogleSignInGate) dùng chung .keypad/.key với PIN nhưng nằm trong
+   .gate-modal rộng hơn — cho các ô to hơn nữa để dễ ngắm bằng mắt từ xa (TV để cách xa
+   người xem hơn điện thoại). */
+[data-tv] .gate-modal .keypad { gap: 18px; }
+[data-tv] .gate-modal .key { font-size: 32px; padding: 26px 0; border-radius: 20px; }
+[data-tv] .gate-modal .key.wide { font-size: 22px; }
+[data-tv] .gate-modal .pin-dots { margin-bottom: 26px; }
+[data-tv] .gate-modal .pin-dot { width: 26px; height: 26px; }
+[data-tv] .err { font-size: 19px; height: 24px; }
+[data-tv] .close-x { font-size: 26px; top: 18px; right: 20px; }
+
+/* --- Màn hình đăng nhập Google / mã qua email / ghép mã TV (GoogleSignInGate,
+   FamilyBindingScreen) --- Modal này có nhiều chữ + form hơn bảng PIN, nên trên TV cần
+   RỘNG HƠN hẳn 470px ở trên — dùng riêng class .gate-modal thay vì đổi chung .modal (đổi
+   chung sẽ ảnh hưởng cả bảng PIN, không cần thiết). */
+.gate-modal { width: 400px; }
+[data-tv] .gate-modal { width: 920px; padding: 52px; border-radius: 34px; }
+.gate-desc { font-size: 15px; opacity: 0.75; line-height: 1.55; margin: 8px 0 18px; }
+[data-tv] .gate-desc { font-size: 25px; line-height: 1.55; margin: 14px 0 30px; }
+.gate-divider { font-size: 13px; opacity: 0.5; text-align: center; margin: 18px 0 12px; }
+[data-tv] .gate-divider { font-size: 20px; margin: 26px 0 18px; }
+.gate-google-btn {
+  width: 100%;
+  padding: 16px 20px;
+  font-size: 16px;
+  font-weight: 800;
+  border-radius: 14px;
+  border: none;
+  cursor: pointer;
+  background: #fff;
+  color: #1a1a1a;
+}
+[data-tv] .gate-google-btn { font-size: 27px; padding: 26px 30px; border-radius: 20px; }
+
+/* --- 2 khối "Đăng nhập" / "Ghép mã TV" làm nổi bật riêng biệt trong GoogleSignInGate —
+   nền + viền khác màu để mắt phân biệt ngay 2 lựa chọn, không phải đọc chữ mới biết. */
+.gate-option { border-radius: 18px; padding: 18px 20px; margin-bottom: 16px; }
+[data-tv] .gate-option { padding: 30px 32px; border-radius: 24px; margin-bottom: 24px; }
+.gate-option-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+[data-tv] .gate-option-head { gap: 16px; margin-bottom: 10px; }
+.gate-option-icon { font-size: 22px; line-height: 1; }
+[data-tv] .gate-option-icon { font-size: 36px; }
+.gate-option-title { font-size: 16px; font-weight: 800; }
+[data-tv] .gate-option-title { font-size: 27px; }
+.gate-option-sub { font-size: 13px; opacity: 0.7; line-height: 1.5; margin: 0 0 14px; }
+[data-tv] .gate-option-sub { font-size: 21px; line-height: 1.5; margin: 0 0 22px; }
+[data-theme='dark'] .gate-option--login { background: #1c2b4a; border: 2px solid #2c4270; }
+[data-theme='dark'] .gate-option--pair { background: #1c3a2c; border: 2px solid #2c5a40; }
+[data-theme='chibi'] .gate-option--login { background: #eaf1ff; border: 2px solid #cfe0ff; }
+[data-theme='chibi'] .gate-option--pair { background: #fff0dd; border: 2px solid #ffdbb0; }
+.gate-pair-btn {
+  width: 100%;
+  padding: 16px 20px;
+  font-size: 16px;
+  font-weight: 800;
+  border-radius: 14px;
+  border: none;
+  cursor: pointer;
+  background: #3aa35c;
+  color: #fff;
+}
+[data-tv] .gate-pair-btn { font-size: 27px; padding: 26px 30px; border-radius: 20px; }
+/* Nút phụ nhỏ dạng chữ (vd "Dùng mã gửi qua email thay vào đó") — cố ý nhạt + không viền,
+   để không cạnh tranh với 2 nút chính ở trên. */
+.gate-link-btn {
+  width: 100%;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.65;
+  font-size: 13px;
+  text-decoration: underline;
+  padding: 10px 0 0;
+}
+[data-tv] .gate-link-btn { font-size: 19px; padding: 16px 0 0; }
+
+/* --- Khu vực Bố mẹ --- */
+[data-tv] .parent-tabs { gap: 16px; margin: 28px 0 36px; }
+[data-tv] .tab-btn { font-size: 23px; padding: 18px 30px; border-radius: 20px; }
+[data-tv] .mini-profiles { gap: 16px; margin-bottom: 30px; }
+[data-tv] .mini-profile-btn { font-size: 21px; padding: 14px 26px; }
+[data-tv] .settings-card { max-width: 900px; padding: 28px 32px; border-radius: 26px; margin-bottom: 26px; }
+[data-tv] .settings-card h4 { font-size: 24px; margin: 0 0 20px; }
+[data-tv] .settings-row { gap: 16px; margin-bottom: 18px; }
+[data-tv] .settings-row label { font-size: 20px; min-width: 240px; }
+[data-tv] .settings-row span { font-size: 19px; }
+[data-tv] .settings-row input[type='number'] { font-size: 21px; padding: 14px 18px; width: 140px; }
+[data-tv] .day-pills { gap: 12px; }
+[data-tv] .day-pill { font-size: 19px; padding: 13px 20px; }
+[data-tv] .window-row { gap: 14px; margin-bottom: 14px; }
+[data-tv] .window-row input[type='time'] { font-size: 20px; padding: 13px 16px; }
+[data-tv] .icon-btn { font-size: 24px; }
+[data-tv] .add-window-btn { font-size: 19px; padding: 14px 24px; border-radius: 16px; }
+[data-tv] .session-live { font-size: 21px; gap: 18px; }
+[data-tv] .live-dot { width: 14px; height: 14px; }
+[data-tv] .stop-btn { font-size: 20px; padding: 16px 26px; border-radius: 16px; }
+[data-tv] .form-row { margin-bottom: 18px; }
+[data-tv] .form-row label { font-size: 18px; margin-bottom: 8px; }
+[data-tv] .form-row select,
+[data-tv] .form-row input { font-size: 20px; padding: 15px 18px; border-radius: 14px; }
+[data-tv] .hint { font-size: 17px; height: 22px; }
+[data-tv] .submit-btn { font-size: 21px; padding: 18px; border-radius: 16px; }
+[data-tv] .added-list { font-size: 19px; margin-top: 20px; }
+[data-tv] .added-item { padding: 12px 16px; border-radius: 14px; margin-bottom: 9px; }
+
+/* --- Màn hình chặn ngoài giờ xem (bé nhìn từ xa, cần to rõ nhất) --- */
+[data-tv] .block-card { width: 960px; padding: 76px 64px; border-radius: 44px; }
+[data-tv] .block-emoji { font-size: 168px; }
+/* Chữ to hơn hẳn bản trước: đã bỏ nút "VÂNG, con hiểu rồi" khỏi màn hình thật (xem
+   BlockScreen.tsx) nên khung dư chỗ, tăng cỡ chữ hết mức cho dễ đọc từ xa. */
+[data-tv] .block-card h2 { font-size: 62px; margin: 0 0 26px; font-weight: 900; }
+[data-tv] .block-card p { font-size: 38px; margin: 0 0 32px; }
+[data-tv] .block-card .submit-btn { font-size: 30px; padding: 26px; }
+[data-tv] .block-card .add-window-btn { font-size: 24px; padding: 20px 30px; }
+
+/* ====================================================================================
+   GIAO DIỆN ĐIỆN THOẠI (màn hình hẹp dưới 760px)
+   ------------------------------------------------------------------------------------
+   App vốn được dựng cho màn hình rộng (TV + máy tính): menu trái 248px + thẻ video 340px
+   = đã hơn 600px, nhét vào điện thoại 390px thì tràn hết ra ngoài, phải kéo ngang mới xem
+   được. Khối dưới đây thu gọn lại cho vừa màn hình dọc.
+
+   Ưu tiên số 1 là KHU VỰC BỐ MẸ (thêm/sửa nội dung) — vì đó là việc bố mẹ hay làm nhất
+   trên điện thoại. Không ảnh hưởng gì tới TV (TV rộng 1920px, không khớp @media này) và
+   máy tính.
+   ==================================================================================== */
+@media (max-width: 760px) {
+  /* --- Menu trái thu thành dải icon hẹp, nhường chỗ cho nội dung --- */
+  .sidebar { width: 64px; padding: 8px 6px 12px; }
+  .brand { font-size: 0; padding: 8px 0 0; justify-content: center; gap: 0; }
+  .logo-badge { width: 34px; height: 24px; border-radius: 8px; }
+  .side-item {
+    width: 48px; height: 48px; padding: 0; gap: 0;
+    margin: 0 auto 8px; justify-content: center; border-radius: 14px;
+  }
+  .side-icon { font-size: 24px; line-height: 1; }
+  .side-text { display: none; }
+  .sidebar-deco { display: none; }
+
+  /* Nút chọn hồ sơ ở đầu dải menu: cũng thu về đúng cỡ ô icon 48×48 như .side-item ngay
+     trên, cho thẳng hàng — chữ tên + mũi tên xổ ẩn đi, chỉ còn avatar (giống [data-tv]). */
+  .sidebar-profile .profile-btn {
+    width: 48px; height: 48px; padding: 0; margin: 0 auto 8px;
+    justify-content: center; gap: 0; border-radius: 14px; border-width: 2px;
+  }
+  .sidebar-profile .avatar { width: 32px; height: 32px; font-size: 17px; }
+  .sidebar-profile .profile-name-text,
+  .sidebar-profile .profile-caret { display: none; }
+  .sidebar-profile .profile-menu { left: 100%; right: auto; top: 0; margin-left: 8px; }
+
+  /* --- Thanh trên cùng + khung nội dung --- */
+  .topbar { height: 58px; padding: 0 12px; }
+  .profile-menu-item { font-size: 14px; padding: 7px 14px 7px 5px; border-width: 2px; }
+  .profile-menu-item .avatar { width: 32px; height: 32px; font-size: 17px; }
+  /* .profile-btn / .avatar chung (không có tiền tố .sidebar-profile/.topbar-profile) chỉ
+     còn áp dụng cho bản .topbar-profile ở điện thoại thật (≤700px) — bản .sidebar-profile
+     đã có kích thước riêng ngay trên. */
+  .profile-btn { font-size: 14px; padding: 5px 14px 5px 5px; border-width: 2px; }
+  .avatar { width: 32px; height: 32px; font-size: 17px; }
+  .main { padding: 14px 12px 48px; min-width: 0; }
+  .content-col { min-width: 0; }
+  .greet { font-size: 18px; margin: 2px 0 16px; }
+  .section-title { font-size: 16px; margin: 0 0 12px; }
+  .back-btn { font-size: 14px; padding: 10px 16px; }
+
+  /* --- Thẻ video: 1 thẻ chiếm gần trọn bề ngang, thẻ sau ló ra để biết còn kéo được --- */
+  .shelf .card { flex: 0 0 82%; }
+  .shelf-cap3 { max-width: none; }
+  .grid3 { grid-template-columns: 1fr; gap: 16px; }
+  .card-title { font-size: 15px; }
+  .card-sub { font-size: 12px; }
+  .channel-shelf .channel-item { width: 96px; }
+  .channel-avatar { width: 72px; height: 72px; font-size: 30px; }
+  .channel-name { font-size: 15px; }
+
+  /* --- KHU VỰC BỐ MẸ — phần được tối ưu kỹ nhất --- */
+  .parent-tabs { flex-wrap: wrap; gap: 8px; margin: 14px 0 18px; }
+  .tab-btn { font-size: 13.5px; padding: 10px 14px; }
+  .mini-profiles { flex-wrap: wrap; gap: 8px; }
+  .mini-profile-btn { font-size: 13px; padding: 8px 14px; }
+
+  /* max-width của các thẻ cài đặt cũng đặt thẳng trong JSX → cần !important để phủ hết
+     bề ngang màn hình, không còn thừa lề hai bên. */
+  .settings-card { max-width: 100% !important; padding: 14px 14px 16px; border-radius: 16px; }
+  .settings-card h4 { font-size: 15px; margin: 0 0 14px; }
+
+  /* Mỗi dòng cài đặt xuống hàng: nhãn ở trên, ô nhập bên dưới chiếm trọn bề ngang —
+     nằm ngang như bản máy tính thì ô nhập bị bóp còn vài chục pixel, không bấm nổi. */
+  .settings-row { flex-direction: column; align-items: stretch; gap: 8px; }
+  .settings-row label { min-width: 0; font-size: 13.5px; }
+  .settings-row input[type='number'] { width: 100%; }
+
+  /* font-size 16px là cỡ nhỏ nhất mà Safari trên iPhone KHÔNG tự phóng to trang khi bấm
+     vào ô nhập — để nhỏ hơn là mỗi lần gõ màn hình lại nhảy loạn. */
+  .form-row input,
+  .form-row select,
+  .settings-row input[type='number'],
+  .window-row input[type='time'] { font-size: 16px; padding: 12px 12px; width: 100%; box-sizing: border-box; }
+  .form-row label { font-size: 13px; }
+
+  .day-pills { flex-wrap: wrap; gap: 8px; }
+  .day-pill { font-size: 13px; padding: 10px 14px; }
+  .window-row { flex-wrap: wrap; gap: 8px; }
+  .window-row input[type='time'] { width: auto; flex: 1 1 120px; }
+  .add-window-btn { font-size: 13px; padding: 11px 16px; }
+  .submit-btn { font-size: 15px; padding: 14px; }
+  .icon-btn { font-size: 20px; padding: 4px; }
+
+  /* Tên nội dung dài: rút theo bề ngang màn hình thay vì con số cứng 300px */
+  .ellip { max-width: 46vw; }
+  .added-item { padding: 10px 12px; gap: 8px; }
+  .added-list { font-size: 13px; }
+
+  /* --- Bảng nhập PIN vừa màn hình dọc --- */
+  .modal { width: min(92vw, 340px); padding: 20px; }
+  .gate-modal { width: min(94vw, 400px); padding: 22px; }
+  .gate-option { padding: 14px 16px; }
+  .block-card { width: min(92vw, 420px); padding: 28px 20px; }
+  .block-emoji { font-size: 62px; }
+  .block-card h2 { font-size: 22px; }
+  .block-card p { font-size: 14px; }
+
+  /* --- Trình phát video --- */
+  .player-wrap { border-radius: 14px; margin: 12px 0 12px; }
+}
+
+/* --- Thanh đếm ngược "tự phát video tiếp theo" (trang phát video) --- */
+.autonext-bar {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  padding: 14px 18px; border-radius: 16px; margin: 0 0 18px;
+  border: 2px solid var(--focus-color); background: rgba(124, 156, 255, 0.1);
+}
+.autonext-count {
+  flex-shrink: 0; width: 44px; height: 44px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 900; font-size: 20px; background: var(--focus-color); color: #0e0f13;
+}
+.autonext-text { min-width: 0; flex: 1; }
+.autonext-label { font-size: 13px; opacity: 0.75; }
+.autonext-title { font-weight: 800; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+[data-tv] .autonext-bar { padding: 22px 28px; border-radius: 22px; gap: 24px; margin-bottom: 26px; border-width: 4px; }
+[data-tv] .autonext-count { width: 72px; height: 72px; font-size: 34px; }
+[data-tv] .autonext-label { font-size: 22px; }
+[data-tv] .autonext-title { font-size: 28px; }
+
+/* --- Nút chức năng của bố mẹ trên màn hình chặn --- */
+.block-parent-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+[data-tv] .block-parent-actions { gap: 16px; margin-top: 22px; }
+/* Nút "Bố mẹ bấm vào đây" trong màn hình chặn: chỉ hiện trên ĐIỆN THOẠI. Mặc định ẩn
+   (TV/máy tính/iPad không thấy nữa — đã bỏ theo yêu cầu trước), tới đúng bề ngang điện
+   thoại (≤700px, cùng mốc với thanh menu dưới đáy) mới hiện lại. */
+.block-parent-gate-mobile { display: none; }
+@media (max-width: 700px) {
+  .block-parent-gate-mobile { display: block; }
+}
+
+/* --- Nút đổi thứ tự video trong playlist tự tạo --- */
+.order-btns { display: flex; gap: 2px; flex-shrink: 0; }
+.order-btns .icon-btn:disabled { opacity: 0.25; cursor: default; }
+
+/* --- Tiêu đề từng mục nhỏ trong danh sách "Nội dung đã thêm" --- */
+.added-group-title {
+  font-size: 13px; font-weight: 800; opacity: 0.75;
+  margin: 0 0 8px; padding-bottom: 6px; border-bottom: 1px solid currentColor;
+}
+[data-tv] .added-group-title { font-size: 20px; margin-bottom: 12px; }
+@media (max-width: 760px) {
+  .added-group-title { font-size: 12.5px; }
+}
+
+/* ====================================================================================
+   BẢNG ĐIỀU KHIỂN TRÌNH PHÁT (nổi bên trong khung video)
+   ------------------------------------------------------------------------------------
+   Cố ý nằm BÊN TRONG .player-wrap: lúc xem toàn màn hình, trình duyệt chỉ vẽ phần tử nằm
+   trong khung đang toàn màn hình — để ngoài là không thấy gì.
+   ==================================================================================== */
+.player-panel {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 5;
+  display: flex; flex-wrap: wrap; gap: 16px; justify-content: center;
+  padding: 22px 14px; background: linear-gradient(to top, rgba(0, 0, 0, 0.88), rgba(0, 0, 0, 0));
+}
+/* Nút điều khiển trong bảng — TĂNG GẤP ĐÔI so với bản trước (yêu cầu "phù hợp với trẻ nhỏ,
+   giống YouTube Kids TV"): chữ 14px→28px, đệm 10x18→20x36, viền 3px→5px. */
+.player-panel-btn {
+  border: 5px solid transparent; border-radius: 999px; cursor: pointer;
+  padding: 20px 36px; font-weight: 800; font-size: 28px;
+  background: rgba(255, 255, 255, 0.14); color: #fff;
+}
+.player-panel-btn.active { border-color: var(--focus-color); background: rgba(255, 255, 255, 0.28); }
+.player-panel-btn.is-disabled { opacity: 0.35; cursor: default; }
+
+/* Icon (lucide-react) đứng trước chữ trong nút điều khiển — CÙNG kiểu nét/tỉ lệ với
+   .section-icon ở Trang chủ (thay cho icon emoji trước đây), chỉ khác là tính theo cỡ chữ
+   của .player-panel-btn (28px/48px/18px ở 3 breakpoint) nên tự to/nhỏ theo nút luôn. */
+.player-panel-icon {
+  display: inline-block;
+  width: 0.85em; height: 0.85em; vertical-align: -0.12em; margin-right: 10px; stroke-width: 2.4;
+}
+
+/* Nhãn hiện giữa video khi đang tua nhanh/tua lùi */
+.player-seek-badge {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 6;
+  padding: 14px 26px; border-radius: 999px; font-weight: 900; font-size: 26px;
+  background: rgba(0, 0, 0, 0.75); color: #fff; pointer-events: none;
+}
+
+/* Chừa thêm khoảng trống ở mép dưới: nhiều TV cắt mất viền màn hình (overscan), để chữ sát
+   mép quá là ngồi xem bị mất chữ. TV: nút điều khiển cũng tăng gấp đôi (24px→48px chữ,
+   16x30→32x60 đệm, viền 4px→7px) — cỡ cũ vốn đã to hơn bản web, giờ càng rõ, càng dễ bấm. */
+[data-tv] .player-panel { gap: 26px; padding: 34px 22px 60px; }
+[data-tv] .player-panel-btn { font-size: 48px; padding: 32px 60px; border-width: 7px; }
+[data-tv] .player-seek-badge { font-size: 44px; padding: 20px 40px; }
+
+@media (max-width: 760px) {
+  .player-panel { gap: 10px; padding: 14px 8px; }
+  .player-panel-btn { font-size: 18px; padding: 14px 22px; border-width: 3px; }
+  .player-seek-badge { font-size: 18px; padding: 10px 18px; }
+}
+
+/* ====================================================================================
+   ICON ▶/⏸ TO GIỮA MÀN HÌNH — chớp lên rồi tự mờ dần mỗi khi bấm OK tạm dừng/phát tiếp.
+   ------------------------------------------------------------------------------------
+   Yêu cầu "tăng size icon Play/Pause gấp đôi": lấy cỡ chữ icon trong .player-panel-btn làm
+   mốc rồi nhân đôi (28px→56px bản web, 48px→96px bản TV) — icon giữa màn hình vốn PHẢI to
+   hơn hẳn icon trong hàng nút, không thì "gấp đôi" chẳng còn ý nghĩa gì.
+   ==================================================================================== */
+.player-center-icon {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 7;
+  width: 110px; height: 110px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, 0.55); color: #fff;
+  font-size: 56px; line-height: 1; pointer-events: none;
+  animation: player-center-icon-pop 0.7s ease both;
+}
+/* Icon lucide-react thay cho emoji ▶/⏸ cũ — quy về đúng size ô tròn qua font-size (em),
+   giữ nguyên toàn bộ cách tính cỡ theo 3 breakpoint đã có sẵn ở trên/dưới. */
+.player-center-icon svg { width: 0.7em; height: 0.7em; stroke-width: 2.2; }
+@keyframes player-center-icon-pop {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.7); }
+  15% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  70% { opacity: 1; }
+  100% { opacity: 0; }
+}
+[data-tv] .player-center-icon { width: 180px; height: 180px; font-size: 96px; }
+@media (max-width: 760px) {
+  .player-center-icon { width: 80px; height: 80px; font-size: 38px; }
+}
+
+/* ====================================================================================
+   DANH SÁCH PLAYLIST TRONG TRÌNH XEM (mở bằng phím MŨI TÊN XUỐNG) — 2 GIAI ĐOẠN
+   ------------------------------------------------------------------------------------
+   Giống app YouTube Kids trên TV: bấm Xuống lần 1 chỉ "lấp ló" 3 thẻ đầu (báo hiệu có
+   danh sách, chưa chọn được ô nào); bấm Xuống thêm lần nữa mới "nở" ra thành lưới đầy đủ,
+   3 thẻ/hàng, chọn được từng ô. Xem PlayerPlaylistDrawer.tsx (component quyết định giai
+   đoạn nào render gì) và useTvPlayerControls.ts (phím quyết định lúc nào chuyển giai đoạn).
+   Cố ý đặt bên trong .player-wrap để lúc xem toàn màn hình vẫn thấy được.
+   ==================================================================================== */
+.player-playlist {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 5;
+  display: flex; flex-direction: column;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.92), rgba(0, 0, 0, 0.3) 70%, rgba(0, 0, 0, 0));
+  /* Đệm 2 bên tăng lên (14px→34px) — thu hẹp bớt bề ngang thật của lưới 3 cột, nhờ vậy mỗi
+     thẻ nhỏ lại 1 chút thay vì chiếm trọn hết bề ngang màn hình, đỡ rối mắt hơn. */
+  padding: 24px 34px 14px;
+  overflow: hidden;
+  /* Cả 2 giai đoạn CHUNG 1 khối, chỉ đổi chiều cao — nhờ transition ở đây mà lúc "nở" từ
+     giai đoạn 1 sang 2 (hoặc thu lại) tự trượt mượt, không giật cục. */
+  transition: height 0.22s ease;
+}
+/* Giai đoạn 1 — "lấp ló": chỉ đủ cao để nhô lên 1 phần of 3 thẻ đầu, ẩn hẳn phần tiêu đề
+   (chưa vào chế độ chọn, chưa cần tên video) — đúng nghĩa "báo hiệu còn nữa" chứ chưa phải
+   danh sách xem đầy đủ. */
+.player-playlist-stage1 { height: 22%; }
+/* Giai đoạn 2 — lưới đầy đủ, cao hơn hẳn để thấy rõ nhiều hàng, tên video, ô đang chọn. */
+.player-playlist-stage2 { height: 62%; }
+
+.player-playlist-title { color: #fff; font-weight: 800; font-size: 16px; margin: 0 4px 10px; opacity: 0.85; }
+/* CẢ 2 GIAI ĐOẠN đều dùng chung 1 LƯỚI 3 CỘT ĐỀU NHAU (grid-template-columns: repeat(3,
+   1fr)) — khác nhau đúng 1 chỗ: giai đoạn 1 chỉ hiện đúng 3 ô đầu (PlayerPlaylistDrawer.tsx
+   cắt mảng còn 3 phần tử) nên nhìn như "1 hàng ngang cân đối 3 video"; giai đoạn 2 hiện
+   TOÀN BỘ mảng nên tự động xuống hàng, cuộn dọc được khi nhiều hơn 1 hàng. Trước đây giai
+   đoạn 1 dùng flex + width cố định (190px) nên 3 thẻ bị co nhỏ lại, dư khoảng trắng bên
+   phải — đổi sang grid 3 cột thì 3 thẻ luôn giãn đều lấp đầy hết bề ngang. */
+.player-playlist-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px 26px;
+  overflow-y: auto; padding-bottom: 8px; scroll-behavior: smooth; scrollbar-width: none;
+}
+/* padding/border-radius LUÔN CỐ ĐỊNH (có sẵn dù đang chọn hay không) — giống nguyên tắc ở
+   thẻ video Trang chủ (.card-highlight): ô.active CHỈ đổi màu nền, không đổi kích thước,
+   nên không có hiệu ứng phóng to/thu nhỏ khi dí ô chọn qua lại giữa các video. */
+.player-playlist-item { cursor: pointer; min-width: 0; padding: 10px; border-radius: 16px; background: transparent; }
+.player-playlist-thumb {
+  position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 12px;
+  background: #222 center/cover; border: 4px solid transparent;
+  display: flex; align-items: center; justify-content: center;
+}
+/* "Làm nổi bật video mà mũi tên đang rê vào" — chỉ có tác dụng ở giai đoạn 2 (giai đoạn 1
+   không có ô nào được chọn cả, xem PlayerPlaylistDrawer.tsx: prop activeIndex bị bỏ qua ở
+   giai đoạn 1). Bọc trọn cả ảnh lẫn chữ trong khối nền TRẮNG (đồng bộ với kiểu làm nổi bật
+   thẻ video ở Trang chủ, xem [data-tv] .card.tv-focused) — chữ chuyển sang màu đen. */
+.player-playlist-item.active { background: #fff; }
+.player-playlist-item.active .player-playlist-thumb { border-color: transparent; box-shadow: none; }
+.player-playlist-item.active .player-playlist-item-title { color: #14151a; }
+.player-playlist-item.is-current .player-playlist-thumb { box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.6); }
+.player-playlist-playing { font-size: 22px; color: #fff; text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7); }
+/* Cỡ chữ tên video BẰNG ĐÚNG .card-title (thẻ ở Trang chủ) — 17px/800/1.3 bản web, xem
+   [data-tv] bên dưới cho bản TV (36px/900/1.26) — để nhất quán, không phải 1 cỡ chữ "riêng
+   của trình xem" nhỏ hơn hẳn phần còn lại của app. */
+.player-playlist-item-title {
+  color: #fff; font-size: 17px; font-weight: 800; line-height: 1.3; margin-top: 8px;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+
+[data-tv] .player-playlist { padding: 34px 60px 40px; }
+[data-tv] .player-playlist-title { font-size: 24px; margin: 0 4px 16px; }
+[data-tv] .player-playlist-grid { gap: 34px 40px; }
+[data-tv] .player-playlist-thumb { border-radius: 16px; border-width: 5px; }
+[data-tv] .player-playlist-item-title { font-size: 36px; font-weight: 900; line-height: 1.26; margin-top: 14px; }
+[data-tv] .player-playlist-item { padding: 16px; border-radius: 22px; }
+
+@media (max-width: 760px) {
+  .player-playlist-stage1 { height: 18%; }
+  .player-playlist-stage2 { height: 56%; }
+  .player-playlist { padding: 14px 10px 10px; }
+  .player-playlist-item-title { font-size: 15px; }
+}
+
+/* ====================================================================================
+   ĐỒ HOẠ "ĐANG TẢI VIDEO..." — thay cho màn hình đen ~4 giây lúc mới bấm chọn video.
+   ------------------------------------------------------------------------------------
+   Trước đây khoảng thời gian này chỉ toàn màu đen, không ai biết là đang tải hay app bị
+   lỗi. Vòng xoay + chữ này lấp đúng khoảng chờ đó, VÀ tự biến mất ngay khi trình phát có
+   khung hình đầu tiên (xem SafeYouTubePlayer.tsx / DirectVideoPlayer.tsx) — không phải
+   chờ tải xong hẳn mới ẩn.
+   ==================================================================================== */
+.player-loading {
+  position: absolute; inset: 0; z-index: 3;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+  background: #000;
+}
+.player-loading-spinner {
+  width: 56px; height: 56px; border-radius: 50%;
+  border: 6px solid rgba(255, 255, 255, 0.22); border-top-color: #fff;
+  animation: player-loading-spin 0.85s linear infinite;
+}
+.player-loading-text { color: rgba(255, 255, 255, 0.85); font-size: 16px; font-weight: 700; }
+@keyframes player-loading-spin {
+  to { transform: rotate(360deg); }
+}
+[data-tv] .player-loading-spinner { width: 90px; height: 90px; border-width: 9px; }
+[data-tv] .player-loading-text { font-size: 26px; }
+
+/* ====================================================================================
+   ĐỒNG HỒ ĐẾM NGƯỢC SẮP HẾT GIỜ (góc trên-phải khung video)
+   ------------------------------------------------------------------------------------
+   Nằm BÊN TRONG .player-wrap để lúc xem toàn màn hình vẫn thấy.
+   Nền tối mờ + làm nhoè hậu cảnh: đọc được số trên mọi cảnh phim, mà không che mất video.
+   Màu chỉ là lớp thông tin PHỤ — trạng thái luôn kèm icon (⚠️ / 🚨) và chữ.
+   ==================================================================================== */
+.watch-countdown {
+  position: absolute; top: 14px; right: 14px; z-index: 6;
+  display: flex; align-items: center;
+  padding: 10px 14px; border-radius: 18px;
+  background: rgba(10, 10, 14, 0.38);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  color: #fff; pointer-events: none;
+  animation: wc-fade-in 0.45s ease both;
+}
+@keyframes wc-fade-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: none; }
+}
+
+.watch-countdown-main { display: flex; align-items: center; gap: 12px; }
+.watch-countdown-ring { position: relative; width: 52px; height: 52px; flex: none; }
+.watch-countdown-ring svg { width: 100%; height: 100%; display: block; }
+.wc-ring-track { fill: none; stroke: rgba(255, 255, 255, 0.22); stroke-width: 6; }
+.wc-ring-bar {
+  fill: none; stroke: var(--wc-color); stroke-width: 6; stroke-linecap: round;
+  transition: stroke-dashoffset 0.9s linear, stroke 0.3s ease;
+}
+.watch-countdown-icon {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+}
+.watch-countdown-label { font-size: 12px; font-weight: 700; opacity: 0.82; line-height: 1.2; }
+.watch-countdown-time {
+  font-size: 26px; font-weight: 900; line-height: 1.1;
+  font-variant-numeric: tabular-nums; color: var(--wc-color);
+}
+
+/* 2 trạng thái. Vàng = còn 1–2 phút, đỏ = còn dưới 1 phút (nhấp nháy NHẸ, chu kỳ chậm để
+   không gây khó chịu / không ảnh hưởng người nhạy cảm với ánh sáng nhấp nháy). */
+.watch-countdown.is-warn { --wc-color: #ffc148; }
+.watch-countdown.is-critical { --wc-color: #ff7a6b; animation: wc-fade-in 0.45s ease both, wc-pulse 1.6s ease-in-out 0.45s infinite; }
+@keyframes wc-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 122, 107, 0); }
+  50% { box-shadow: 0 0 0 5px rgba(255, 122, 107, 0.32); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .watch-countdown, .watch-countdown.is-critical { animation: none; }
+}
+
+[data-tv] .watch-countdown { top: 26px; right: 26px; padding: 16px 22px; border-radius: 24px; }
+[data-tv] .watch-countdown-ring { width: 84px; height: 84px; }
+[data-tv] .watch-countdown-icon { font-size: 32px; }
+[data-tv] .watch-countdown-label { font-size: 19px; }
+[data-tv] .watch-countdown-time { font-size: 44px; }
+
+@media (max-width: 760px) {
+  .watch-countdown { top: 8px; right: 8px; padding: 7px 10px; border-radius: 14px; }
+  .watch-countdown-ring { width: 38px; height: 38px; }
+  .watch-countdown-icon { font-size: 15px; }
+  .watch-countdown-label { font-size: 10px; }
+  .watch-countdown-time { font-size: 18px; }
+}
+
+/* ====================================================================================
+   BÁO CÁO TUẦN (khu Bố mẹ)
+   ==================================================================================== */
+.wr-totals, .wr-tops { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: 640px; }
+/* min-width: 0 là BẮT BUỘC: ô trong lưới mặc định không chịu co nhỏ hơn nội dung của
+   nó, nên 1 tên video dài sẽ đẩy phình cả thẻ ra ngoài khung 640px thay vì bị cắt bớt
+   bằng dấu "...". */
+.wr-totals > *, .wr-tops > * { min-width: 0; }
+.wr-totals .settings-card, .wr-tops .settings-card { max-width: none; margin-bottom: 0; }
+.wr-tops { margin-top: 4px; }
+
+.wr-total-head { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 15px; }
+.wr-total-emoji { font-size: 22px; }
+.wr-total-value { font-size: 38px; font-weight: 900; line-height: 1.1; margin: 8px 0 2px; font-variant-numeric: tabular-nums; }
+.wr-total-unit { font-size: 16px; font-weight: 800; }
+.wr-total-sub { font-size: 12.5px; opacity: 0.65; }
+
+.wr-chart-card { max-width: 640px; }
+.wr-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+.wr-legend-item { display: inline-flex; align-items: center; gap: 6px; }
+.wr-legend-dot { width: 12px; height: 12px; border-radius: 4px; display: inline-block; }
+.wr-legend-unit { opacity: 0.55; font-weight: 600; margin-left: auto; }
+
+.wr-chart { position: relative; padding-left: 28px; padding-top: 30px; }
+/* Vạch kẻ ngang mờ — chỉ để ước lượng chiều cao, cố ý nhạt hơn cột rất nhiều. */
+.wr-grid { position: absolute; left: 28px; right: 0; top: 30px; height: 170px; pointer-events: none; }
+.wr-grid-line { position: absolute; left: 0; right: 0; border-top: 1px dashed currentColor; opacity: 0.16; }
+.wr-grid-label { position: absolute; left: -28px; top: -8px; font-size: 11px; opacity: 0.85; font-variant-numeric: tabular-nums; }
+
+.wr-days { display: flex; gap: 6px; align-items: flex-end; }
+.wr-day { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+/* 2 cột của 1 ngày dính sát nhau (cách 2px) để đọc thành 1 nhóm; các NGÀY thì cách xa hơn. */
+.wr-bars { position: relative; width: 100%; height: 170px; display: flex; align-items: flex-end; justify-content: center; gap: 2px; }
+.wr-bar {
+  width: 42%; max-width: 26px; min-height: 2px;
+  border-radius: 4px 4px 0 0; transition: filter 0.15s ease;
+}
+.wr-bar.is-hover { filter: brightness(1.18); }
+.wr-tip {
+  position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+  white-space: nowrap; font-size: 12px; font-weight: 700; padding: 5px 9px; border-radius: 9px;
+  background: rgba(10, 10, 14, 0.86); color: #fff; z-index: 2; pointer-events: none;
+}
+.wr-day-label { font-size: 11.5px; font-weight: 700; opacity: 0.7; white-space: nowrap; }
+/* Hôm nay: in đậm rõ hơn + có dấu chấm, để bố mẹ định vị ngay mình đang ở đâu trong tuần. */
+.wr-day-label.is-today { opacity: 1; font-weight: 900; }
+.wr-day-label.is-today::after { content: ' •'; color: var(--focus-color); }
+/* Ngày chưa tới trong tuần: mờ đi, để không nhầm "cột thấp" với "chưa xem". */
+.wr-day.is-future { opacity: 0.4; }
+.wr-table tr.is-today td { font-weight: 900; }
+.wr-empty { font-size: 13.5px; opacity: 0.65; margin: 6px 0 0; }
+.wr-table-toggle { margin-top: 16px; }
+
+.wr-table-wrap { overflow-x: auto; margin-top: 12px; }
+.wr-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.wr-table th, .wr-table td { padding: 7px 10px; text-align: right; white-space: nowrap; }
+.wr-table th:first-child, .wr-table td:first-child { text-align: left; }
+.wr-table th { font-weight: 800; opacity: 0.75; border-bottom: 1px solid currentColor; }
+.wr-table td { font-variant-numeric: tabular-nums; }
+.wr-table-total td { font-weight: 900; border-top: 1px solid currentColor; }
+
+.wr-top-item { font-size: 13px; }
+.wr-top-rank { font-weight: 900; opacity: 0.5; min-width: 14px; }
+.wr-top-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wr-top-minutes { font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+[data-tv] .wr-totals, [data-tv] .wr-tops { max-width: 900px; gap: 24px; }
+[data-tv] .wr-chart-card { max-width: 900px; }
+[data-tv] .wr-total-head { font-size: 23px; }
+[data-tv] .wr-total-emoji { font-size: 34px; }
+[data-tv] .wr-total-value { font-size: 58px; }
+[data-tv] .wr-total-sub { font-size: 18px; }
+[data-tv] .wr-legend { font-size: 20px; gap: 22px; }
+[data-tv] .wr-legend-dot { width: 18px; height: 18px; }
+[data-tv] .wr-bars, [data-tv] .wr-grid { height: 240px; }
+[data-tv] .wr-bar { max-width: 40px; }
+[data-tv] .wr-day-label { font-size: 17px; }
+[data-tv] .wr-tip { font-size: 19px; padding: 8px 14px; border-radius: 12px; }
+[data-tv] .wr-grid-label { font-size: 16px; }
+[data-tv] .wr-table { font-size: 19px; }
+[data-tv] .wr-top-item { font-size: 19px; }
+[data-tv] .wr-empty { font-size: 19px; }
+
+@media (max-width: 760px) {
+  /* Điện thoại: xếp dọc cho dễ đọc, cột hẹp lại nhưng vẫn giữ đủ 7 ngày. */
+  .wr-totals, .wr-tops { grid-template-columns: 1fr; gap: 12px; max-width: 100%; }
+  .wr-chart-card { max-width: 100%; }
+  .wr-total-value { font-size: 30px; }
+  .wr-bars, .wr-grid { height: 130px; }
+  .wr-days { gap: 3px; }
+  .wr-bar { max-width: 16px; }
+  .wr-day-label { font-size: 10px; }
+  .wr-legend { font-size: 12px; gap: 10px; }
+  .wr-legend-unit { margin-left: 0; width: 100%; }
+}
+
+/* ====================================================================================
+   NGHỈ GIẢI LAO + XIN THÊM GIỜ
+   ==================================================================================== */
+
+/* Đồng hồ đếm ngược to giữa màn hình nghỉ — để bé nhìn thấy "sắp được xem tiếp rồi",
+   đỡ sốt ruột hơn hẳn một dòng chữ. */
+.break-count {
+  font-size: 54px; font-weight: 900; line-height: 1.1; margin: 6px 0 4px;
+  font-variant-numeric: tabular-nums; color: var(--focus-color);
+}
+.break-tips { font-size: 13.5px; opacity: 0.75; margin-bottom: 18px; }
+
+/* Nút "con xin thêm giờ" trên màn hình hết giờ */
+.block-ask { margin: 4px 0 14px; }
+.block-ask-btn { width: auto; padding: 12px 26px; }
+.block-ask-status {
+  font-size: 14px; font-weight: 800; padding: 12px 16px; border-radius: 14px;
+  background: rgba(128, 128, 128, 0.14);
+}
+.block-ask-status.is-waiting { color: var(--focus-color); }
+.block-ask-status.is-denied { opacity: 0.75; }
+
+/* Thẻ duyệt lời xin, phía bố mẹ */
+.request-card { border-color: var(--focus-color) !important; }
+.request-row {
+  display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;
+  padding: 12px 0; border-top: 1px solid rgba(128, 128, 128, 0.22);
+}
+.request-row:first-of-type { border-top: none; padding-top: 0; }
+.request-who { display: flex; gap: 10px; align-items: center; min-width: 0; }
+.request-emoji { font-size: 28px; }
+.request-name { font-weight: 800; font-size: 14.5px; }
+.request-meta { font-size: 12px; opacity: 0.6; }
+.request-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.request-actions .add-window-btn { padding: 10px 14px; font-weight: 800; }
+.request-deny { opacity: 0.75; }
+
+[data-tv] .break-count { font-size: 92px; }
+[data-tv] .break-tips { font-size: 21px; }
+[data-tv] .block-ask-status { font-size: 26px; padding: 20px 26px; }
+[data-tv] .request-emoji { font-size: 40px; }
+[data-tv] .request-name { font-size: 22px; }
+[data-tv] .request-meta { font-size: 18px; }
+[data-tv] .request-actions .add-window-btn { padding: 16px 22px; font-size: 21px; }
+
+@media (max-width: 760px) {
+  .break-count { font-size: 40px; }
+  .break-tips { font-size: 12.5px; }
+  .request-row { padding: 10px 0; }
+  .request-actions { width: 100%; }
+  .request-actions .add-window-btn { flex: 1; padding: 10px 8px; font-size: 13px; }
+}
+
+/* ====================================================================================
+   THANH MENU DƯỚI ĐÁY — chỉ dành cho ĐIỆN THOẠI
+   ------------------------------------------------------------------------------------
+   Trên điện thoại, menu dọc bên trái vừa chiếm mất bề ngang vốn đã hẹp, vừa nằm ở chỗ
+   ngón cái khó với tới. Ở đây lật nó thành thanh ngang dưới đáy — đúng kiểu mọi app điện
+   thoại vẫn làm. Vẫn dùng CHUNG một đoạn mã Sidebar, chỉ đổi cách bày ra bằng CSS.
+
+   ⚠️ VÌ SAO LÀ 700px CHỨ KHÔNG PHẢI 760px như các khối khác:
+   iPad mini để dọc rộng 744px. Lấy mốc 760 thì iPad mini cũng bị kéo menu xuống đáy —
+   trong khi yêu cầu là iPad GIỮ NGUYÊN bố cục cột dọc. iPhone bản to nhất để dọc cũng chỉ
+   440px, nên mốc 700 tách bạch được: iPhone dính, mọi iPad đều không.
+
+   iPhone XOAY NGANG (~950px) cũng cố ý không dính: lúc đó màn hình thấp mà rộng, chiếm
+   thêm một dải ngang dưới đáy là mất chỗ xem, để menu bên trái hợp lý hơn.
+
+   Khối này phải nằm SAU khối @media 760px ở trên, vì nó bật lại phần chữ mà khối kia ẩn đi.
+   ==================================================================================== */
+@media (max-width: 700px) {
+  /* Bỏ xếp ngang: menu không còn là 1 cột trong hàng nữa mà nổi hẳn lên trên nội dung. */
+  .layout { display: block; }
+
+  .sidebar {
+    position: fixed; left: 0; right: 0; bottom: 0; top: auto;
+    width: auto; height: auto; align-self: auto;
+    flex-direction: row; justify-content: space-around; align-items: stretch;
+    /* env(safe-area-inset-bottom): chừa chỗ cho vạch Home của iPhone không viền, nếu
+       không thì mục cuối bị vạch đó che mất một phần. */
+    padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+    z-index: 40;
+    box-sizing: border-box;
+  }
+  /* Viền chuyển từ cạnh phải sang cạnh trên. Phải viết riêng cho từng giao diện vì 2 chỗ
+     khai báo viền gốc đều gắn với [data-theme], "đè" bằng .sidebar không thì không thắng. */
+  [data-theme='dark'] .sidebar { border-right: none; border-top: 1px solid #23242c; }
+  [data-theme='chibi'] .sidebar { border-right: none; border-top: 3px dashed #ffb6d5; }
+
+  /* Logo và hoa lá bỏ đi: thanh dưới đáy chỉ nên có đúng thứ bấm được. */
+  .brand { display: none; }
+  .sidebar-deco { display: none; }
+
+  /* Nút chọn hồ sơ: ẩn khỏi thanh dưới đáy (không phải chỗ hợp lý — bàn tay bấm nhầm sang
+     mục khác ngay cạnh), quay lại góc phải thanh trên cùng — chỗ quen thuộc trên điện
+     thoại từ trước tới giờ. */
+  .sidebar-profile { display: none; }
+  .topbar-profile { display: flex; }
+
+  .side-item {
+    flex: 1; min-width: 0;
+    flex-direction: column; gap: 3px;
+    width: auto; height: auto; margin: 0;
+    padding: 7px 2px; border-radius: 14px;
+    justify-content: center; border-width: 2px;
+  }
+  .side-icon { font-size: 21px; line-height: 1; }
+  /* Bật lại chữ (khối 760px ở trên đã ẩn) — thanh dưới đáy còn chỗ, có chữ thì rõ nghĩa
+     hơn hẳn, nhất là icon 🎨 và 🔒 vốn không tự nói lên được là gì. */
+  .side-text {
+    display: block; font-size: 10.5px; font-weight: 800; line-height: 1.15;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+  }
+  .side-action { opacity: 1; }
+
+  /* Chừa chỗ cho thanh dưới đáy, không thì phần cuối trang bị nó che mất. */
+  .main { padding-bottom: 96px; }
+}
+
+/* =====================================================================
+   KHU BỐ MẸ TRÊN ĐIỆN THOẠI — trên điện thoại thật, app CHỈ còn đúng 1 trang (Khu Bố mẹ,
+   xem Layout.tsx phần "khoá thẳng vào Khu vực Bố mẹ") — Trang chủ/xem video không dùng tới
+   nữa. Vì vậy:
+     1) Ẩn hẳn thanh menu Trang chủ/Bố mẹ của Sidebar (khối "THANH MENU DƯỚI ĐÁY" ở trên) —
+        không còn tác dụng gì (Trang chủ không dẫn tới đâu, Bố mẹ thì đã sẵn ở đây rồi).
+     2) 5 mục CỦA CHÍNH Khu Bố mẹ (.parent-tabs) THAY THẾ vai trò "thanh dưới đáy" đó —
+        đúng khoảng trống .main{padding-bottom:96px} đã chừa sẵn ở trên, không cần thêm gì.
+   Cùng mốc 700px với khối trên (không phải 760px) — mọi iPad đều rộng hơn mốc này nên giữ
+   nguyên bố cục hiện có, chỉ điện thoại thật mới đổi. */
+@media (max-width: 700px) {
+  .sidebar { display: none; }
+  /* TopBar chỉ có logo (đã ẩn từ trước) + nút chọn hồ sơ — nút đó cũng chỉ có ý nghĩa cho
+     việc XEM VIDEO (đổi hồ sơ đang xem), không còn trang xem nào trên điện thoại nữa nên
+     ẩn LUÔN cả thanh này, nhường hết chỗ phía trên cho tiêu đề "Khu vực Bố mẹ". */
+  .topbar { display: none; }
+
+  .parent-tabs {
+    position: fixed; left: 0; right: 0; bottom: 0; top: auto;
+    display: flex; flex-direction: row; justify-content: space-around; align-items: stretch;
+    width: auto; margin: 0; gap: 0;
+    padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+    z-index: 40;
+    box-sizing: border-box;
+  }
+  [data-theme='dark'] .parent-tabs { background: #16171d; border-top: 1px solid #23242c; }
+  [data-theme='chibi'] .parent-tabs { background: #fff0f6; border-top: 3px dashed #ffb6d5; }
+
+  .parent-tabs .tab-btn {
+    flex: 1; min-width: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    background: none !important; border: none;
+    padding: 7px 2px; border-radius: 14px; font-size: 10.5px; font-weight: 800;
+  }
+  .parent-tabs .tab-btn-icon { font-size: 20px; line-height: 1; margin-right: 0; }
+  .parent-tabs .tab-btn-label {
+    display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+  }
+  [data-theme='dark'] .parent-tabs .tab-btn { color: #c7c9d1; }
+  [data-theme='dark'] .parent-tabs .tab-btn.active { color: #7c9cff; }
+  [data-theme='chibi'] .parent-tabs .tab-btn { color: #c2447a; }
+  [data-theme='chibi'] .parent-tabs .tab-btn.active { color: #ff5c9e; }
+
+  /* Không còn trang nào để "Quay lại" nữa (Trang chủ đã ẩn khỏi điện thoại) — ẩn luôn nút
+     này trên Khu Bố mẹ, đỡ bấm vào rồi bị tự động đưa quay lại đây (xem Layout.tsx). */
+  .parent-page .back-btn { display: none; }
+}
+
+/* =====================================================================
+   KHU BỐ MẸ TRÊN MÁY TÍNH (ParentDashboardPage) — màn rộng, KHÔNG áp dụng cho TV.
+   =====================================================================
+   Vì sao phải chặn riêng [data-tv]: màn hình TV thực tế CŨNG rộng (1920/1280px) nên lọt
+   luôn vào điều kiện "min-width" bên dưới nếu không chặn — mà giao diện menu dọc/nhiều cột
+   ở đây chỉ hợp với chuột+bàn phím, dùng điều khiển TV (D-pad) sẽ rất khó bấm. `data-tv`
+   KHÔNG dựa vào kích thước màn hình (xem main.tsx) nên dùng được để phân biệt chắc chắn:
+   TV thật luôn có data-tv, máy tính/laptop thì không — mọi luật trong khối này đều bọc
+   trong ":root:not([data-tv])" để CHỈ áp dụng cho máy tính, tuyệt đối không đụng tới TV.
+   ===================================================================== */
+@media (min-width: 1000px) {
+  /* --- Menu dọc bên trái thay cho hàng tab ngang --- */
+  :root:not([data-tv]) .parent-layout { display: flex; align-items: flex-start; gap: 32px; }
+  :root:not([data-tv]) .parent-tabs {
+    flex-direction: column;
+    width: 230px;
+    flex-shrink: 0;
+    gap: 6px;
+    margin: 8px 0 0;
+    position: sticky;
+    top: 24px;
+  }
+  :root:not([data-tv]) .tab-btn { width: 100%; text-align: left; padding: 13px 18px; }
+  :root:not([data-tv]) .parent-main { flex: 1; min-width: 0; }
+
+  /* --- Chia 2 cột: form nhập liệu bên trái, danh sách/trạng thái bên phải — đỡ phải cuộn
+     dài như trên điện thoại. .col-form luôn đứng bên TRÁI, .col-list bên PHẢI, BẤT KỂ thứ
+     tự thật trong mã nguồn (dùng "order" của CSS Grid) — nhờ vậy điện thoại/TV vẫn giữ
+     đúng thứ tự trên-xuống-dưới như cũ, không bị đổi hành vi ngoài ý muốn. */
+  :root:not([data-tv]) .parent-cols {
+    display: grid;
+    grid-template-columns: minmax(340px, 460px) 1fr;
+    gap: 28px;
+    align-items: start;
+  }
+  :root:not([data-tv]) .parent-cols .col { min-width: 0; }
+  :root:not([data-tv]) .parent-cols .col-form { order: 1; }
+  :root:not([data-tv]) .parent-cols .col-list { order: 2; }
+
+  /* --- Danh sách nhiều thẻ cùng loại (khu Tài khoản) xếp dạng lưới thay vì xếp chồng dài
+     xuống dưới. --- */
+  :root:not([data-tv]) .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 20px;
+    align-items: start;
+  }
+
+  /* --- Chữ/khoảng cách trong form nhỉnh hơn 1 chút so với cỡ điện thoại mặc định — đọc
+     thoải mái hơn trên màn hình lớn, KHÔNG to bằng cỡ TV (xem [data-tv] ở trên, TV xem xa
+     hơn hẳn máy tính nên cần chữ to hơn máy tính rất nhiều). Chỉ áp dụng bên trong trang
+     Khu Bố mẹ (.parent-page), không đụng tới trang khác. */
+  :root:not([data-tv]) .parent-page .form-row label { font-size: 13px; }
+  :root:not([data-tv]) .parent-page .form-row select,
+  :root:not([data-tv]) .parent-page .form-row input { font-size: 14.5px; padding: 11px 14px; }
+  :root:not([data-tv]) .parent-page .submit-btn { font-size: 15px; padding: 13px; }
+  :root:not([data-tv]) .parent-page .add-window-btn { font-size: 13.5px; padding: 11px 18px; }
+  :root:not([data-tv]) .parent-page .settings-card { padding: 24px 26px; }
+  :root:not([data-tv]) .parent-page .greet { font-size: 26px; }
+}
+
+/* =====================================================================
+   CHẾ ĐỘ IPAD — menu trái ẩn chữ (chỉ còn icon), header gọn hơn, thẻ video/khoảng cách thu
+   nhỏ vừa đủ để LUÔN thấy đúng 3 thẻ/hàng ở khối "Tiếp tục xem"/"Danh sách"/"Video đề xuất"
+   mà không phải cuộn ngang mới thấy hết. Gắn theo thuộc tính [data-ipad] (nhận diện THIẾT
+   BỊ, không theo bề ngang cửa sổ — xem main.tsx) nên KHÔNG đụng gì tới máy tính/điện
+   thoại/TV, kể cả khi cửa sổ máy tính bị kéo hẹp trùng đúng bề ngang 1 chiếc iPad.
+
+   Vì sao phải thu nhỏ CẢ card lẫn khoảng cách (không chỉ menu): menu trái từ 248px xuống
+   ~76px chỉ cứu được ~170px — vẫn chưa đủ chỗ cho 3 thẻ cỡ 310px (cỡ máy tính) trên màn
+   hình iPad hẹp nhất (iPad mini đứng dọc, 744px). Phải giảm thêm cỡ thẻ mới vừa khít.
+   ===================================================================== */
+[data-ipad] {
+  --card-w: 198px;
+  --shelf-gap: 16px;
+}
+
+/* --- Menu trái: thu gọn thành dải icon, giống hệt cách làm cho TV/điện thoại (chỉ khác
+   kích cỡ, chọn to hơn TV 1 chút cho vừa tay chạm) --- */
+[data-ipad] .sidebar { width: 76px; padding: 14px 8px; }
+[data-ipad] .side-item {
+  width: 54px; height: 54px; padding: 0; margin: 0 auto 10px;
+  justify-content: center; gap: 0; border-radius: 16px;
+}
+[data-ipad] .side-icon { font-size: 22px; line-height: 1; }
+[data-ipad] .side-text { display: none; }
+[data-ipad] .sidebar-deco { display: none; }
+[data-ipad] .sidebar-profile .profile-btn {
+  width: 54px; height: 54px; padding: 0; margin: 0 auto 10px;
+  justify-content: center; gap: 0; border-radius: 16px;
+}
+[data-ipad] .sidebar-profile .avatar { width: 34px; height: 34px; font-size: 18px; }
+[data-ipad] .sidebar-profile .profile-name-text,
+[data-ipad] .sidebar-profile .profile-caret { display: none; }
+[data-ipad] .sidebar-profile .profile-menu { top: 0; left: 100%; right: auto; margin-left: 12px; }
+
+/* --- Header gọn hơn (không ẩn chữ "Ytube", chỉ giảm chiều cao/khoảng đệm) --- */
+[data-ipad] .topbar { height: calc(60px + env(safe-area-inset-top, 0px)); padding: env(safe-area-inset-top, 0px) 16px 0; }
+[data-ipad] .main { padding: 16px 18px 50px; }
+
+/* --- Ép luôn 3 cột cho các trang danh sách (trang Kênh, danh sách video playlist) — mặc
+   định (xem .grid3 ở trên) đã là 3 cột co giãn theo bề rộng nên hầu hết iPad không cần sửa
+   gì, CHỈ riêng iPad mini đứng dọc (744px) đang bị khối "≤760px" phía trên ép về 1 cột
+   (vốn dành cho điện thoại) — ghi đè lại đúng 3 cột cho mọi iPad. */
+[data-ipad] .grid3 { grid-template-columns: repeat(3, 1fr); gap: 20px; }
+
+/* =====================================================================
+   HUY HIỆU "GIỮ ĐÚNG GIỜ XEM N NGÀY LIÊN TIẾP" (StreakBadge.tsx)
+   ===================================================================== */
+.streak-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 18px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 14px;
+  color: #ffb02e;
+  background: rgba(255, 176, 46, 0.14);
+  border: 1px solid rgba(255, 176, 46, 0.35);
+  width: fit-content;
+}
+[data-tv] .streak-badge { font-size: 26px; padding: 14px 26px; gap: 12px; margin: 16px 0 26px; }
+
+/* =====================================================================
+   HÌNH NỀN TRANG CHỦ THEO MÙA/DỊP LỄ (backgroundThemes.ts + useHomeBackground.ts)
+   =====================================================================
+   Cách hoạt động: Layout.tsx gắn thuộc tính data-bg-theme="<id>" lên .layout CHỈ KHI đang
+   ở Trang chủ ("/") — nhờ đó mọi rule dưới đây (nhắm theo [data-bg-theme='...']) tự động
+   KHÔNG áp dụng ở trang phát video hay khu Bố mẹ, dù CSS này không cần biết gì về route.
+
+   Mọi hình nền chỉ thêm background-image (hoạ tiết chấm màu alpha RẤT thấp, 0.04–0.12) —
+   CỐ Ý không đụng tới background-color gốc của .sidebar/.topbar/.main (khai ở phần "THEME 1:
+   DARK TV" phía trên) — nhờ vậy hình nền chỉ là 1 lớp ánh màu mờ phía sau, thẻ video/chữ
+   vẫn rõ như cũ 100%, không ảnh hưởng mắt bé. Cùng độ đặc/độ lớn (background-size) dùng
+   chung cho cả 3 nơi để đồng bộ hoạ tiết giữa menu và nội dung. */
+[data-bg-theme] .sidebar,
+[data-bg-theme] .topbar,
+[data-bg-theme] .main {
+  background-repeat: repeat;
+  transition: background-image 0.4s ease;
+}
+
+[data-bg-theme='xuan'] .sidebar,
+[data-bg-theme='xuan'] .topbar,
+[data-bg-theme='xuan'] .main {
+  background-image:
+    radial-gradient(circle at 15% 25%, rgba(255, 182, 213, 0.12) 0 7px, transparent 8px),
+    radial-gradient(circle at 70% 65%, rgba(178, 255, 190, 0.1) 0 6px, transparent 7px),
+    radial-gradient(circle at 40% 85%, rgba(255, 240, 180, 0.08) 0 5px, transparent 6px),
+    linear-gradient(180deg, rgba(255, 182, 213, 0.05), rgba(178, 255, 190, 0.05));
+  background-size: 210px 210px, 260px 260px, 190px 190px, 100% 100%;
+}
+
+[data-bg-theme='ha'] .sidebar,
+[data-bg-theme='ha'] .topbar,
+[data-bg-theme='ha'] .main {
+  background-image:
+    radial-gradient(circle at 80% 15%, rgba(255, 221, 110, 0.14) 0 10px, transparent 11px),
+    radial-gradient(circle at 20% 70%, rgba(120, 210, 255, 0.1) 0 7px, transparent 8px),
+    linear-gradient(180deg, rgba(120, 210, 255, 0.06), rgba(255, 221, 110, 0.05));
+  background-size: 320px 320px, 220px 220px, 100% 100%;
+}
+
+[data-bg-theme='thu'] .sidebar,
+[data-bg-theme='thu'] .topbar,
+[data-bg-theme='thu'] .main {
+  background-image:
+    radial-gradient(circle at 25% 30%, rgba(230, 150, 70, 0.12) 0 7px, transparent 8px),
+    radial-gradient(circle at 75% 60%, rgba(210, 110, 60, 0.1) 0 6px, transparent 7px),
+    radial-gradient(circle at 50% 90%, rgba(240, 190, 90, 0.08) 0 5px, transparent 6px),
+    linear-gradient(180deg, rgba(210, 110, 60, 0.06), rgba(240, 190, 90, 0.05));
+  background-size: 230px 230px, 270px 270px, 200px 200px, 100% 100%;
+}
+
+[data-bg-theme='dong'] .sidebar,
+[data-bg-theme='dong'] .topbar,
+[data-bg-theme='dong'] .main {
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(220, 240, 255, 0.12) 0 4px, transparent 5px),
+    radial-gradient(circle at 65% 50%, rgba(220, 240, 255, 0.1) 0 3px, transparent 4px),
+    radial-gradient(circle at 40% 80%, rgba(220, 240, 255, 0.09) 0 4px, transparent 5px),
+    linear-gradient(180deg, rgba(120, 170, 255, 0.06), rgba(220, 240, 255, 0.04));
+  background-size: 160px 160px, 140px 140px, 180px 180px, 100% 100%;
+}
+
+[data-bg-theme='trungthu'] .sidebar,
+[data-bg-theme='trungthu'] .topbar,
+[data-bg-theme='trungthu'] .main {
+  background-image:
+    radial-gradient(circle at 82% 18%, rgba(255, 226, 150, 0.16) 0 26px, transparent 27px),
+    radial-gradient(circle at 25% 65%, rgba(255, 176, 90, 0.1) 0 8px, transparent 9px),
+    radial-gradient(circle at 55% 90%, rgba(180, 120, 220, 0.08) 0 6px, transparent 7px),
+    linear-gradient(180deg, rgba(90, 60, 140, 0.07), rgba(255, 176, 90, 0.05));
+  background-size: 100% 100%, 240px 240px, 200px 200px, 100% 100%;
+}
+
+[data-bg-theme='giangsinh'] .sidebar,
+[data-bg-theme='giangsinh'] .topbar,
+[data-bg-theme='giangsinh'] .main {
+  background-image:
+    radial-gradient(circle at 18% 22%, rgba(255, 255, 255, 0.1) 0 4px, transparent 5px),
+    radial-gradient(circle at 60% 55%, rgba(255, 255, 255, 0.08) 0 3px, transparent 4px),
+    radial-gradient(circle at 40% 85%, rgba(120, 220, 150, 0.08) 0 6px, transparent 7px),
+    linear-gradient(180deg, rgba(200, 60, 70, 0.06), rgba(70, 150, 90, 0.06));
+  background-size: 170px 170px, 150px 150px, 220px 220px, 100% 100%;
+}
+
+[data-bg-theme='tet'] .sidebar,
+[data-bg-theme='tet'] .topbar,
+[data-bg-theme='tet'] .main {
+  background-image:
+    radial-gradient(circle at 20% 25%, rgba(255, 214, 100, 0.14) 0 8px, transparent 9px),
+    radial-gradient(circle at 70% 60%, rgba(255, 214, 100, 0.1) 0 6px, transparent 7px),
+    radial-gradient(circle at 45% 88%, rgba(255, 120, 120, 0.08) 0 6px, transparent 7px),
+    linear-gradient(180deg, rgba(200, 40, 50, 0.07), rgba(255, 214, 100, 0.05));
+  background-size: 220px 220px, 260px 260px, 200px 200px, 100% 100%;
+}
+
+/* --- Lưới chọn hình nền trong HomeBackgroundCard.tsx (khu Bố mẹ > Tài khoản) --- */
+.bg-theme-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+.bg-theme-pick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 84px;
+  cursor: pointer;
+  font-size: 12px;
+  text-align: center;
+  opacity: 0.75;
+}
+.bg-theme-pick.on,
+.bg-theme-pick:hover { opacity: 1; }
+.bg-swatch {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  background: #1b1c22;
+  border: 2px solid #262731;
+}
+.bg-theme-pick.on .bg-swatch { border-color: #7c9cff; box-shadow: 0 0 0 3px rgba(124, 156, 255, 0.25); }
+.bg-swatch--default { color: #c7c9d1; }
+.bg-swatch--xuan { background: linear-gradient(135deg, #3a2b35, #2b3a2f), radial-gradient(circle, rgba(255,182,213,0.5) 0 8px, transparent 9px) 15% 25%/30px 30px; }
+.bg-swatch--ha { background: linear-gradient(135deg, #2b3540, #3a331e); }
+.bg-swatch--thu { background: linear-gradient(135deg, #3a2a1c, #2f2015); }
+.bg-swatch--dong { background: linear-gradient(135deg, #202b3a, #182230); }
+.bg-swatch--trungthu { background: linear-gradient(135deg, #2a2140, #3a2c15); }
+.bg-swatch--giangsinh { background: linear-gradient(135deg, #2a1518, #14251a); }
+.bg-swatch--tet { background: linear-gradient(135deg, #2a1416, #3a2c12); }
+
+[data-tv] .bg-theme-pick { width: 140px; font-size: 20px; gap: 10px; }
+[data-tv] .bg-swatch { width: 110px; height: 110px; font-size: 40px; border-radius: 26px; }
