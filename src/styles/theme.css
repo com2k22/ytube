@@ -209,9 +209,14 @@ body {
 .brand { font-size: 26px; font-weight: 900; display: flex; align-items: center; gap: 9px; }
 .logo-badge {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 44px; height: 31px; background: #ff0000; color: #fff; border-radius: 10px;
-  font-size: 15px; padding-left: 3px; flex-shrink: 0;
+  width: 44px; height: 31px; background: #e02020; color: #fff; border-radius: 10px;
+  flex-shrink: 0;
 }
+/* Tam giác play — ĐỒNG BỘ đúng màu đỏ (#e02020) + tỉ lệ tam giác với bộ icon app (xem
+   scripts/gen-icons.py). Sizing bằng % nên tự to/nhỏ theo đúng khung .logo-badge ở mọi
+   breakpoint (TV/máy tính/tablet bên dưới), không cần khai lại font-size riêng từng nơi
+   như hồi còn dùng ký tự "▶". */
+.logo-badge-icon { width: 46%; height: 46%; fill: #fff; flex-shrink: 0; }
 
 /* justify-content: flex-end — thanh trên cùng giờ chỉ còn nút chọn hồ sơ, đặt ở GÓC PHẢI.
    padding-top: env(safe-area-inset-top) — trên iPhone có "tai thỏ"/viên thuốc đục lỗ,
@@ -552,7 +557,7 @@ body {
 /* Logo — giờ nằm trong .topbar, không còn trong .sidebar nữa (xem TopBar.tsx). To hơn hẳn
    bản trước (badge 48×34 → 70×50) theo yêu cầu, kèm lại chữ "Ytube" đứng sau icon. */
 [data-tv] .brand { font-size: 40px; }
-[data-tv] .logo-badge { width: 70px; height: 50px; font-size: 25px; border-radius: 16px; padding-left: 6px; }
+[data-tv] .logo-badge { width: 70px; height: 50px; border-radius: 16px; }
 
 /* Menu trái LUÔN thu gọn thành dải icon — không bung ra nữa, kể cả khi đang chọn vào nó.
    (Bản trước có kiểu tự bung rộng khi chọn; bỏ đi cho màn hình đứng yên, không xê dịch.)
@@ -843,7 +848,7 @@ body {
   /* --- Menu trái thu thành dải icon hẹp, nhường chỗ cho nội dung --- */
   .sidebar { width: 64px; padding: 8px 6px 12px; }
   .brand { font-size: 0; padding: 8px 0 0; justify-content: center; gap: 0; }
-  .logo-badge { width: 34px; height: 24px; font-size: 12px; border-radius: 8px; }
+  .logo-badge { width: 34px; height: 24px; border-radius: 8px; }
   .side-item {
     width: 48px; height: 48px; padding: 0; gap: 0;
     margin: 0 auto 8px; justify-content: center; border-radius: 14px;

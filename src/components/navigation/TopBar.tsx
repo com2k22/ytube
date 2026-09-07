@@ -16,14 +16,21 @@ import { ProfileSwitcher } from './ProfileSwitcher';
  * Cả 2 phần bên dưới CÙNG NẰM TRONG MÃ, CSS quyết định cái nào hiện theo bề ngang màn hình
  * — xem .topbar-profile trong theme.css.
  *
- * Logo: icon ▶ + chữ "Ytube" đứng SAU (đã thử bỏ chữ ở 1 bản trước, nay thêm lại theo yêu
- * cầu mới nhất — icon to hơn hẳn bản trước, xem [data-tv] .logo-badge trong theme.css).
+ * Logo: khối đỏ bo góc + tam giác play trắng (vẽ bằng SVG) + chữ "Ytube" đứng sau — ĐỒNG
+ * BỘ với bộ icon app (icon màn hình chính điện thoại/TV, xem scripts/gen-icons.py): cùng
+ * màu đỏ, cùng độ bo góc, cùng tỉ lệ tam giác. Trước đây icon là ký tự "▶" gõ bằng chữ —
+ * đổi sang SVG để hình tam giác giống hệt nhau ở MỌI nơi (không phụ thuộc font chữ của
+ * từng máy/TV, vốn có thể hiện lệch/mỏng khác nhau tuỳ thiết bị).
  */
 export function TopBar() {
   return (
     <div className="topbar">
       <div className="brand">
-        <span className="logo-badge">▶</span>
+        <span className="logo-badge">
+          <svg className="logo-badge-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <polygon points="7,4 7,20 20,12" />
+          </svg>
+        </span>
         <span className="brand-text">Ytube</span>
       </div>
       <ProfileSwitcher region="topbar" className="topbar-profile" />
