@@ -15,8 +15,18 @@ declare global {
 
 let apiLoadPromise: Promise<void> | null = null;
 
-/** Nạp script chính thức của YouTube IFrame Player API (chỉ 1 lần cho cả app). */
-function loadYouTubeApi(): Promise<void> {
+/**
+ * Nạp script chính thức của YouTube IFrame Player API (chỉ 1 lần cho cả app).
+ *
+ * "export" để HomePage.tsx gọi TRƯỚC, ngay khi vào Trang chủ — lúc đó bé/bố mẹ còn đang
+ * chọn video, chưa cần phát gì cả, nên tải sẵn script này trong lúc rảnh (không làm chậm
+ * gì thêm). Nhờ vậy tới lúc THẬT SỰ bấm 1 video thì script đã có sẵn, đỡ mất thêm 1 nhịp
+ * mạng — cải thiện tốc độ mở video cho MỌI thiết bị, rõ nhất trên TV (mạng/CPU yếu hơn
+ * máy tính, 1 nhịp mạng chờ tải script cũng đủ tạo cảm giác giật/chờ lâu). Gọi lại nhiều
+ * lần cũng không sao — hàm tự biết nếu script đã tải xong hoặc đang tải dở thì dùng lại,
+ * không tải thêm lần nữa (xem 2 dòng if đầu tiên bên dưới).
+ */
+export function loadYouTubeApi(): Promise<void> {
   if (window.YT?.Player) return Promise.resolve();
   if (apiLoadPromise) return apiLoadPromise;
   apiLoadPromise = new Promise((resolve) => {
@@ -88,6 +98,9 @@ export function SafeYouTubePlayer({
   const onProgressRef = useRef(onProgress);
   const onEndedRef = useRef(onEnded);
   const unmutedRef = useRef(false);
+  /** true = ĐÃ tua tới chỗ xem dở cho lượt phát hiện tại — chỉ tua đúng 1 lần, ngay sau khi
+      video thật sự bắt đầu chạy (xem giải thích đầy đủ ở onStateChange bên dưới). */
+  const resumeSeekDoneRef = useRef(false);
   const [captionsOn, setCaptionsOn] = useState(false);
   const [paused, setPaused] = useState(false);
   /** true = còn đang tải/chưa phát được khung hình nào — hiện đồ hoạ "Đang tải video..."
@@ -165,6 +178,7 @@ export function SafeYouTubePlayer({
     // Video mới lại được tắt tiếng để tự phát cho chắc, mà cờ đang bật nên không ai bật
     // tiếng lại nữa → xem tiếp trong im lặng.
     unmutedRef.current = false;
+    resumeSeekDoneRef.current = false;
     setCaptionsOn(false);
     setPaused(false);
     setLoading(true);
@@ -192,28 +206,30 @@ export function SafeYouTubePlayer({
         events: {
           onReady: () => {
             hideCaptions();
-            // Tua tới đúng chỗ đã xem dở lần trước ("Tiếp tục xem") — PlayerPage.tsx đã tự
-            // bỏ qua (truyền 0) nếu video này chưa xem dở hoặc đã xem gần xong.
-            //
-            // QUAN TRỌNG — vì sao gọi seekTo() Ở ĐÂY thay vì dùng tham số "start" trên URL
-            // (cách làm cũ): tham số "start" bắt YouTube phải TỰ ĐỆM (buffer) từ đầu file
-            // cho tới đúng giây đó rồi mới cho phát khung hình đầu tiên — trên mạng/máy yếu
-            // (đúng như trường hợp iPad được báo) bước đệm-trước-khi-phát này có thể rất
-            // chậm hoặc treo hẳn (màn hình cứ hiện "Đang tải video..." mãi không hết), vì
-            // trình duyệt phải tải xong 1 đoạn dữ liệu lớn TRƯỚC KHI cho biết video đã sẵn
-            // sàng. Ngược lại seekTo() gọi SAU khi player đã báo onReady sẽ cho video được
-            // nạp bình thường từ giây 0 trước (nhanh, giống hệt video mới chưa xem dở),
-            // rồi mới nhảy tới đúng giây cần xem — y hệt cơ chế khi bấm tua tay (vốn vẫn
-            // luôn nhanh, vì cũng gọi seekTo() sau khi player đã chạy).
             const resumeAt = Math.max(0, Math.floor(startSeconds ?? 0));
-            if (resumeAt > 0) playerRef.current?.seekTo?.(resumeAt, true);
             if (autoFullscreen) {
               // Trình duyệt luôn cho phép tự phát nếu video đang TẮT TIẾNG — nên chủ động
               // tắt tiếng rồi tự bấm play qua API (đáng tin cậy hơn nhiều so với chỉ dựa
-              // vào tham số autoplay=1 trên URL, vốn hay bị chặn). Video sẽ tự bật lại
-              // tiếng ngay khi bắt đầu phát thật sự — xem onStateChange bên dưới.
+              // vào tham số autoplay=1 trên URL, vốn hay bị chặn).
+              //
+              // QUAN TRỌNG — video "Tiếp tục xem" (resumeAt > 0) CỐ Ý được cho chạy từ GIÂY
+              // 0 trước, KHÔNG seekTo() ngay ở đây: việc tua tới đúng chỗ xem dở được dời
+              // sang onStateChange bên dưới, làm SAU KHI video đã thật sự phát (state
+              // PLAYING) — tức là "tua NÓNG" (lúc này trình phát đã có sẵn 1 phiên đang
+              // truyền dữ liệu thật). Đã thử tua ngay tại đây ("tua NGUỘI" — seek trước khi
+              // có bất kỳ khung hình nào từng phát) nhưng vẫn bị chậm/treo y hệt cách dùng
+              // tham số "start" cũ, vì bản chất 2 cách đó giống nhau: đều bắt trình phát
+              // phải tự định vị + đệm đúng ngay đoạn giữa file NGAY TỪ ĐẦU, trước khi có
+              // phiên phát nào đang chạy — đây mới là nguyên nhân thật sự gây treo trên
+              // mạng/máy yếu (iPad), không phải do "start" param như đoán ban đầu. Tua sau
+              // khi đã phát thật (tua nóng) thì luôn nhanh, y hệt lúc bấm tua tay.
               playerRef.current?.mute?.();
               playerRef.current?.playVideo?.();
+            } else if (resumeAt > 0) {
+              // Trường hợp không tự phát: video đang đứng yên (chưa từng chạy khung hình
+              // nào), tua ngay ở đây cũng không "nguội" hơn được nữa — cứ tua luôn, người
+              // xem sẽ tự bấm Play khi sẵn sàng.
+              playerRef.current?.seekTo?.(resumeAt, true);
             }
             intervalRef.current = setInterval(() => {
               const p = playerRef.current;
@@ -238,6 +254,18 @@ export function SafeYouTubePlayer({
             if (e.data === S.PLAYING && !captionsOnRef.current) hideCaptions();
             if (!unmutedRef.current && e.data === S.PLAYING) {
               unmutedRef.current = true;
+              // Video "Tiếp tục xem" (autoFullscreen, có resumeAt > 0): ĐÂY mới là lúc tua
+              // tới đúng chỗ xem dở — video vừa mới thật sự chạy được (frame đầu tiên ở
+              // giây 0), tức là đã có 1 phiên phát đang truyền dữ liệu thật ("nóng"). Tua ở
+              // đúng thời điểm này thì nhanh, không còn bị treo như tua "nguội" ngay từ lúc
+              // onReady nữa (xem giải thích đầy đủ ở onReady bên trên). Chỉ tua ĐÚNG 1 lần
+              // (resumeSeekDoneRef) — video tự phát tiếp bình thường sau đó, không tua lại
+              // mỗi lần onStateChange bắn PLAYING (vd sau khi tạm dừng rồi bấm phát tiếp).
+              if (!resumeSeekDoneRef.current) {
+                resumeSeekDoneRef.current = true;
+                const resumeAt = Math.max(0, Math.floor(startSeconds ?? 0));
+                if (resumeAt > 0) playerRef.current?.seekTo?.(resumeAt, true);
+              }
               playerRef.current?.unMute?.();
             }
             if (e.data === S.ENDED) {

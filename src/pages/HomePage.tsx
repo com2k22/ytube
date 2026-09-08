@@ -6,6 +6,7 @@ import { useAllowedSources } from '@/hooks/useAllowedSources';
 import { useWatchProgress } from '@/hooks/useWatchProgress';
 import { useContentLabels } from '@/hooks/useContentLabels';
 import { PlaylistCard } from '@/components/common/PlaylistCard';
+import { loadYouTubeApi } from '@/components/player/SafeYouTubePlayer';
 import { extractVideoId, extractPlaylistId } from '@/utils/youtubeParser';
 import { fetchVideoInfo } from '@/lib/youtube';
 import type { AllowedSource, ContentLabel } from '@/types';
@@ -28,6 +29,15 @@ export function HomePage() {
   const [videoInfoCache, setVideoInfoCache] = useState<Record<string, { title: string; thumbnail: string | null } | null>>(
     {}
   );
+
+  /** Tải TRƯỚC script YouTube IFrame Player API ngay khi vào Trang chủ — lúc này bé/bố mẹ
+      còn đang chọn video, chưa cần phát gì, nên tranh thủ tải sẵn trong lúc rảnh. Nhờ vậy
+      tới lúc bấm 1 video (kể cả "Tiếp tục xem") thì script đã có sẵn, đỡ mất thêm 1 nhịp
+      mạng ngay lúc đang cần mở nhanh nhất — cải thiện tốc độ mở video, rõ nhất trên TV
+      (mạng/CPU thường yếu hơn máy tính). Chỉ cần gọi 1 lần, không cần dọn dẹp gì thêm. */
+  useEffect(() => {
+    loadYouTubeApi();
+  }, []);
 
   const hiddenLabelId = allLabels.find((l) => l.is_hidden)?.id ?? null;
   const priorityLabelId = allLabels.find((l) => l.is_priority)?.id ?? null;

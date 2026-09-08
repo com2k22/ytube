@@ -18,6 +18,20 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Ytube" />
     <meta name="mobile-web-app-capable" content="yes" />
+
+    <!-- "Bắt tay" TRƯỚC với các máy chủ của YouTube (mở kết nối mạng sẵn: tìm địa chỉ,
+         bảo mật SSL...) NGAY khi vừa mở app — trước cả khi biết người xem sẽ bấm video
+         nào. Việc "bắt tay" này vốn dĩ nào cũng phải làm trước khi phát được video, tốn
+         khá nhiều thời gian trên mạng yếu (đặc biệt TV, thường mạng/Wi-Fi yếu hơn máy
+         tính) — làm trước trong lúc bé/bố mẹ còn đang chọn video thì tới lúc bấm phát,
+         phần "bắt tay" đã xong sẵn, video hiện lên nhanh hơn hẳn. Không tốn thêm dung
+         lượng gì (chỉ mở kết nối, chưa tải file nào). -->
+    <link rel="preconnect" href="https://www.youtube-nocookie.com" />
+    <link rel="preconnect" href="https://www.youtube.com" />
+    <link rel="preconnect" href="https://i.ytimg.com" crossorigin />
+    <link rel="dns-prefetch" href="https://www.youtube-nocookie.com" />
+    <link rel="dns-prefetch" href="https://www.youtube.com" />
+    <link rel="dns-prefetch" href="https://i.ytimg.com" />
   </head>
   <body>
     <div id="root"></div>
