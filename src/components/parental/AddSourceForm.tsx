@@ -345,99 +345,6 @@ export function AddSourceForm() {
     <div className="parent-cols">
       <div className="col col-form">
       <div className="settings-card">
-        <h4><Tag className="icon icon-lead" aria-hidden="true" /> Quản lý nhãn</h4>
-        <div className="added-list">
-          {labels.map((l) => (
-            <div className="added-item" key={l.id} style={{ justifyContent: 'space-between' }}>
-              {renamingLabelId === l.id ? (
-                <div style={{ display: 'flex', gap: 8, flex: 1, minWidth: 0 }}>
-                  <input
-                    data-region="plabel"
-                    tabIndex={0}
-                    value={renameDraft}
-                    onChange={(e) => setRenameDraft(e.target.value)}
-                    style={{ flex: 1 }}
-                    autoFocus
-                  />
-                  <button className="icon-btn" data-region="plabel" tabIndex={0} title="Lưu" onClick={submitRenameLabel}>
-                    <Check className="icon" aria-hidden="true" />
-                  </button>
-                  <button
-                    className="icon-btn"
-                    data-region="plabel"
-                    tabIndex={0}
-                    title="Huỷ"
-                    onClick={() => setRenamingLabelId(null)}
-                  >
-                    <X className="icon" aria-hidden="true" />
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', minWidth: 0 }}>
-                    {l.is_priority ? (
-                      <Star className="icon" aria-hidden="true" />
-                    ) : l.is_hidden ? (
-                      <EyeOff className="icon" aria-hidden="true" />
-                    ) : (
-                      <Tag className="icon" aria-hidden="true" />
-                    )}
-                    <span className="ellip">{l.name}</span>
-                    {l.is_builtin && (
-                      <span style={{ fontSize: 11, opacity: 0.55, flexShrink: 0 }}>(đặc biệt)</span>
-                    )}
-                  </div>
-                  <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-                    <button
-                      className="icon-btn"
-                      data-region="plabel"
-                      tabIndex={0}
-                      title="Đổi tên"
-                      onClick={() => startRenameLabel(l.id, l.name)}
-                    >
-                      <Pencil className="icon" aria-hidden="true" />
-                    </button>
-                    {!l.is_builtin && (
-                      <button
-                        className="icon-btn"
-                        data-region="plabel"
-                        tabIndex={0}
-                        title="Xoá"
-                        onClick={() => onDeleteLabel(l.id, l.name)}
-                      >
-                        <Trash2 className="icon" aria-hidden="true" />
-                      </button>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-          ))}
-        </div>
-        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-          <input
-            data-region="plabel"
-            tabIndex={0}
-            value={newLabelName}
-            onChange={(e) => setNewLabelName(e.target.value)}
-            placeholder="Tên nhãn mới, VD: Nhạc thiếu nhi"
-            style={{ flex: 1 }}
-          />
-          <button
-            type="button"
-            className="add-window-btn"
-            style={{ flexShrink: 0 }}
-            data-region="plabel"
-            tabIndex={0}
-            disabled={!newLabelName.trim()}
-            onClick={onAddLabel}
-          >
-            <Plus className="icon icon-lead" aria-hidden="true" /> Thêm nhãn
-          </button>
-        </div>
-      </div>
-
-      <div className="settings-card">
         <h4>
           {isEditing ? (
             <>
@@ -679,6 +586,101 @@ export function AddSourceForm() {
               Huỷ
             </button>
           )}
+        </div>
+      </div>
+
+      {/* "Quản lý nhãn" đặt XUỐNG CUỐI cột này — form thêm nội dung mới là việc dùng thường
+          xuyên hơn nên ưu tiên hiện lên đầu, quản lý nhãn ít bấm tới hơn nên xuống dưới. */}
+      <div className="settings-card">
+        <h4><Tag className="icon icon-lead" aria-hidden="true" /> Quản lý nhãn</h4>
+        <div className="added-list">
+          {labels.map((l) => (
+            <div className="added-item" key={l.id} style={{ justifyContent: 'space-between' }}>
+              {renamingLabelId === l.id ? (
+                <div style={{ display: 'flex', gap: 8, flex: 1, minWidth: 0 }}>
+                  <input
+                    data-region="plabel"
+                    tabIndex={0}
+                    value={renameDraft}
+                    onChange={(e) => setRenameDraft(e.target.value)}
+                    style={{ flex: 1 }}
+                    autoFocus
+                  />
+                  <button className="icon-btn" data-region="plabel" tabIndex={0} title="Lưu" onClick={submitRenameLabel}>
+                    <Check className="icon" aria-hidden="true" />
+                  </button>
+                  <button
+                    className="icon-btn"
+                    data-region="plabel"
+                    tabIndex={0}
+                    title="Huỷ"
+                    onClick={() => setRenamingLabelId(null)}
+                  >
+                    <X className="icon" aria-hidden="true" />
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', minWidth: 0 }}>
+                    {l.is_priority ? (
+                      <Star className="icon" aria-hidden="true" />
+                    ) : l.is_hidden ? (
+                      <EyeOff className="icon" aria-hidden="true" />
+                    ) : (
+                      <Tag className="icon" aria-hidden="true" />
+                    )}
+                    <span className="ellip">{l.name}</span>
+                    {l.is_builtin && (
+                      <span style={{ fontSize: 11, opacity: 0.55, flexShrink: 0 }}>(đặc biệt)</span>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                    <button
+                      className="icon-btn"
+                      data-region="plabel"
+                      tabIndex={0}
+                      title="Đổi tên"
+                      onClick={() => startRenameLabel(l.id, l.name)}
+                    >
+                      <Pencil className="icon" aria-hidden="true" />
+                    </button>
+                    {!l.is_builtin && (
+                      <button
+                        className="icon-btn"
+                        data-region="plabel"
+                        tabIndex={0}
+                        title="Xoá"
+                        onClick={() => onDeleteLabel(l.id, l.name)}
+                      >
+                        <Trash2 className="icon" aria-hidden="true" />
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+          <input
+            data-region="plabel"
+            tabIndex={0}
+            value={newLabelName}
+            onChange={(e) => setNewLabelName(e.target.value)}
+            placeholder="Tên nhãn mới, VD: Nhạc thiếu nhi"
+            style={{ flex: 1 }}
+          />
+          <button
+            type="button"
+            className="add-window-btn"
+            style={{ flexShrink: 0 }}
+            data-region="plabel"
+            tabIndex={0}
+            disabled={!newLabelName.trim()}
+            onClick={onAddLabel}
+          >
+            <Plus className="icon icon-lead" aria-hidden="true" /> Thêm nhãn
+          </button>
         </div>
       </div>
       </div>

@@ -312,6 +312,9 @@ body {
 /* display: flex + white-space: nowrap — icon (Users, ParentDashboardPage.tsx) và chữ
    "Khu vực Bố mẹ"/"Xin chào, ..." nằm chung 1 dòng, không bị ngắt xuống dòng như trước. */
 .greet { font-size: 22px; font-weight: 800; margin: 4px 0 22px; display: flex; align-items: center; white-space: nowrap; }
+/* "parent-greet" — dòng "Khu vực Bố mẹ" (ParentDashboardPage.tsx), thay cho style
+   marginTop inline cũ, để còn chỉnh riêng được ở khối điện thoại bên dưới. */
+.parent-greet { margin-top: 20px; }
 .section-title {
   font-size: 20px; font-weight: 800; margin: 0 0 16px;
   display: inline-block;
@@ -438,7 +441,10 @@ input[data-region='plabel'] { padding: 10px 12px; border-radius: 10px; font-size
 .hint { font-size: 11px; margin-top: 4px; height: 14px; }
 .hint.ok-text { color: #3aa35c; }
 .hint.bad-text { color: #e05a5a; }
-.submit-btn { width: 100%; padding: 12px; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; font-size: 14px; margin-top: 4px; }
+/* display: flex + justify-content: center — giữ đúng chữ nằm giữa nút như trước (mặc định
+   trình duyệt canh giữa chữ trong <button>), đồng thời icon + chữ (vd "Thêm bé", "Đổi mã
+   PIN") luôn nằm chung 1 hàng, không bị ngắt xuống dòng như trước. */
+.submit-btn { width: 100%; padding: 12px; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; font-size: 14px; margin-top: 4px; display: flex; align-items: center; justify-content: center; white-space: nowrap; }
 
 .added-list { text-align: left; margin-top: 14px; font-size: 12.5px; }
 .added-item { padding: 8px 10px; border-radius: 10px; margin-bottom: 6px; display: flex; gap: 8px; align-items: center; }
@@ -1528,10 +1534,11 @@ input[data-region='plabel'] { padding: 10px 12px; border-radius: 10px; font-size
   .parent-page .back-btn { display: none; }
 
   /* .topbar đã ẩn ở trên nên dòng "Khu vực Bố mẹ" giờ là thứ TRÊN CÙNG màn hình — cần cộng
-     thêm khoảng đệm an toàn env(safe-area-inset-top) (tránh tai thỏ/viên thuốc đục lỗ của
-     iPhone) CỘNG THÊM chút khoảng đệm cho đẹp (trước đây chỉ có đúng 14px của .main, sát
-     quá vào thanh trạng thái). */
-  .main.parent-page { padding-top: calc(14px + env(safe-area-inset-top, 0px) + 14px); }
+     thêm khoảng đệm an toàn env(safe-area-inset-top) (tránh tai thỏ/viên thuốc đục lỗ) cộng
+     thêm chút đệm nhỏ cho đẹp. Bản trước cộng dồn 2 lớp đệm (padding của .main + margin-top
+     20px có sẵn của .greet) nên bị đẩy xuống quá xa — ở đây giảm cả 2 lại cho vừa mắt. */
+  .main.parent-page { padding-top: calc(env(safe-area-inset-top, 0px) + 10px); }
+  .parent-page .parent-greet { margin-top: 6px; }
 }
 
 /* =====================================================================

@@ -60,7 +60,7 @@ export function ParentDashboardPage() {
       <button className="back-btn" data-region="detailback" tabIndex={0} onClick={() => navigate('/')}>
         ← Quay lại
       </button>
-      <div className="greet" style={{ marginTop: 20 }}>
+      <div className="greet parent-greet">
         <Users className="icon icon-lead" aria-hidden="true" /> Khu vực Bố mẹ
       </div>
 
