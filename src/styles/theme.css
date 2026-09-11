@@ -410,7 +410,14 @@ body {
 .player-note { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; font-size: 11.5px; }
 .player-note span { padding: 3px 9px; border-radius: 999px; font-weight: 700; }
 
-.overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.55); display: none; align-items: center; justify-content: center; z-index: 100; }
+/* top/right/bottom/left: 0 thay vì viết tắt "inset: 0" — trình duyệt Chromium CŨ trên TV
+   (nhiều dòng LG webOS vẫn dùng Chromium bản cũ hơn 87, thời điểm "inset" mới được hỗ trợ)
+   ÂM THẦM BỎ QUA thuộc tính "inset" vì không hiểu, khiến lớp phủ mất hết vị trí/kích thước
+   đã định (chỉ còn "position: fixed" suông) — co lại theo đúng chỗ nó nằm trong flex layout
+   (ngay sau menu trái) thay vì phủ kín MÀN HÌNH TV, nên card bên trong lệch hẳn khỏi tâm
+   màn hình thật và menu trái không bị tối đi như ý muốn. 4 thuộc tính riêng lẻ (top/right/
+   bottom/left) đã được hỗ trợ từ rất lâu trên mọi trình duyệt, kể cả TV đời cũ nhất. */
+.overlay { position: fixed; top: 0; right: 0; bottom: 0; left: 0; background: rgba(0, 0, 0, 0.55); display: none; align-items: center; justify-content: center; z-index: 100; }
 .overlay.show { display: flex; }
 .modal { width: 340px; border-radius: 22px; padding: 26px; text-align: center; position: relative; }
 .modal h3 { margin: 0 0 6px; font-size: 17px; }
@@ -1190,7 +1197,9 @@ input[data-region='plabel'] { padding: 10px 12px; border-radius: 10px; font-size
    chờ tải xong hẳn mới ẩn.
    ==================================================================================== */
 .player-loading {
-  position: absolute; inset: 0; z-index: 3;
+  /* top/right/bottom/left: 0 thay vì "inset: 0" — xem giải thích ở ".overlay" phía trên,
+     TV đời cũ không hiểu "inset" thì mất luôn vị trí phủ kín màn hình phát. */
+  position: absolute; top: 0; right: 0; bottom: 0; left: 0; z-index: 3;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
   background: #000;
 }
@@ -1236,7 +1245,8 @@ input[data-region='plabel'] { padding: 10px 12px; border-radius: 10px; font-size
   transition: stroke-dashoffset 0.9s linear, stroke 0.3s ease;
 }
 .watch-countdown-icon {
-  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  /* top/right/bottom/left: 0 thay vì "inset: 0" — xem giải thích ở ".overlay" phía trên. */
+  position: absolute; top: 0; right: 0; bottom: 0; left: 0; display: flex; align-items: center; justify-content: center;
   font-size: 20px;
 }
 .watch-countdown-label { font-size: 12px; font-weight: 700; opacity: 0.82; line-height: 1.2; }

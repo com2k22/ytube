@@ -203,8 +203,8 @@ export function HomePage() {
     navigate(`/player?${params.toString()}`);
   };
 
-  /** Mở đúng 1 VIDEO từ khối "Tiếp tục xem" — vào thẳng video đó (đã tự tua tới chỗ đang
-      xem dở, xem PlayerPage.tsx mục startSeconds), không phải qua trang danh sách nữa. */
+  /** Mở đúng 1 VIDEO từ khối "Tiếp tục xem" — vào thẳng video đó (phát lại từ đầu, không
+      tua tới chỗ xem dở nữa — bỏ để đỡ chậm/treo trên TV), không phải qua trang danh sách. */
   const openContinuingVideo = (entry: (typeof continuingVideos)[number]) => {
     const params = new URLSearchParams({ sourceId: entry.source.id, title: entry.title });
     if (entry.directUrlParam) params.set('directUrl', entry.directUrlParam);

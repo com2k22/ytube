@@ -10,11 +10,10 @@ import type { ResolvedVideo } from '@/types';
 interface Props {
   url: string;
   title: string;
-  /** Gọi định kỳ với % đã xem (0-100) VÀ số giây hiện tại — dùng để lưu "tiếp tục xem". */
+  /** Gọi định kỳ với % đã xem (0-100) VÀ số giây hiện tại — dùng để hiện % đã xem trên thẻ
+      video và tính giờ xem (Báo cáo tuần). KHÔNG còn dùng để tua tới chỗ cũ nữa — mọi video
+      giờ luôn phát từ đầu (xem chú thích ở PlayerPage.tsx). */
   onProgress?: (percent: number, seconds: number) => void;
-  /** Vị trí xem dở lần trước (giây) — tua tới đây ngay khi video có thể tua được, để "Tiếp
-      tục xem" phát đúng chỗ đã dừng thay vì phát lại từ đầu. 0/undefined = phát từ đầu. */
-  startSeconds?: number;
   onEnded?: () => void;
   /** true khi video được mở từ trong 1 playlist — tự phát + tự vào chế độ toàn màn hình. */
   autoFullscreen?: boolean;
@@ -40,7 +39,6 @@ export function DirectVideoPlayer({
   url,
   title,
   onProgress,
-  startSeconds,
   onEnded,
   autoFullscreen,
   onPrev,
@@ -113,17 +111,6 @@ export function DirectVideoPlayer({
     // không còn là màn hình đen "không biết đang tải hay lỗi" nữa nên tắt đồ hoạ tải ở đây.
     const onLoadedData = () => setLoading(false);
 
-    /** Tua tới chỗ xem dở lần trước — chỉ làm được khi đã biết duration (metadata tải xong),
-        và chỉ tua 1 LẦN cho mỗi lượt mở video (đặt qua ref, không phải state, để không phụ
-        thuộc thứ tự render). Bỏ qua nếu là link HLS đang chờ hls.js đính kèm — nghe cùng
-        sự kiện này trên chính thẻ <video> vẫn hoạt động bình thường vì hls.js phát ra sự
-        kiện chuẩn của HTML5 video. */
-    const onLoadedMetadata = () => {
-      if (startSeconds && startSeconds > 0 && startSeconds < video.duration) {
-        video.currentTime = startSeconds;
-      }
-    };
-
     const onTimeUpdate = () => {
       if (video.duration > 0) onProgress?.((video.currentTime / video.duration) * 100, video.currentTime);
     };
@@ -133,14 +120,12 @@ export function DirectVideoPlayer({
     };
     video.addEventListener('playing', onPlaying);
     video.addEventListener('loadeddata', onLoadedData);
-    video.addEventListener('loadedmetadata', onLoadedMetadata);
     video.addEventListener('timeupdate', onTimeUpdate);
     video.addEventListener('ended', onEndedHandler);
 
     return () => {
       video.removeEventListener('playing', onPlaying);
       video.removeEventListener('loadeddata', onLoadedData);
-      video.removeEventListener('loadedmetadata', onLoadedMetadata);
       video.removeEventListener('timeupdate', onTimeUpdate);
       video.removeEventListener('ended', onEndedHandler);
       hlsRef.current?.destroy();

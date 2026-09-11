@@ -194,6 +194,22 @@ export function Layout() {
   }, [onBreak, location.pathname, navigate]);
 
   /*
+    HẾT GIỜ XEM HẲN (ngoài khung giờ cho phép, hoặc dùng hết hạn mức trong ngày) mà bé đang
+    ở trang phát → RỜI HẲN về Trang chủ, giống hệt lý do ở khối "nghỉ giải lao" ngay trên.
+
+    Trước đây chỉ mỗi "nghỉ giải lao" làm việc này — "hết giờ hẳn" (showBlockScreen) thì
+    KHÔNG, nên đúng lỗi bạn thấy: đếm ngược về 0 trong lúc đang xem thì lớp phủ "Chưa đến
+    giờ xem TV" có bật lên thật, nhưng TV đang phát toàn màn hình (Fullscreen API) — trình
+    duyệt CHỈ vẽ đúng phần tử đang toàn màn hình (SafeYouTubePlayer) và các phần tử BÊN
+    TRONG nó, mọi thứ khác trong trang (kể cả lớp phủ này, nằm tận gốc Layout, không phải
+    con của phần tử toàn màn hình) đều bị ẩn đi — nên phải bấm "quay lại trang chủ" thì
+    lớp phủ mới thấy được thực sự (đồng thời việc thoát trang cũng tự out fullscreen).
+  */
+  useEffect(() => {
+    if (showBlockScreen && location.pathname === '/player') navigate('/');
+  }, [showBlockScreen, location.pathname, navigate]);
+
+  /*
     Trên ĐIỆN THOẠI THẬT: khoá thẳng vào Khu vực Bố mẹ, không cho vào Trang chủ/xem video
     nữa — giao diện xem video (lưới thẻ, trình phát...) chưa tối ưu cho màn hình điện thoại,
     và trên thực tế bé chỉ xem trên TV, điện thoại chỉ để bố mẹ quản lý từ xa. iPad KHÔNG bị
