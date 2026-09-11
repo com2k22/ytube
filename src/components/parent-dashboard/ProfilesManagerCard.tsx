@@ -93,7 +93,7 @@ export function ProfilesManagerCard() {
     // "parent-cols": trên máy tính chia 2 cột — danh sách bé (phải) + form thêm/sửa (trái).
     // Thứ tự trong mã nguồn giữ NGUYÊN như bản cũ (danh sách trước, form sau) để điện
     // thoại/TV không đổi gì — "form bên trái" trên máy tính chỉ là CSS "order" (theme.css).
-    <div className="parent-cols">
+    <div className="parent-cols profiles-cols">
       <div className="col col-list">
       <div className="settings-card">
         <h4><Baby className="icon icon-lead" aria-hidden="true" /> Hồ sơ các bé</h4>

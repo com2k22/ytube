@@ -93,7 +93,8 @@ body {
 [data-theme='dark'] .settings-row input,
 [data-theme='dark'] .form-row select,
 [data-theme='dark'] .form-row input,
-[data-theme='dark'] .window-row input[type='time'] {
+[data-theme='dark'] .window-row input[type='time'],
+[data-theme='dark'] input[data-region='plabel'] {
   background: #0e0f13; color: #f2f3f5; border-color: #2a2c38;
 }
 [data-theme='dark'] .day-pill { background: #23242c; color: #c7c9d1; }
@@ -164,7 +165,8 @@ body {
 [data-theme='chibi'] .settings-row input,
 [data-theme='chibi'] .form-row select,
 [data-theme='chibi'] .form-row input,
-[data-theme='chibi'] .window-row input[type='time'] {
+[data-theme='chibi'] .window-row input[type='time'],
+[data-theme='chibi'] input[data-region='plabel'] {
   background: #fffaf9; color: #5b4636; border-color: #ffd1e6;
 }
 [data-theme='chibi'] .day-pill { background: #fff0f6; color: #c2447a; }
@@ -307,7 +309,9 @@ body {
 .side-icon-svg { width: 1.35em; height: 1.35em; flex-shrink: 0; stroke-width: 2.2; }
 
 .main { flex: 1; padding: 24px 30px 60px; }
-.greet { font-size: 22px; font-weight: 800; margin: 4px 0 22px; }
+/* display: flex + white-space: nowrap — icon (Users, ParentDashboardPage.tsx) và chữ
+   "Khu vực Bố mẹ"/"Xin chào, ..." nằm chung 1 dòng, không bị ngắt xuống dòng như trước. */
+.greet { font-size: 22px; font-weight: 800; margin: 4px 0 22px; display: flex; align-items: center; white-space: nowrap; }
 .section-title {
   font-size: 20px; font-weight: 800; margin: 0 0 16px;
   display: inline-block;
@@ -426,6 +430,11 @@ body {
 .form-row { text-align: left; margin-bottom: 12px; }
 .form-row label { font-size: 12px; font-weight: 700; display: block; margin-bottom: 5px; opacity: 0.75; }
 .form-row select, .form-row input { width: 100%; padding: 10px 12px; border-radius: 10px; font-size: 13.5px; border: 2px solid transparent; outline: none; }
+/* input[data-region='plabel'] — 2 ô nhập chữ ở "Quản lý nhãn" (đổi tên nhãn + thêm nhãn
+   mới, AddSourceForm.tsx) KHÔNG nằm trong ".form-row" nên trước đây bị bỏ sót, vẫn giữ
+   nền trắng mặc định của trình duyệt trong khi cả app đang dùng theme tối/chibi — style
+   riêng ở đây để đồng bộ đúng màu với các ô nhập khác. */
+input[data-region='plabel'] { padding: 10px 12px; border-radius: 10px; font-size: 13.5px; border: 2px solid transparent; outline: none; }
 .hint { font-size: 11px; margin-top: 4px; height: 14px; }
 .hint.ok-text { color: #3aa35c; }
 .hint.bad-text { color: #e05a5a; }
@@ -472,14 +481,16 @@ body {
 .settings-row input[type='number'] { padding: 9px 12px; border-radius: 10px; font-size: 14px; border: 2px solid transparent; width: 100px; }
 
 .day-pills { display: flex; gap: 8px; flex-wrap: wrap; }
-.day-pill { padding: 9px 14px; border-radius: 999px; font-weight: 800; font-size: 13px; cursor: pointer; border: 2px solid transparent; opacity: 0.4; }
+.day-pill { padding: 9px 14px; border-radius: 999px; font-weight: 800; font-size: 13px; cursor: pointer; border: 2px solid transparent; opacity: 0.4; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
 .day-pill.on { opacity: 1; }
 
 .window-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
 .window-row input[type='time'] { padding: 8px 10px; border-radius: 10px; font-size: 13.5px; border: 2px solid transparent; }
 .arrow-sep { opacity: 0.5; font-weight: 700; }
 .icon-btn { border: none; background: transparent; cursor: pointer; font-size: 16px; opacity: 0.6; }
-.add-window-btn { border: none; cursor: pointer; padding: 9px 16px; border-radius: 12px; font-weight: 700; font-size: 13px; margin-top: 4px; }
+/* display: inline-flex + white-space: nowrap — icon và chữ trong nút (vd "Dò tiêu đề từ
+   YouTube") luôn nằm chung 1 dòng, không bị ngắt xuống dòng như trước. */
+.add-window-btn { border: none; cursor: pointer; padding: 9px 16px; border-radius: 12px; font-weight: 700; font-size: 13px; margin-top: 4px; display: inline-flex; align-items: center; white-space: nowrap; }
 
 .session-live { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-size: 14px; }
 .live-dot { width: 10px; height: 10px; border-radius: 50%; background: #ff4d4d; animation: pulseDot 1.4s ease-in-out infinite; flex-shrink: 0; }
@@ -994,6 +1005,7 @@ body {
 .added-group-title {
   font-size: 13px; font-weight: 800; opacity: 0.75;
   margin: 0 0 8px; padding-bottom: 6px; border-bottom: 1px solid currentColor;
+  display: flex; align-items: center; gap: 7px; white-space: nowrap;
 }
 [data-tv] .added-group-title { font-size: 20px; margin-bottom: 12px; }
 @media (max-width: 760px) {
@@ -1549,6 +1561,13 @@ body {
   :root:not([data-tv]) .parent-cols .col-form { order: 1; }
   :root:not([data-tv]) .parent-cols .col-list { order: 2; }
 
+  /* --- Riêng tab "Hồ sơ bé" (ProfilesManagerCard.tsx): muốn NGƯỢC LẠI với các tab khác —
+     "Hồ sơ các bé" (col-list) đứng TRƯỚC, "Thêm bé mới"/"Sửa hồ sơ" (col-form) đứng SAU —
+     nên thêm class riêng "profiles-cols" để đảo lại đúng 2 dòng order ở trên, không đụng
+     tới các tab khác vẫn đang dùng đúng thứ tự "form trước, danh sách sau". */
+  :root:not([data-tv]) .profiles-cols .col-form { order: 2; }
+  :root:not([data-tv]) .profiles-cols .col-list { order: 1; }
+
   /* --- Danh sách nhiều thẻ cùng loại (khu Tài khoản) xếp dạng lưới thay vì xếp chồng dài
      xuống dưới. --- */
   :root:not([data-tv]) .card-grid {
@@ -1601,6 +1620,10 @@ body {
   :root:not([data-tv]) .sidebar {
     width: 88px;
     padding: calc(14px + env(safe-area-inset-top, 0px)) 10px 14px;
+    /* z-index cao hơn .topbar (20) — tránh avatar/tên hồ sơ ở đầu dải menu (sidebar-profile)
+       bị thanh trên cùng đè lên khi đổi hồ sơ (2 khối đều "position: sticky", .sidebar
+       trước đây không khai z-index nên .topbar luôn thắng khi 2 bên chạm nhau). */
+    z-index: 25;
   }
   :root:not([data-tv]) .side-item {
     width: 58px; height: 58px; padding: 0; margin: 0 auto 10px;

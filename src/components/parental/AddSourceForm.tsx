@@ -1,5 +1,23 @@
 import { useState } from 'react';
-import { Tag, Plus, Pencil, Trash2, X, Check, Search, ClipboardList, ChevronUp, ChevronDown } from 'lucide-react';
+import {
+  Tag,
+  Plus,
+  Pencil,
+  Trash2,
+  X,
+  Check,
+  Search,
+  ClipboardList,
+  ChevronUp,
+  ChevronDown,
+  Star,
+  EyeOff,
+  Youtube,
+  ListPlus,
+  ListVideo,
+  Film,
+  Link2,
+} from 'lucide-react';
 import { useAllowedSources } from '@/hooks/useAllowedSources';
 import { useContentLabels } from '@/hooks/useContentLabels';
 import { useProfileContext } from '@/context/ProfileContext';
@@ -7,29 +25,29 @@ import { useToast } from '@/components/common/Toast';
 import { isSafeHttpsUrl, sanitizeTitle } from '@/utils/urlValidator';
 import { extractPlaylistId, extractVideoId, extractChannelRef } from '@/utils/youtubeParser';
 import { fetchPlaylistInfo, fetchVideoInfo, fetchChannelInfo, resolveChannelHandle } from '@/lib/youtube';
-import { profileEmoji, SOURCE_TYPE_ICON } from '@/constants';
+import { profileEmoji } from '@/constants';
 import type { AllowedSource, CustomPlaylistItem, SourceType } from '@/types';
 
 const TYPE_OPTIONS: { value: SourceType; label: string }[] = [
-  { value: 'youtube_playlist', label: 'Playlist YouTube' },
-  { value: 'youtube_video', label: 'Link YouTube (video đơn lẻ)' },
   { value: 'youtube_channel', label: 'Kênh YouTube' },
+  { value: 'custom_playlist', label: 'Danh sách video tùy chỉnh (ghép từ video đơn lẻ)' },
+  { value: 'youtube_playlist', label: 'Danh sách video youtube' },
+  { value: 'youtube_video', label: 'Link YouTube (video đơn lẻ)' },
   { value: 'direct_url', label: 'Link trực tiếp (mp4/m3u8)' },
-  { value: 'custom_playlist', label: '🧩 Playlist tự tạo (ghép từ video đơn lẻ)' },
 ];
 
 const TYPE_LABEL: Record<SourceType, string> = {
-  youtube_playlist: 'Playlist',
+  youtube_playlist: 'Danh sách video youtube',
   youtube_video: 'Video YouTube',
   youtube_channel: 'Kênh',
   direct_url: 'Link trực tiếp',
-  custom_playlist: 'Playlist tự tạo',
+  custom_playlist: 'Danh sách video tùy chỉnh',
 };
 
 /** Tên từng mục trong danh sách "Nội dung đã thêm" (dạng số nhiều, đọc cho tự nhiên). */
 const GROUP_LABEL: Record<SourceType, string> = {
-  custom_playlist: 'Playlist tự tạo',
-  youtube_playlist: 'Playlist YouTube',
+  custom_playlist: 'Danh sách video tùy chỉnh',
+  youtube_playlist: 'Danh sách video youtube',
   youtube_channel: 'Kênh YouTube',
   youtube_video: 'Video riêng lẻ',
   direct_url: 'Link trực tiếp',
@@ -44,10 +62,21 @@ const GROUP_ORDER: SourceType[] = [
   'direct_url',
 ];
 
+/** Icon phong cách mới (lucide-react, SVG) cho từng loại nguồn — dùng riêng ở khu "Nội
+    dung đã thêm" để đồng bộ với icon mới của cả khu Bố mẹ. Tách riêng khỏi SOURCE_TYPE_ICON
+    (constants.ts, vẫn dùng icon mặt cười cho thẻ video/báo cáo — 2 chỗ khác, không đụng tới). */
+const GROUP_ICON: Record<SourceType, typeof Tag> = {
+  youtube_channel: Youtube,
+  custom_playlist: ListPlus,
+  youtube_playlist: ListVideo,
+  youtube_video: Film,
+  direct_url: Link2,
+};
+
 /** URL giả dùng làm chỗ trống cho playlist tự tạo — loại này không có 1 link duy nhất, ghép từ nhiều video. */
 const CUSTOM_PLAYLIST_URL = 'internal://custom-playlist';
 
-const emptyForm = { type: 'youtube_playlist' as SourceType, title: '', url: '', thumbnail: null as string | null };
+const emptyForm = { type: 'youtube_channel' as SourceType, title: '', url: '', thumbnail: null as string | null };
 
 /**
  * AddSourceForm — form "Thêm nội dung" + danh mục nội dung đã thêm (sửa/xoá được),
@@ -348,7 +377,13 @@ export function AddSourceForm() {
               ) : (
                 <>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', minWidth: 0 }}>
-                    <span>{l.is_priority ? '⭐' : l.is_hidden ? '🙈' : '🏷'}</span>
+                    {l.is_priority ? (
+                      <Star className="icon" aria-hidden="true" />
+                    ) : l.is_hidden ? (
+                      <EyeOff className="icon" aria-hidden="true" />
+                    ) : (
+                      <Tag className="icon" aria-hidden="true" />
+                    )}
                     <span className="ellip">{l.name}</span>
                     {l.is_builtin && (
                       <span style={{ fontSize: 11, opacity: 0.55, flexShrink: 0 }}>(đặc biệt)</span>
@@ -617,7 +652,14 @@ export function AddSourceForm() {
                   tabIndex={0}
                   onClick={() => toggleLabel(l.id)}
                 >
-                  {l.is_priority ? '⭐' : l.is_hidden ? '🙈' : '🏷'} {l.name}
+                  {l.is_priority ? (
+                    <Star className="icon" aria-hidden="true" />
+                  ) : l.is_hidden ? (
+                    <EyeOff className="icon" aria-hidden="true" />
+                  ) : (
+                    <Tag className="icon" aria-hidden="true" />
+                  )}{' '}
+                  {l.name}
                 </div>
               ))}
             </div>
@@ -656,16 +698,19 @@ export function AddSourceForm() {
         {GROUP_ORDER.map((type) => {
           const items = sources.filter((s) => s.type === type);
           if (items.length === 0) return null;
+          const GroupTypeIcon = GROUP_ICON[type];
           return (
             <div key={type} style={{ marginTop: 18 }}>
               <div className="added-group-title">
-                {SOURCE_TYPE_ICON[type] ?? '📄'} {GROUP_LABEL[type]} ({items.length})
+                <GroupTypeIcon className="icon" aria-hidden="true" /> {GROUP_LABEL[type]} ({items.length})
               </div>
               <div className="added-list">
-                {items.map((s) => (
+                {items.map((s) => {
+                  const ItemTypeIcon = GROUP_ICON[s.type];
+                  return (
                   <div className="added-item" key={s.id} style={{ justifyContent: 'space-between' }}>
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center', minWidth: 0 }}>
-                      <span>{SOURCE_TYPE_ICON[s.type] ?? '📄'}</span>
+                      <ItemTypeIcon className="icon" aria-hidden="true" />
                       <div style={{ minWidth: 0 }}>
                         <div className="ellip" style={{ fontWeight: 700 }}>
                           {s.title}
@@ -685,7 +730,8 @@ export function AddSourceForm() {
                       </button>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           );
