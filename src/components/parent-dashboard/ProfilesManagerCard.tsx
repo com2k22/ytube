@@ -141,7 +141,9 @@ export function ProfilesManagerCard() {
 
         <div className="form-row">
           <label>Emoji đại diện</label>
-          <div className="day-pills">
+          {/* "day-pills-scroll": danh sách 36 emoji xếp nằm ngang 1 hàng, vuốt/kéo ngang để
+              xem hết thay vì xuống dòng dài như trước — đỡ tốn chỗ, nhất là trên máy tính. */}
+          <div className="day-pills day-pills-scroll">
             {PROFILE_EMOJI_PRESETS.map((e) => (
               <div
                 key={e}

@@ -1,8 +1,12 @@
-import { useEffect } from 'react';
-import { Tv, Unplug } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Tv, Unplug, ChevronDown, ChevronUp } from 'lucide-react';
 import { useFamilyContentDevices } from '@/hooks/useFamilyContentDevices';
 import { useToast } from '@/components/common/Toast';
 import { getFamilyId } from '@/lib/familyId';
+
+/** Chỉ hiện tối đa 3 thiết bị — nhiều hơn thì bấm "Xem thêm" mới mở hết ra, đỡ danh sách
+    dài chiếm hết màn hình (nhất là trên điện thoại). */
+const COLLAPSE_LIMIT = 3;
 
 /** "5 phút trước" / "hôm qua"... — giống hệt DeviceManagerCard.tsx. */
 function lastSeenLabel(iso: string): string {
@@ -26,6 +30,7 @@ export function ContentDeviceManagerCard() {
   const familyId = getFamilyId();
   const { devices, loading, deviceId, refresh, removeDevice } = useFamilyContentDevices(familyId);
   const { showToast } = useToast();
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     refresh();
@@ -52,28 +57,49 @@ export function ContentDeviceManagerCard() {
       ) : devices.length === 0 ? (
         <p style={{ opacity: 0.6 }}>Chưa có thiết bị nào — thử tải lại trang này.</p>
       ) : (
-        devices.map((d) => {
-          const isThisDevice = d.device_id === deviceId;
-          return (
-            <div key={d.id} className="added-item" style={{ marginBottom: 8 }}>
-              <div style={{ flex: 1 }}>
-                <div>
-                  {d.label} {isThisDevice && <span style={{ opacity: 0.6 }}>(thiết bị này)</span>}
+        <>
+          {(expanded ? devices : devices.slice(0, COLLAPSE_LIMIT)).map((d) => {
+            const isThisDevice = d.device_id === deviceId;
+            return (
+              <div key={d.id} className="added-item" style={{ marginBottom: 8 }}>
+                <div style={{ flex: 1 }}>
+                  <div>
+                    {d.label} {isThisDevice && <span style={{ opacity: 0.6 }}>(thiết bị này)</span>}
+                  </div>
+                  <div style={{ opacity: 0.55, fontSize: 12 }}>Hoạt động gần nhất: {lastSeenLabel(d.last_seen)}</div>
                 </div>
-                <div style={{ opacity: 0.55, fontSize: 12 }}>Hoạt động gần nhất: {lastSeenLabel(d.last_seen)}</div>
+                <button
+                  className="icon-btn"
+                  data-region="pcontentdevice"
+                  tabIndex={0}
+                  title="Ngắt ghép thiết bị này"
+                  onClick={() => onRemove(d.id, d.label, isThisDevice)}
+                >
+                  <Unplug className="icon" aria-hidden="true" />
+                </button>
               </div>
-              <button
-                className="icon-btn"
-                data-region="pcontentdevice"
-                tabIndex={0}
-                title="Ngắt ghép thiết bị này"
-                onClick={() => onRemove(d.id, d.label, isThisDevice)}
-              >
-                <Unplug className="icon" aria-hidden="true" />
-              </button>
-            </div>
-          );
-        })
+            );
+          })}
+          {devices.length > COLLAPSE_LIMIT && (
+            <button
+              type="button"
+              className="add-window-btn"
+              data-region="pcontentdevice"
+              tabIndex={0}
+              onClick={() => setExpanded((v) => !v)}
+            >
+              {expanded ? (
+                <>
+                  <ChevronUp className="icon icon-lead" aria-hidden="true" /> Thu gọn
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="icon icon-lead" aria-hidden="true" /> Xem thêm ({devices.length - COLLAPSE_LIMIT})
+                </>
+              )}
+            </button>
+          )}
+        </>
       )}
     </div>
   );

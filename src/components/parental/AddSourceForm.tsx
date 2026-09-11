@@ -64,6 +64,11 @@ const GROUP_ICON = SOURCE_TYPE_ICON_SVG;
 /** URL giả dùng làm chỗ trống cho playlist tự tạo — loại này không có 1 link duy nhất, ghép từ nhiều video. */
 const CUSTOM_PLAYLIST_URL = 'internal://custom-playlist';
 
+/** Mỗi nhóm trong "Nội dung đã thêm" chỉ hiện tối đa từng này mục, nhiều hơn thì phải bấm
+    "Xem thêm" mới thấy hết — đỡ danh sách dài chiếm hết màn hình (đặc biệt trên điện thoại),
+    máy tính cũng gọn hơn hẳn. */
+const COLLAPSE_LIMIT = 3;
+
 const emptyForm = { type: 'youtube_channel' as SourceType, title: '', url: '', thumbnail: null as string | null };
 
 /**
@@ -105,6 +110,11 @@ export function AddSourceForm() {
   const [draftItems, setDraftItems] = useState<CustomPlaylistItem[]>([]);
   const [draftVideoUrl, setDraftVideoUrl] = useState('');
   const [addingVideo, setAddingVideo] = useState(false);
+
+  /** Mỗi nhóm trong "Nội dung đã thêm" chỉ hiện tối đa COLLAPSE_LIMIT mục — bấm "Xem thêm"
+      mới mở hết nhóm đó ra. Theo dõi RIÊNG từng nhóm (key = loại nguồn) để mở nhóm này
+      không tự mở luôn nhóm khác. */
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
   const isEditing = editingId !== null;
 
@@ -687,13 +697,15 @@ export function AddSourceForm() {
           const items = sources.filter((s) => s.type === type);
           if (items.length === 0) return null;
           const GroupTypeIcon = GROUP_ICON[type];
+          const isExpanded = !!expandedGroups[type];
+          const visibleItems = isExpanded ? items : items.slice(0, COLLAPSE_LIMIT);
           return (
             <div key={type} style={{ marginTop: 18 }}>
               <div className="added-group-title">
                 <GroupTypeIcon className="icon" aria-hidden="true" /> {GROUP_LABEL[type]} ({items.length})
               </div>
               <div className="added-list">
-                {items.map((s) => {
+                {visibleItems.map((s) => {
                   const ItemTypeIcon = GROUP_ICON[s.type];
                   return (
                   <div className="added-item" key={s.id} style={{ justifyContent: 'space-between' }}>
@@ -721,6 +733,26 @@ export function AddSourceForm() {
                   );
                 })}
               </div>
+              {items.length > COLLAPSE_LIMIT && (
+                <button
+                  type="button"
+                  className="add-window-btn"
+                  style={{ marginTop: 8 }}
+                  data-region="padded"
+                  tabIndex={0}
+                  onClick={() => setExpandedGroups((g) => ({ ...g, [type]: !g[type] }))}
+                >
+                  {isExpanded ? (
+                    <>
+                      <ChevronUp className="icon icon-lead" aria-hidden="true" /> Thu gọn
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="icon icon-lead" aria-hidden="true" /> Xem thêm ({items.length - COLLAPSE_LIMIT})
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           );
         })}
