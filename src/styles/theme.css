@@ -500,6 +500,11 @@ input[data-region='plabel'] { padding: 10px 12px; border-radius: 10px; font-size
    không cần thêm JS). ".day-pill" bên trong cần "flex-shrink: 0" để không bị bóp nhỏ lại. */
 .day-pills-scroll { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; padding-bottom: 6px; -webkit-overflow-scrolling: touch; }
 .day-pills-scroll .day-pill { flex-shrink: 0; }
+/* ".day-pills.day-pills-scroll" (2 lớp chọn thay vì 1) — cần thắng được rule ".day-pills {
+   flex-wrap: wrap }" ở khối điện thoại/tablet hẹp (≤760px) phía dưới, vốn cùng độ ưu tiên
+   với ".day-pills-scroll" 1 lớp nên ai đứng SAU trong file thắng — viết rõ 2 lớp ở đây để
+   chắc chắn luôn thắng, không phụ thuộc thứ tự trong file. */
+.day-pills.day-pills-scroll { flex-wrap: nowrap; }
 .day-pill { padding: 9px 14px; border-radius: 999px; font-weight: 800; font-size: 13px; cursor: pointer; border: 2px solid transparent; opacity: 0.4; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
 .day-pill.on { opacity: 1; }
 
@@ -1006,7 +1011,10 @@ input[data-region='plabel'] { padding: 10px 12px; border-radius: 10px; font-size
 [data-tv] .autonext-title { font-size: 28px; }
 
 /* --- Nút chức năng của bố mẹ trên màn hình chặn --- */
-.block-parent-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+/* "align-items: center" — không có dòng này thì nút bên trong tự kéo giãn hết bề ngang cột
+   (mặc định của flex-column là "stretch"), khiến icon+chữ bị dồn lệch trái trông như chưa
+   căn giữa. Thêm dòng này để nút co lại vừa đúng chữ rồi tự nằm giữa. */
+.block-parent-actions { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 14px; }
 [data-tv] .block-parent-actions { gap: 16px; margin-top: 22px; }
 /* Nút "Bố mẹ bấm vào đây" trong màn hình chặn: chỉ hiện trên ĐIỆN THOẠI. Mặc định ẩn
    (TV/máy tính/iPad không thấy nữa — đã bỏ theo yêu cầu trước), tới đúng bề ngang điện
@@ -1391,7 +1399,9 @@ input[data-region='plabel'] { padding: 10px 12px; border-radius: 10px; font-size
 
 /* Nút "con xin thêm giờ" trên màn hình hết giờ */
 .block-ask { margin: 4px 0 14px; }
-.block-ask-btn { width: auto; padding: 12px 26px; }
+/* "width: auto" làm nút chỉ rộng vừa đúng chữ bên trong (không còn kéo full-width như nút
+   thường), nên cần thêm "margin: 0 auto" để tự nằm giữa khối cha thay vì dạt sang trái. */
+.block-ask-btn { width: auto; margin: 0 auto; padding: 12px 26px; }
 .block-ask-status {
   font-size: 14px; font-weight: 800; padding: 12px 16px; border-radius: 14px;
   background: rgba(128, 128, 128, 0.14);
@@ -1502,7 +1512,7 @@ input[data-region='plabel'] { padding: 10px 12px; border-radius: 10px; font-size
    nữa. Vì vậy:
      1) Ẩn hẳn thanh menu Trang chủ/Bố mẹ của Sidebar (khối "THANH MENU DƯỚI ĐÁY" ở trên) —
         không còn tác dụng gì (Trang chủ không dẫn tới đâu, Bố mẹ thì đã sẵn ở đây rồi).
-     2) 5 mục CỦA CHÍNH Khu Bố mẹ (.parent-tabs) THAY THẾ vai trò "thanh dưới đáy" đó —
+     2) Các mục CỦA CHÍNH Khu Bố mẹ (.parent-tabs) THAY THẾ vai trò "thanh dưới đáy" đó —
         đúng khoảng trống .main{padding-bottom:96px} đã chừa sẵn ở trên, không cần thêm gì.
    Cùng mốc 700px với khối trên (không phải 760px) — mọi iPad đều rộng hơn mốc này nên giữ
    nguyên bố cục hiện có, chỉ điện thoại thật mới đổi. */

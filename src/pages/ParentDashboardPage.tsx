@@ -20,7 +20,7 @@ import { PairingCodeCard } from '@/components/parent-dashboard/PairingCodeCard';
 import { HomeBackgroundCard } from '@/components/parent-dashboard/HomeBackgroundCard';
 import { useFamilyAuth } from '@/hooks/useFamilyAuth';
 
-type Tab = 'time' | 'content' | 'kids' | 'report' | 'account';
+type Tab = 'time' | 'content' | 'kids' | 'account';
 
 /** Icon + tên rút gọn cho từng tab — tách riêng icon/chữ (thay vì gộp 1 chuỗi như bản cũ)
     để CSS xếp lại được thành thanh dưới đáy trên điện thoại (icon trên, chữ nhỏ dưới,
@@ -31,8 +31,8 @@ type Tab = 'time' | 'content' | 'kids' | 'report' | 'account';
 const TABS: { value: Tab; icon: LucideIcon; label: string }[] = [
   { value: 'time', icon: Clock, label: 'Thời gian' },
   { value: 'content', icon: ListPlus, label: 'Nội dung' },
+  // "Báo cáo" đã gộp chung vào đây (bên dưới "Hồ sơ bé") cho gọn — bớt 1 tab, xem bên dưới.
   { value: 'kids', icon: Baby, label: 'Hồ sơ bé' },
-  { value: 'report', icon: BarChart3, label: 'Báo cáo' },
   { value: 'account', icon: User, label: 'Tài khoản' },
 ];
 
@@ -137,9 +137,18 @@ export function ParentDashboardPage() {
 
           {tab === 'content' && <AddSourceForm />}
 
-          {tab === 'kids' && <ProfilesManagerCard />}
+          {tab === 'kids' && (
+            <div>
+              <ProfilesManagerCard />
 
-          {tab === 'report' && <WeeklyReportTab />}
+              {/* Gộp "Báo cáo" vào chung tab này (trước đây là tab riêng) — bớt 1 mục trên
+                  thanh tab cho gọn, vẫn xem được đầy đủ ngay bên dưới danh sách hồ sơ bé. */}
+              <div className="section-title" style={{ marginTop: 28, display: 'flex', alignItems: 'center' }}>
+                <BarChart3 className="icon icon-lead" aria-hidden="true" /> Báo cáo tuần
+              </div>
+              <WeeklyReportTab />
+            </div>
+          )}
 
           {tab === 'account' && (
             <div>
