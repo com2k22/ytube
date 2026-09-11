@@ -1,3 +1,6 @@
+import { Youtube, ListPlus, ListVideo, Film, Link2 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+
 // ID gốc của Mina & Cốm — 2 hồ sơ có sẵn từ đầu (khởi tạo trong supabase/001_schema.sql).
 // Từ bản có "Hồ sơ các bé linh hoạt" (supabase/012_...), KHÔNG còn gắn cứng danh sách bé
 // trong code nữa — thêm/bớt bé làm ngay trong khu Bố mẹ. 2 hằng số này chỉ còn giữ lại để
@@ -56,4 +59,16 @@ export const SOURCE_TYPE_ICON: Record<string, string> = {
   youtube_channel: '📺',
   direct_url: '🔗',
   custom_playlist: '🧩',
+};
+
+// Bản icon SVG (lucide-react) phong cách mới của bảng trên — dùng ở các màn hình MỚI trong
+// khu Bố mẹ (AddSourceForm.tsx "Nội dung đã thêm", WeeklyReportTab.tsx "xem nhiều nhất") để
+// đồng bộ giao diện. Tách riêng khỏi SOURCE_TYPE_ICON ở trên vì icon mặt cười đó vẫn đang
+// dùng cho thẻ video (PlaylistCard.tsx) — chỗ đó KHÔNG đổi, giữ nguyên phong cách cũ.
+export const SOURCE_TYPE_ICON_SVG: Record<string, LucideIcon> = {
+  youtube_channel: Youtube,
+  custom_playlist: ListPlus,
+  youtube_playlist: ListVideo,
+  youtube_video: Film,
+  direct_url: Link2,
 };

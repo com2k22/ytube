@@ -12,11 +12,6 @@ import {
   ChevronDown,
   Star,
   EyeOff,
-  Youtube,
-  ListPlus,
-  ListVideo,
-  Film,
-  Link2,
 } from 'lucide-react';
 import { useAllowedSources } from '@/hooks/useAllowedSources';
 import { useContentLabels } from '@/hooks/useContentLabels';
@@ -25,7 +20,7 @@ import { useToast } from '@/components/common/Toast';
 import { isSafeHttpsUrl, sanitizeTitle } from '@/utils/urlValidator';
 import { extractPlaylistId, extractVideoId, extractChannelRef } from '@/utils/youtubeParser';
 import { fetchPlaylistInfo, fetchVideoInfo, fetchChannelInfo, resolveChannelHandle } from '@/lib/youtube';
-import { profileEmoji } from '@/constants';
+import { profileEmoji, SOURCE_TYPE_ICON_SVG } from '@/constants';
 import type { AllowedSource, CustomPlaylistItem, SourceType } from '@/types';
 
 const TYPE_OPTIONS: { value: SourceType; label: string }[] = [
@@ -62,16 +57,9 @@ const GROUP_ORDER: SourceType[] = [
   'direct_url',
 ];
 
-/** Icon phong cách mới (lucide-react, SVG) cho từng loại nguồn — dùng riêng ở khu "Nội
-    dung đã thêm" để đồng bộ với icon mới của cả khu Bố mẹ. Tách riêng khỏi SOURCE_TYPE_ICON
-    (constants.ts, vẫn dùng icon mặt cười cho thẻ video/báo cáo — 2 chỗ khác, không đụng tới). */
-const GROUP_ICON: Record<SourceType, typeof Tag> = {
-  youtube_channel: Youtube,
-  custom_playlist: ListPlus,
-  youtube_playlist: ListVideo,
-  youtube_video: Film,
-  direct_url: Link2,
-};
+/** Icon phong cách mới cho từng loại nguồn ở khu "Nội dung đã thêm" — dùng chung
+    SOURCE_TYPE_ICON_SVG (constants.ts) để đồng bộ với "Xem nhiều nhất" bên tab Báo cáo. */
+const GROUP_ICON = SOURCE_TYPE_ICON_SVG;
 
 /** URL giả dùng làm chỗ trống cho playlist tự tạo — loại này không có 1 link duy nhất, ghép từ nhiều video. */
 const CUSTOM_PLAYLIST_URL = 'internal://custom-playlist';

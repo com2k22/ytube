@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Clock, ListPlus, Baby, BarChart3, User, Users, KeyRound, BellRing } from 'lucide-react';
+import { Clock, ListPlus, Baby, BarChart3, User, Users, BellRing } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useProfileContext } from '@/context/ProfileContext';
 import { useTimeRules } from '@/hooks/useTimeRules';
@@ -116,7 +116,6 @@ export function ParentDashboardPage() {
                 </div>
 
                 <SessionLiveCard profileId={configProfile.id} profileLabel={configProfile.name} />
-                <PushSetupCard />
               </div>
 
               <div className="col col-form">
@@ -169,17 +168,15 @@ export function ParentDashboardPage() {
               {/* "card-grid": trên máy tính, các thẻ dưới đây xếp thành lưới nhiều cột thay
                   vì chồng dài xuống dưới như trên điện thoại/TV (xem theme.css). */}
               <div className="card-grid">
+                {/* "Ghép TV mới" đặt lên ĐẦU lưới — ngay sau khối "Tài khoản gia đình" phía
+                    trên — vì đây là việc bố mẹ cần làm sớm nhất khi cài app trên TV mới. */}
+                <PairingCodeCard />
                 <DeviceManagerCard />
                 <ContentDeviceManagerCard />
-                <PairingCodeCard />
+                <PushSetupCard />
                 <HomeBackgroundCard />
                 <BackupExportCard />
-                <div>
-                  <div className="section-title" style={{ marginTop: 0, display: 'flex', alignItems: 'center' }}>
-                    <KeyRound className="icon icon-lead" aria-hidden="true" /> Đổi PIN
-                  </div>
-                  <ChangePinCard />
-                </div>
+                <ChangePinCard />
               </div>
             </div>
           )}

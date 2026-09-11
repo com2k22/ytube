@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { RefreshCw, TrendingUp, ChevronUp, ChevronDown } from 'lucide-react';
+import { RefreshCw, TrendingUp, ChevronUp, ChevronDown, Film } from 'lucide-react';
 import { useProfileContext } from '@/context/ProfileContext';
 import { useWeeklyReport, type ReportDay } from '@/hooks/useWeeklyReport';
-import { profileChartColor, profileEmoji, SOURCE_TYPE_ICON } from '@/constants';
+import { profileChartColor, profileEmoji, SOURCE_TYPE_ICON_SVG } from '@/constants';
 
 /**
  * Làm tròn LÊN mốc cao nhất của trục dọc cho "chẵn đẹp" (10 / 15 / 30 / 60 phút...).
@@ -221,7 +221,10 @@ export function WeeklyReportTab() {
                 items.map((item, i) => (
                   <div key={item.key} className="added-item wr-top-item">
                     <span className="wr-top-rank">{i + 1}</span>
-                    <span>{item.sourceType ? SOURCE_TYPE_ICON[item.sourceType] ?? '🎬' : '🎬'}</span>
+                    {(() => {
+                      const TypeIcon = (item.sourceType && SOURCE_TYPE_ICON_SVG[item.sourceType]) || Film;
+                      return <TypeIcon className="icon" aria-hidden="true" />;
+                    })()}
                     <span className="wr-top-title">{item.title}</span>
                     <span className="wr-top-minutes">{item.minutes} phút</span>
                   </div>

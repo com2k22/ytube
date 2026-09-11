@@ -1520,6 +1520,12 @@ input[data-region='plabel'] { padding: 10px 12px; border-radius: 10px; font-size
   /* Không còn trang nào để "Quay lại" nữa (Trang chủ đã ẩn khỏi điện thoại) — ẩn luôn nút
      này trên Khu Bố mẹ, đỡ bấm vào rồi bị tự động đưa quay lại đây (xem Layout.tsx). */
   .parent-page .back-btn { display: none; }
+
+  /* .topbar đã ẩn ở trên nên dòng "Khu vực Bố mẹ" giờ là thứ TRÊN CÙNG màn hình — cần cộng
+     thêm khoảng đệm an toàn env(safe-area-inset-top) (tránh tai thỏ/viên thuốc đục lỗ của
+     iPhone) CỘNG THÊM chút khoảng đệm cho đẹp (trước đây chỉ có đúng 14px của .main, sát
+     quá vào thanh trạng thái). */
+  .main.parent-page { padding-top: calc(14px + env(safe-area-inset-top, 0px) + 14px); }
 }
 
 /* =====================================================================
