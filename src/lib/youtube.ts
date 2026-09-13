@@ -86,7 +86,9 @@ export async function fetchPlaylistItems(playlistId: string): Promise<YtPlaylist
     console.warn('[Ytube] Thiếu VITE_YOUTUBE_API_KEY — không thể tải danh sách video thật.');
     return [];
   }
-  const url = `${API_BASE}/playlistItems?part=snippet&maxResults=50&playlistId=${encodeURIComponent(
+  // "part=status" thêm để lấy đúng cờ privacyStatus (public/private/unlisted) của TỪNG
+  // video trong playlist — xem lý do ở cụm filter bên dưới.
+  const url = `${API_BASE}/playlistItems?part=snippet,status&maxResults=50&playlistId=${encodeURIComponent(
     playlistId
   )}&key=${key}`;
   const res = await fetch(url);
@@ -96,21 +98,27 @@ export async function fetchPlaylistItems(playlistId: string): Promise<YtPlaylist
   }
   const data = await res.json();
   const items: YtPlaylistItem[] = (data.items ?? [])
+    // Lọc NGAY trên dữ liệu thô (còn đủ cả snippet lẫn status) trước khi rút gọn thành
+    // YtPlaylistItem — 2 lớp lọc video riêng tư/đã xoá:
+    // (1) Cờ "status.privacyStatus" — đáng tin cậy NHẤT, YouTube trả thẳng đúng trạng thái
+    //     video ngay cả khi tiêu đề vẫn hiện bình thường (đây là chỗ TRƯỚC ĐÂY bị lọt: chỉ
+    //     đoán qua tiêu đề nên video riêng tư mà còn giữ tiêu đề gốc thì lọt qua được).
+    // (2) Video ĐÃ BỊ XOÁ hẳn thì không kèm privacyStatus, chỉ còn đổi tiêu đề thành đúng 2
+    //     chuỗi cố định "Private video"/"Deleted video" (không kèm ảnh) — giữ lại lớp lọc
+    //     theo tiêu đề này làm dự phòng (YouTube trả về tiếng Anh, không đổi theo ngôn ngữ
+    //     trình duyệt).
+    .filter((item: any) => {
+      const videoId = item.snippet?.resourceId?.videoId;
+      const title = item.snippet?.title;
+      const privacyStatus = item.status?.privacyStatus;
+      return Boolean(videoId) && title !== 'Private video' && title !== 'Deleted video' && privacyStatus !== 'private';
+    })
     .map((item: any) => ({
-      videoId: item.snippet?.resourceId?.videoId ?? '',
+      videoId: item.snippet.resourceId.videoId,
       title: item.snippet?.title ?? 'Không có tiêu đề',
       thumbnail: item.snippet?.thumbnails?.medium?.url ?? item.snippet?.thumbnails?.default?.url ?? null,
       position: item.snippet?.position ?? 0,
-    }))
-    // Video ĐÃ BỊ XOÁ hẳn thì YouTube trả về mà KHÔNG kèm id — bỏ luôn (dòng cũ).
-    // Video bị chuyển sang RIÊNG TƯ (hoặc đã xoá nhưng vẫn còn id) thì YouTube VẪN trả về
-    // đúng videoId, chỉ đổi tiêu đề thành đúng 2 chuỗi cố định "Private video"/"Deleted
-    // video" (không kèm ảnh) — đây chính là lỗ hổng khiến các video/playlist riêng tư vẫn
-    // lọt vào danh sách của bé (hiện ra thành thẻ trống, không xem được). Lọc luôn theo
-    // đúng 2 chuỗi này (YouTube trả về tiếng Anh, không đổi theo ngôn ngữ trình duyệt).
-    .filter(
-      (it: YtPlaylistItem) => it.videoId.length > 0 && it.title !== 'Private video' && it.title !== 'Deleted video'
-    );
+    }));
 
   if (items.length === 0) return items;
   const keep = await filterOutShorts(
@@ -188,7 +196,32 @@ export async function resolveChannelHandle(
 }
 
 /**
- * Từ 1 kênh YouTube, lấy danh sách các playlist công khai của kênh đó.
+ * Lấy đúng playlist "Video đã tải lên" (Uploads) của 1 kênh — đây là playlist ĐẶC BIỆT do
+ * chính YouTube tự sinh ra cho mọi kênh, CHỈ chứa video do CHÍNH kênh đó tự đăng tải, không
+ * lẫn video của kênh khác — dù kênh này có gộp video kênh khác vào 1 playlist "tuyển tập"
+ * nào đó thì video đó cũng KHÔNG nằm trong playlist Uploads này. Dùng hàm này để lọc đúng
+ * "chỉ hiện nội dung do kênh đó tự tạo ra" (xem ChannelPage.tsx).
+ */
+export async function fetchChannelUploadsPlaylistId(channelId: string): Promise<string | null> {
+  const key = getApiKey();
+  if (!key) return null;
+  const url = `${API_BASE}/channels?part=contentDetails&id=${encodeURIComponent(channelId)}&key=${key}`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    console.error('[Ytube] Lỗi gọi YouTube API (channels.contentDetails):', await res.text());
+    return null;
+  }
+  const data = await res.json();
+  const item = data.items?.[0];
+  return item?.contentDetails?.relatedPlaylists?.uploads ?? null;
+}
+
+/**
+ * Từ 1 kênh YouTube, lấy danh sách các playlist công khai của kênh đó (playlist do kênh TỰ
+ * TẠO — có thể là playlist "tuyển tập" gộp cả video của kênh khác vào, không chỉ video của
+ * chính kênh này). KHÔNG còn dùng cho trang Kênh nữa (xem fetchChannelUploadsPlaylistId ở
+ * trên — đó mới là danh sách lọc đúng "chỉ nội dung do kênh này tự tạo"). Giữ lại hàm này
+ * phòng khi cần tính năng "xem thêm playlist khác của kênh" sau này.
  * Bỏ qua luôn các playlist do chính chủ kênh đặt tên là "Shorts" (rất nhiều kênh gom
  * video ngắn vào 1 playlist riêng như vậy) — chặn ngay từ vòng ngoài, khỏi phải vào
  * trong mới lọc từng video.
