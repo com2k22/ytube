@@ -745,8 +745,7 @@ export function AddSourceForm() {
           <Ban className="icon icon-lead" aria-hidden="true" /> Chặn nội dung
         </h4>
         <p style={{ fontSize: 12.5, opacity: 0.65, margin: '-8px 0 16px' }}>
-          Dán link 1 playlist hoặc video YouTube cụ thể để ẩn riêng nó đi — dùng khi 1 kênh đã
-          cho xem lại có playlist do kênh tự gộp dẫn ra nguồn khác mà không muốn chặn cả kênh.
+          Dán link playlist/video cần ẩn, không phải chặn cả kênh.
         </p>
         <div style={{ display: 'flex', gap: 8 }}>
           <input
