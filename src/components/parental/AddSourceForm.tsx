@@ -12,16 +12,20 @@ import {
   ChevronDown,
   Star,
   EyeOff,
+  Ban,
+  ListVideo,
+  Film,
 } from 'lucide-react';
 import { useAllowedSources } from '@/hooks/useAllowedSources';
 import { useContentLabels } from '@/hooks/useContentLabels';
+import { useBlockedItems } from '@/hooks/useBlockedItems';
 import { useProfileContext } from '@/context/ProfileContext';
 import { useToast } from '@/components/common/Toast';
 import { isSafeHttpsUrl, sanitizeTitle } from '@/utils/urlValidator';
 import { extractPlaylistId, extractVideoId, extractChannelRef } from '@/utils/youtubeParser';
 import { fetchPlaylistInfo, fetchVideoInfo, fetchChannelInfo, resolveChannelHandle } from '@/lib/youtube';
 import { profileEmoji, SOURCE_TYPE_ICON_SVG } from '@/constants';
-import type { AllowedSource, CustomPlaylistItem, SourceType } from '@/types';
+import type { AllowedSource, BlockedItem, CustomPlaylistItem, SourceType } from '@/types';
 
 const TYPE_OPTIONS: { value: SourceType; label: string }[] = [
   { value: 'youtube_channel', label: 'Kênh YouTube' },
@@ -78,6 +82,7 @@ const emptyForm = { type: 'youtube_channel' as SourceType, title: '', url: '', t
 export function AddSourceForm() {
   const { sources, loading, addSource, updateSource, removeSource } = useAllowedSources('all');
   const { labels, addLabel, renameLabel, removeLabel } = useContentLabels();
+  const { items: blockedItems, addBlockedItem, removeBlockedItem } = useBlockedItems();
   // Danh sách bé LẤY TỪ hồ sơ thật (khu Bố mẹ > Hồ sơ các bé), không còn gắn cứng Mina/Cốm
   // trong code nữa — thêm bé mới ở đó là form này tự thấy ngay, không cần sửa code.
   const { profiles } = useProfileContext();
@@ -101,6 +106,10 @@ export function AddSourceForm() {
   const [newLabelName, setNewLabelName] = useState('');
   const [renamingLabelId, setRenamingLabelId] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState('');
+
+  // Riêng cho khối "Chặn nội dung": link playlist/video đang dán dở.
+  const [blockUrl, setBlockUrl] = useState('');
+  const [addingBlock, setAddingBlock] = useState(false);
 
   const toggleLabel = (id: string) => {
     setSelectedLabelIds((prev) => (prev.includes(id) ? prev.filter((l) => l !== id) : [...prev, id]));
@@ -287,6 +296,50 @@ export function AddSourceForm() {
       showToast(`🗑 Đã xoá nhãn "${name}"`);
       setSelectedLabelIds((prev) => prev.filter((l) => l !== id));
     } else showToast('Có lỗi khi xoá nhãn — thử lại nhé.');
+  };
+
+  /**
+   * Chặn thủ công 1 playlist/video YouTube cụ thể (dán link) — dùng khi 1 kênh đã cho phép
+   * xem lại có playlist "tuyển tập" dẫn ra nguồn ngoài mà không muốn chặn hẳn cả kênh. Tự
+   * nhận diện link là playlist hay video đơn lẻ (ưu tiên playlist nếu link có cả 2 tham số,
+   * VD link video nằm trong 1 playlist), và tự dò tên thật từ YouTube để hiển thị cho dễ nhận ra.
+   */
+  const onAddBlockedItem = async () => {
+    const url = blockUrl.trim();
+    if (!url) return;
+    const playlistId = extractPlaylistId(url);
+    const videoId = extractVideoId(url);
+    if (!playlistId && !videoId) {
+      showToast('Dán link 1 playlist hoặc video YouTube hợp lệ để chặn nhé.');
+      return;
+    }
+    setAddingBlock(true);
+    try {
+      if (playlistId) {
+        const info = await fetchPlaylistInfo(playlistId);
+        const ok = await addBlockedItem({ itemType: 'playlist', itemId: playlistId, title: info?.title ?? null });
+        if (ok) {
+          showToast(`🚫 Đã chặn playlist${info ? ` "${info.title}"` : ''}`);
+          setBlockUrl('');
+        } else showToast('Có lỗi khi chặn — có thể playlist này đã chặn rồi, hoặc thử lại.');
+      } else if (videoId) {
+        const info = await fetchVideoInfo(videoId);
+        const ok = await addBlockedItem({ itemType: 'video', itemId: videoId, title: info?.title ?? null });
+        if (ok) {
+          showToast(`🚫 Đã chặn video${info ? ` "${info.title}"` : ''}`);
+          setBlockUrl('');
+        } else showToast('Có lỗi khi chặn — có thể video này đã chặn rồi, hoặc thử lại.');
+      }
+    } finally {
+      setAddingBlock(false);
+    }
+  };
+
+  const onRemoveBlockedItem = async (item: BlockedItem) => {
+    if (!window.confirm(`Bỏ chặn "${item.title ?? item.item_id}"? Nội dung này sẽ hiện lại bình thường.`)) return;
+    const ok = await removeBlockedItem(item.id);
+    if (ok) showToast('✓ Đã bỏ chặn');
+    else showToast('Có lỗi khi bỏ chặn — thử lại nhé.');
   };
 
   const onDelete = async (s: AllowedSource) => {
@@ -682,6 +735,74 @@ export function AddSourceForm() {
             <Plus className="icon icon-lead" aria-hidden="true" /> Thêm nhãn
           </button>
         </div>
+      </div>
+
+      {/* "Chặn nội dung" — chặn thủ công 1 playlist/video YouTube cụ thể, dùng khi 1 kênh đã
+          cho phép xem lại có playlist "tuyển tập" dẫn ra nguồn ngoài (video của kênh khác)
+          mà không muốn chặn hẳn cả kênh (xem ChannelPage.tsx + useBlockedItems.ts). */}
+      <div className="settings-card">
+        <h4>
+          <Ban className="icon icon-lead" aria-hidden="true" /> Chặn nội dung
+        </h4>
+        <p style={{ fontSize: 12.5, opacity: 0.65, margin: '-8px 0 16px' }}>
+          Dán link 1 playlist hoặc video YouTube cụ thể để ẩn riêng nó đi — dùng khi 1 kênh đã
+          cho xem lại có playlist do kênh tự gộp dẫn ra nguồn khác mà không muốn chặn cả kênh.
+        </p>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input
+            data-region="pblock"
+            tabIndex={0}
+            value={blockUrl}
+            onChange={(e) => setBlockUrl(e.target.value)}
+            placeholder="Dán link playlist hoặc video YouTube..."
+            style={{ flex: 1 }}
+          />
+          <button
+            type="button"
+            className="add-window-btn"
+            style={{ flexShrink: 0 }}
+            data-region="pblock"
+            tabIndex={0}
+            disabled={addingBlock || !blockUrl.trim()}
+            onClick={onAddBlockedItem}
+          >
+            {addingBlock ? (
+              'Đang chặn...'
+            ) : (
+              <>
+                <Ban className="icon icon-lead" aria-hidden="true" /> Chặn
+              </>
+            )}
+          </button>
+        </div>
+
+        {blockedItems.length === 0 ? (
+          <p style={{ fontSize: 12.5, opacity: 0.55, marginTop: 12 }}>Chưa chặn playlist/video nào.</p>
+        ) : (
+          <div className="added-list" style={{ marginTop: 12 }}>
+            {blockedItems.map((b) => (
+              <div className="added-item" key={b.id} style={{ justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', minWidth: 0 }}>
+                  {b.item_type === 'playlist' ? (
+                    <ListVideo className="icon" aria-hidden="true" />
+                  ) : (
+                    <Film className="icon" aria-hidden="true" />
+                  )}
+                  <span className="ellip">{b.title ?? b.item_id}</span>
+                </div>
+                <button
+                  className="icon-btn"
+                  data-region="pblock"
+                  tabIndex={0}
+                  title="Bỏ chặn"
+                  onClick={() => onRemoveBlockedItem(b)}
+                >
+                  <Trash2 className="icon" aria-hidden="true" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
       </div>
 

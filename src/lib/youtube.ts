@@ -196,9 +196,10 @@ export async function resolveChannelHandle(
 /**
  * Lấy đúng playlist "Video đã tải lên" (Uploads) của 1 kênh — đây là playlist ĐẶC BIỆT do
  * chính YouTube tự sinh ra cho mọi kênh, CHỈ chứa video do CHÍNH kênh đó tự đăng tải, không
- * lẫn video của kênh khác — dù kênh này có gộp video kênh khác vào 1 playlist "tuyển tập"
- * nào đó thì video đó cũng KHÔNG nằm trong playlist Uploads này. Dùng hàm này để lọc đúng
- * "chỉ hiện nội dung do kênh đó tự tạo ra" (xem ChannelPage.tsx).
+ * lẫn video của kênh khác. TRANG KÊNH (ChannelPage.tsx) HIỆN KHÔNG DÙNG hàm này nữa — phụ
+ * huynh muốn xem đủ mọi playlist của kênh (kể cả playlist "tuyển tập") và tự chặn thủ công
+ * playlist nào lạc nguồn qua khối "Chặn nội dung" (xem useBlockedItems.ts), thay vì tự động
+ * gộp hết về đúng 1 danh sách video như hàm này từng dùng cho. Giữ lại phòng cần dùng lại.
  */
 export async function fetchChannelUploadsPlaylistId(channelId: string): Promise<string | null> {
   const key = getApiKey();
@@ -215,14 +216,24 @@ export async function fetchChannelUploadsPlaylistId(channelId: string): Promise<
 }
 
 /**
- * Từ 1 kênh YouTube, lấy danh sách các playlist công khai của kênh đó (playlist do kênh TỰ
- * TẠO — có thể là playlist "tuyển tập" gộp cả video của kênh khác vào, không chỉ video của
- * chính kênh này). KHÔNG còn dùng cho trang Kênh nữa (xem fetchChannelUploadsPlaylistId ở
- * trên — đó mới là danh sách lọc đúng "chỉ nội dung do kênh này tự tạo"). Giữ lại hàm này
- * phòng khi cần tính năng "xem thêm playlist khác của kênh" sau này.
- * Bỏ qua luôn các playlist do chính chủ kênh đặt tên là "Shorts" (rất nhiều kênh gom
- * video ngắn vào 1 playlist riêng như vậy) — chặn ngay từ vòng ngoài, khỏi phải vào
- * trong mới lọc từng video.
+ * Từ 1 kênh YouTube, lấy danh sách các playlist công khai của kênh đó — dùng cho trang Kênh
+ * (ChannelPage.tsx): tin cả 1 kênh thì xem được mọi playlist công khai của kênh, kể cả
+ * playlist "tuyển tập" mà kênh có thể gộp cả video của kênh khác vào (nếu phụ huynh muốn ẩn
+ * riêng đúng 1 playlist kiểu đó, dùng khối "Chặn nội dung" trong khu Bố mẹ — xem
+ * useBlockedItems.ts — thay vì phải chặn hẳn cả kênh).
+ *
+ * Đã tự lọc bỏ 2 trường hợp KHÔNG nên hiện ra:
+ * (1) Playlist do chính chủ kênh đặt tên là "Shorts" (rất nhiều kênh gom video ngắn vào 1
+ *     playlist riêng như vậy) — lọc theo tên, chặn ngay từ vòng ngoài khỏi phải vào trong
+ *     mới lọc từng video.
+ * (2) Playlist rỗng/không tải được số lượng video (itemCount = 0) — trên thực tế phần lớn
+ *     rơi vào trường hợp playlist đã bị chủ kênh xoá hoặc chuyển sang riêng tư nhưng vẫn còn
+ *     sót lại trong kết quả liệt kê, bấm vào sẽ chỉ thấy trống trơn. LƯU Ý: gọi API công
+ *     khai qua channelId (không đăng nhập) thì bản thân YouTube ĐÃ KHÔNG trả về playlist
+ *     thật sự riêng tư/đã xoá hẳn của kênh khác — 2 lớp lọc trên chỉ là phòng thêm cho các
+ *     trường hợp còn sót, KHÔNG hỏi thêm quyền "status" riêng của từng playlist (thử làm
+ *     vậy 1 lần trước đây từng khiến cả danh sách bị từ chối, mất trắng — xem ghi chú ở
+ *     fetchPlaylistItems phía trên).
  */
 export async function fetchChannelPlaylists(channelId: string): Promise<YtPlaylistInfo[]> {
   const key = getApiKey();
@@ -240,7 +251,7 @@ export async function fetchChannelPlaylists(channelId: string): Promise<YtPlayli
       thumbnail: item.snippet?.thumbnails?.medium?.url ?? null,
       itemCount: item.contentDetails?.itemCount ?? 0,
     }))
-    .filter((pl: YtPlaylistInfo) => !/\bshorts?\b/i.test(pl.title));
+    .filter((pl: YtPlaylistInfo) => !/\bshorts?\b/i.test(pl.title) && pl.itemCount > 0);
 }
 
 /** Lấy tiêu đề + ảnh của 1 video đơn lẻ (dùng cho loại nguồn "youtube_video"). */

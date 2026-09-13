@@ -118,6 +118,24 @@ export interface WatchProgress {
   updated_at: string;
 }
 
+export type BlockedItemType = 'playlist' | 'video';
+
+/**
+ * 1 playlist hoặc video YouTube bị phụ huynh CHỦ ĐỘNG chặn thủ công (xem
+ * supabase/018_blocked_items.sql) — dùng khi 1 kênh đã whitelist có playlist/video "lạc
+ * nguồn" (VD: playlist tổng hợp kênh gộp cả video của kênh khác vào) mà không muốn chặn
+ * hẳn cả kênh, chỉ ẩn riêng đúng playlist/video đó.
+ */
+export interface BlockedItem {
+  id: string;
+  item_type: BlockedItemType;
+  /** playlistId hoặc videoId THẬT trên YouTube — không phải id trong allowed_sources. */
+  item_id: string;
+  /** Tên hiển thị lúc chặn — chỉ để phụ huynh dễ nhận ra trong danh sách, không dùng để so khớp. */
+  title: string | null;
+  created_at: string;
+}
+
 /** Trạng thái 1 lời xin thêm giờ (xem supabase/007_time_requests.sql). */
 export type TimeRequestStatus = 'pending' | 'approved' | 'denied' | 'cancelled';
 

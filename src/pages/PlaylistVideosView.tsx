@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useProfileContext } from '@/context/ProfileContext';
 import { useWatchProgress } from '@/hooks/useWatchProgress';
+import { useBlockedItems } from '@/hooks/useBlockedItems';
 import { VideoCard } from '@/components/common/VideoCard';
 import type { ResolvedVideo } from '@/types';
 
@@ -25,15 +26,21 @@ interface Props {
 export function PlaylistVideosView({ title, videos, loading, error, playlistId, progressSourceId, onBack }: Props) {
   const { activeProfile } = useProfileContext();
   const { progressFor } = useWatchProgress(activeProfile?.id ?? null);
+  // Ẩn riêng từng VIDEO đã bị phụ huynh chủ động chặn (khối "Chặn nội dung" trong khu Bố
+  // mẹ) — áp dụng cho MỌI danh sách video hiển thị qua component này (playlist đã thêm,
+  // playlist "mượn" từ 1 kênh...), không cần biết đang xem playlist nào (xem useBlockedItems.ts).
+  const { blockedIdsOfType } = useBlockedItems();
+  const blockedVideoIds = blockedIdsOfType('video');
+  const visible = videos.filter((v) => !blockedVideoIds.has(v.videoId));
   const navigate = useNavigate();
 
   const sorted = progressSourceId
-    ? [...videos].sort((a, b) => {
+    ? [...visible].sort((a, b) => {
         const pa = progressFor(progressSourceId, a.videoId);
         const pb = progressFor(progressSourceId, b.videoId);
         return Number(pb > 0 && pb < 100) - Number(pa > 0 && pa < 100);
       })
-    : videos;
+    : visible;
 
   return (
     <main className="main">
