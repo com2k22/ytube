@@ -86,9 +86,7 @@ export async function fetchPlaylistItems(playlistId: string): Promise<YtPlaylist
     console.warn('[Ytube] Thiếu VITE_YOUTUBE_API_KEY — không thể tải danh sách video thật.');
     return [];
   }
-  // "part=status" thêm để lấy đúng cờ privacyStatus (public/private/unlisted) của TỪNG
-  // video trong playlist — xem lý do ở cụm filter bên dưới.
-  const url = `${API_BASE}/playlistItems?part=snippet,status&maxResults=50&playlistId=${encodeURIComponent(
+  const url = `${API_BASE}/playlistItems?part=snippet&maxResults=50&playlistId=${encodeURIComponent(
     playlistId
   )}&key=${key}`;
   const res = await fetch(url);
@@ -97,28 +95,28 @@ export async function fetchPlaylistItems(playlistId: string): Promise<YtPlaylist
     return [];
   }
   const data = await res.json();
+  // GHI CHÚ: bản trước có thử thêm "part=status" để hỏi thẳng cờ riêng tư/công khai của
+  // từng video (đáng tin cậy hơn đoán qua tiêu đề) — nhưng phần "status" cần quyền cao hơn
+  // 1 API key thường (phải chính chủ kênh mới xin được), nên khi gọi cho kênh/playlist BẤT
+  // KỲ (không phải kênh của mình) thì cả API bị từ chối, kéo theo MẤT SẠCH danh sách video
+  // (không riêng gì video riêng tư). Đã bỏ lại phần "status", CHỈ còn lọc qua tiêu đề như
+  // dưới đây — không bắt được 100% trường hợp video bị chuyển riêng tư mà vẫn giữ nguyên
+  // tiêu đề, nhưng vẫn hiện được đúng danh sách bình thường như trước.
   const items: YtPlaylistItem[] = (data.items ?? [])
-    // Lọc NGAY trên dữ liệu thô (còn đủ cả snippet lẫn status) trước khi rút gọn thành
-    // YtPlaylistItem — 2 lớp lọc video riêng tư/đã xoá:
-    // (1) Cờ "status.privacyStatus" — đáng tin cậy NHẤT, YouTube trả thẳng đúng trạng thái
-    //     video ngay cả khi tiêu đề vẫn hiện bình thường (đây là chỗ TRƯỚC ĐÂY bị lọt: chỉ
-    //     đoán qua tiêu đề nên video riêng tư mà còn giữ tiêu đề gốc thì lọt qua được).
-    // (2) Video ĐÃ BỊ XOÁ hẳn thì không kèm privacyStatus, chỉ còn đổi tiêu đề thành đúng 2
-    //     chuỗi cố định "Private video"/"Deleted video" (không kèm ảnh) — giữ lại lớp lọc
-    //     theo tiêu đề này làm dự phòng (YouTube trả về tiếng Anh, không đổi theo ngôn ngữ
-    //     trình duyệt).
-    .filter((item: any) => {
-      const videoId = item.snippet?.resourceId?.videoId;
-      const title = item.snippet?.title;
-      const privacyStatus = item.status?.privacyStatus;
-      return Boolean(videoId) && title !== 'Private video' && title !== 'Deleted video' && privacyStatus !== 'private';
-    })
     .map((item: any) => ({
-      videoId: item.snippet.resourceId.videoId,
+      videoId: item.snippet?.resourceId?.videoId ?? '',
       title: item.snippet?.title ?? 'Không có tiêu đề',
       thumbnail: item.snippet?.thumbnails?.medium?.url ?? item.snippet?.thumbnails?.default?.url ?? null,
       position: item.snippet?.position ?? 0,
-    }));
+    }))
+    // Video ĐÃ BỊ XOÁ hẳn thì YouTube trả về mà KHÔNG kèm id — bỏ luôn (dòng cũ).
+    // Video bị chuyển sang RIÊNG TƯ (hoặc đã xoá nhưng vẫn còn id) thì YouTube VẪN trả về
+    // đúng videoId, chỉ đổi tiêu đề thành đúng 2 chuỗi cố định "Private video"/"Deleted
+    // video" (không kèm ảnh) — lọc theo đúng 2 chuỗi này (YouTube trả về tiếng Anh, không
+    // đổi theo ngôn ngữ trình duyệt).
+    .filter(
+      (it: YtPlaylistItem) => it.videoId.length > 0 && it.title !== 'Private video' && it.title !== 'Deleted video'
+    );
 
   if (items.length === 0) return items;
   const keep = await filterOutShorts(
