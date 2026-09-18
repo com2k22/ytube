@@ -195,6 +195,7 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
             hasPrev={!!prevVideo}
             hasNext={!!nextVideo}
             onAdapterReady={setAdapter}
+            artworkUrl={artUrl}
           />
         )}
         {audioMode && (

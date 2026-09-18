@@ -21,6 +21,7 @@ export function PlaylistDetailPage() {
   return (
     <PlaylistVideosView
       title={source.title}
+      thumbnail={source.thumbnail}
       videos={videos}
       loading={loadingVideos}
       error={error}

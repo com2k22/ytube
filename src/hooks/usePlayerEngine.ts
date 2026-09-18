@@ -28,6 +28,23 @@ export interface PlayerEngineParams {
   thumbnail?: string | null;
 }
 
+/**
+ * playerParamsToSearch — đổi PlayerEngineParams thành query string cho URL `/player?...`.
+ * Dùng CHUNG cho mọi nơi cần điều hướng tới trang phát bằng URL (PlayerPage.tsx, và các
+ * trang mở video từ Trang chủ/Kênh/danh sách playlist) — trước đây mỗi trang tự viết lại
+ * đoạn `new URLSearchParams({...})` này riêng, dễ lệch nhau (thiếu tham số, sai thứ tự ưu
+ * tiên videoId/directUrl...). `thumbnail` KHÔNG đưa vào URL (chỉ có ý nghĩa trong bộ nhớ cho
+ * trình phát nổi trên điện thoại — xem PlayerEngineParams).
+ */
+export function playerParamsToSearch(params: PlayerEngineParams): string {
+  const p = new URLSearchParams({ title: params.title ?? '' });
+  if (params.directUrl) p.set('directUrl', params.directUrl);
+  else if (params.videoId) p.set('videoId', params.videoId);
+  if (params.playlistId) p.set('playlistId', params.playlistId);
+  if (params.sourceId) p.set('sourceId', params.sourceId);
+  return p.toString();
+}
+
 interface UsePlayerEngineOptions {
   params: PlayerEngineParams;
   /** Chuyển sang phát 1 video KHÁC (video trước/sau trong playlist, hoặc 1 video lẻ khác

@@ -19,6 +19,8 @@ import { BackupExportCard } from '@/components/parent-dashboard/BackupExportCard
 import { PairingCodeCard } from '@/components/parent-dashboard/PairingCodeCard';
 import { HomeBackgroundCard } from '@/components/parent-dashboard/HomeBackgroundCard';
 import { useFamilyAuth } from '@/hooks/useFamilyAuth';
+import { useIsPhoneScreen } from '@/lib/screenSize';
+import { MobileParentDashboard } from '@/pages/mobile/MobileParentDashboard';
 
 type Tab = 'time' | 'content' | 'kids' | 'account';
 
@@ -40,6 +42,12 @@ const TABS: { value: Tab; icon: LucideIcon; label: string }[] = [
     đã đăng nhập đúng tài khoản Google gia đình trên thiết bị này (xem GoogleSignInGate,
     thay cho PIN cũ — PIN giờ chỉ còn dùng cho "Cho xem ngay"/"Bỏ qua giờ nghỉ", xem ChangePinCard). */
 export function ParentDashboardPage() {
+  const isPhone = useIsPhoneScreen();
+  if (isPhone) return <MobileParentDashboard />;
+  return <ParentDashboardPageDesktop />;
+}
+
+function ParentDashboardPageDesktop() {
   const { profiles, activeProfile } = useProfileContext();
   const { session: familySession, signOut } = useFamilyAuth();
   const [tab, setTab] = useState<Tab>('time');

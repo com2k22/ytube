@@ -2058,4 +2058,199 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
   .mobile-empty-icon { margin-bottom: 12px; opacity: 0.5; }
   .mobile-empty-title { font-size: 16px; font-weight: 800; margin-bottom: 8px; }
   .mobile-empty-text { font-size: 13px; opacity: 0.65; line-height: 1.5; }
+
+  /* --- Trang chủ điện thoại (MobileHomePage.tsx) --- */
+  .mobile-home-greet { font-size: 19px; font-weight: 800; margin: 4px 0 20px; }
+  .mobile-shelf-block { margin-bottom: 28px; }
+  .mobile-shelf-title {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 15px; font-weight: 800; margin-bottom: 12px;
+  }
+  [data-theme='dark'] .mobile-shelf-title,
+  :root:not([data-theme]) .mobile-shelf-title { color: #f2f3f5; }
+  [data-theme='dark'] .mobile-shelf-title svg,
+  :root:not([data-theme]) .mobile-shelf-title svg { color: #7c9cff; }
+  [data-theme='chibi'] .mobile-shelf-title { color: #c2447a; }
+  [data-theme='chibi'] .mobile-shelf-title svg { color: #ff5c9e; }
+
+  .mobile-shelf-empty {
+    padding: 16px; border-radius: 16px; font-size: 12.5px; line-height: 1.5; opacity: 0.75;
+  }
+  [data-theme='dark'] .mobile-shelf-empty,
+  :root:not([data-theme]) .mobile-shelf-empty { background: #1b1c22; border: 1px solid #2a2c38; }
+  [data-theme='chibi'] .mobile-shelf-empty { background: #fffbfd; border: 2px dashed #ffd6ea; }
+
+  .mobile-shelf {
+    display: flex; gap: 12px; overflow-x: auto; padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+  .mobile-shelf::-webkit-scrollbar { display: none; }
+
+  .mobile-content-card {
+    flex: 0 0 auto; width: 128px;
+    display: flex; flex-direction: column; gap: 6px;
+    background: none; border: none; padding: 0; text-align: left; cursor: pointer;
+  }
+  .mobile-content-thumb {
+    position: relative; width: 128px; height: 128px; border-radius: 18px;
+    background-size: cover; background-position: center;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  .mobile-content-card--round .mobile-content-thumb { border-radius: 50%; }
+  [data-theme='dark'] .mobile-content-thumb,
+  :root:not([data-theme]) .mobile-content-thumb { background-color: #23242c; }
+  [data-theme='chibi'] .mobile-content-thumb { background-color: #ffe0ee; }
+  .mobile-content-thumb-fallback { font-size: 30px; opacity: 0.6; }
+  .mobile-content-progress {
+    position: absolute; left: 6px; right: 6px; bottom: 6px; height: 4px; border-radius: 4px;
+    background: rgba(0, 0, 0, 0.35); overflow: hidden;
+  }
+  .mobile-content-progress-fill { height: 100%; background: #7c9cff; }
+  [data-theme='chibi'] .mobile-content-progress-fill { background: #ff5c9e; }
+  .mobile-content-title {
+    font-size: 12.5px; font-weight: 700; line-height: 1.3;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  [data-theme='dark'] .mobile-content-title,
+  :root:not([data-theme]) .mobile-content-title { color: #f2f3f5; }
+  [data-theme='chibi'] .mobile-content-title { color: #c2447a; }
+
+  /* --- Khám phá điện thoại (MobileDiscoverPage.tsx) --- */
+  .mobile-discover-search {
+    display: flex; align-items: center; gap: 8px;
+    padding: 11px 14px; border-radius: 16px; margin-bottom: 14px;
+  }
+  [data-theme='dark'] .mobile-discover-search,
+  :root:not([data-theme]) .mobile-discover-search { background: #1b1c22; border: 1px solid #2a2c38; color: #9a9ca5; }
+  [data-theme='chibi'] .mobile-discover-search { background: #fffbfd; border: 2px solid #ffd6ea; color: #c2447a; }
+  .mobile-discover-search input {
+    flex: 1; border: none; background: none; outline: none; font-size: 14px;
+  }
+  [data-theme='dark'] .mobile-discover-search input,
+  :root:not([data-theme]) .mobile-discover-search input { color: #f2f3f5; }
+  [data-theme='chibi'] .mobile-discover-search input { color: #c2447a; }
+
+  .mobile-discover-chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 18px; scrollbar-width: none; }
+  .mobile-discover-chips::-webkit-scrollbar { display: none; }
+  .mobile-discover-chip {
+    flex: 0 0 auto; padding: 7px 14px; border-radius: 20px; border: none; font-size: 12.5px; font-weight: 700;
+  }
+  [data-theme='dark'] .mobile-discover-chip,
+  :root:not([data-theme]) .mobile-discover-chip { background: #23242c; color: #c7c9d1; }
+  [data-theme='dark'] .mobile-discover-chip.active,
+  :root:not([data-theme]) .mobile-discover-chip.active { background: #7c9cff; color: #0e0f13; }
+  [data-theme='chibi'] .mobile-discover-chip { background: #fff0f6; color: #c2447a; }
+  [data-theme='chibi'] .mobile-discover-chip.active { background: #ff5c9e; color: #fff; }
+
+  .mobile-discover-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .mobile-discover-item {
+    display: flex; flex-direction: column; gap: 6px;
+    background: none; border: none; padding: 0; text-align: left; cursor: pointer;
+  }
+  .mobile-discover-item-thumb {
+    width: 100%; aspect-ratio: 1 / 1; border-radius: 16px;
+    background-size: cover; background-position: center;
+    display: flex; align-items: center; justify-content: center;
+  }
+  [data-theme='dark'] .mobile-discover-item-thumb,
+  :root:not([data-theme]) .mobile-discover-item-thumb { background-color: #23242c; }
+  [data-theme='chibi'] .mobile-discover-item-thumb { background-color: #ffe0ee; }
+  .mobile-discover-item-title {
+    font-size: 12.5px; font-weight: 700; line-height: 1.3;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  [data-theme='dark'] .mobile-discover-item-title,
+  :root:not([data-theme]) .mobile-discover-item-title { color: #f2f3f5; }
+  [data-theme='chibi'] .mobile-discover-item-title { color: #c2447a; }
+
+  /* --- Chi tiết playlist/kênh trên điện thoại (MobileStoryDetailShell.tsx) --- */
+  .mobile-story-back {
+    display: flex; align-items: center; gap: 4px;
+    background: none; border: none; padding: 0; margin-bottom: 14px;
+    font-size: 13.5px; font-weight: 800; cursor: pointer;
+  }
+  [data-theme='dark'] .mobile-story-back,
+  :root:not([data-theme]) .mobile-story-back { color: #7c9cff; }
+  [data-theme='chibi'] .mobile-story-back { color: #ff5c9e; }
+
+  .mobile-story-hero {
+    width: 100%; aspect-ratio: 16 / 9; border-radius: 20px; margin-bottom: 14px;
+    background-size: cover; background-position: center;
+    display: flex; align-items: center; justify-content: center;
+  }
+  [data-theme='dark'] .mobile-story-hero,
+  :root:not([data-theme]) .mobile-story-hero { background-color: #23242c; }
+  [data-theme='chibi'] .mobile-story-hero { background-color: #ffe0ee; }
+  .mobile-story-hero .mobile-content-thumb-fallback { font-size: 40px; }
+
+  .mobile-story-title { font-size: 19px; font-weight: 800; line-height: 1.3; margin-bottom: 4px; }
+  [data-theme='dark'] .mobile-story-title,
+  :root:not([data-theme]) .mobile-story-title { color: #f2f3f5; }
+  [data-theme='chibi'] .mobile-story-title { color: #c2447a; }
+  .mobile-story-count { font-size: 12.5px; opacity: 0.6; margin-bottom: 16px; }
+
+  .mobile-story-playall {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; padding: 13px; border-radius: 16px; border: none;
+    font-size: 14px; font-weight: 800; margin-bottom: 20px;
+  }
+  [data-theme='dark'] .mobile-story-playall,
+  :root:not([data-theme]) .mobile-story-playall { background: #7c9cff; color: #0e0f13; }
+  [data-theme='chibi'] .mobile-story-playall { background: #ff5c9e; color: #fff; }
+
+  .mobile-story-list { display: flex; flex-direction: column; gap: 10px; }
+  .mobile-story-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 8px; border-radius: 16px; border: none; background: none; text-align: left; cursor: pointer;
+  }
+  [data-theme='dark'] .mobile-story-item,
+  :root:not([data-theme]) .mobile-story-item { background: #1b1c22; }
+  [data-theme='chibi'] .mobile-story-item { background: #fffbfd; border: 2px solid #ffd6ea; }
+  .mobile-story-item-thumb {
+    flex: 0 0 auto; width: 64px; height: 64px; border-radius: 12px;
+    background-size: cover; background-position: center;
+    display: flex; align-items: center; justify-content: center;
+  }
+  [data-theme='dark'] .mobile-story-item-thumb,
+  :root:not([data-theme]) .mobile-story-item-thumb { background-color: #23242c; }
+  [data-theme='chibi'] .mobile-story-item-thumb { background-color: #ffe0ee; }
+  .mobile-story-item-info { flex: 1; min-width: 0; }
+  .mobile-story-item-title {
+    font-size: 13px; font-weight: 700; line-height: 1.35;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  [data-theme='dark'] .mobile-story-item-title,
+  :root:not([data-theme]) .mobile-story-item-title { color: #f2f3f5; }
+  [data-theme='chibi'] .mobile-story-item-title { color: #c2447a; }
+  .mobile-story-item-progress { height: 4px; border-radius: 4px; margin-top: 6px; overflow: hidden; background: rgba(124, 156, 255, 0.18); }
+  [data-theme='chibi'] .mobile-story-item-progress { background: rgba(255, 92, 158, 0.18); }
+  .mobile-story-item-progress-fill { height: 100%; background: #7c9cff; }
+  [data-theme='chibi'] .mobile-story-item-progress-fill { background: #ff5c9e; }
+  .mobile-story-item-play { flex: 0 0 auto; opacity: 0.5; }
+
+  /* --- Khu vực Bố mẹ trên điện thoại (MobileParentDashboard.tsx) — gộp 4 tab cũ thành 1
+     trang cuộn với các khối gập/mở, xem MobileAccordionSection.tsx. --- */
+  .mobile-parent .mini-profiles { margin-bottom: 14px; }
+  .mobile-accordion { border-radius: 18px; margin-bottom: 12px; overflow: hidden; }
+  [data-theme='dark'] .mobile-accordion,
+  :root:not([data-theme]) .mobile-accordion { background: #1b1c22; }
+  [data-theme='chibi'] .mobile-accordion { background: #fffbfd; border: 2px solid #ffd6ea; }
+
+  .mobile-accordion-header {
+    width: 100%; display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; padding: 16px 18px; border: none; background: none; cursor: pointer;
+    font-size: 15px; font-weight: 800; text-align: left;
+  }
+  [data-theme='dark'] .mobile-accordion-header,
+  :root:not([data-theme]) .mobile-accordion-header { color: #f2f3f5; }
+  [data-theme='chibi'] .mobile-accordion-header { color: #c2447a; }
+  .mobile-accordion-header-left { display: flex; align-items: center; gap: 10px; }
+  .mobile-accordion-chevron { flex: 0 0 auto; transition: transform 0.18s ease; opacity: 0.6; }
+  .mobile-accordion-open .mobile-accordion-chevron { transform: rotate(180deg); }
+  .mobile-accordion-body { padding: 0 16px 18px; }
+
+  .mobile-parent-signout {
+    width: 100%; justify-content: center; margin: 8px 0 32px;
+  }
 }

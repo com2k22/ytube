@@ -3,10 +3,18 @@ import { useProfileContext } from '@/context/ProfileContext';
 import { useWatchProgress } from '@/hooks/useWatchProgress';
 import { useBlockedItems } from '@/hooks/useBlockedItems';
 import { VideoCard } from '@/components/common/VideoCard';
+import { useIsPhoneScreen } from '@/lib/screenSize';
+import { useMobilePlayback } from '@/context/MobilePlaybackContext';
+import { MobileStoryDetailShell } from '@/pages/mobile/MobileStoryDetailShell';
+import type { PlayerEngineParams } from '@/hooks/usePlayerEngine';
 import type { ResolvedVideo } from '@/types';
 
 interface Props {
   title: string;
+  /** Ảnh đại diện của cả playlist — CHỈ dùng cho phần "hero" trên điện thoại (xem
+      MobileStoryDetailShell); TV/iPad/máy tính vẫn hiện ảnh riêng từng video như cũ, không
+      dùng prop này. null/không truyền = chưa có sẵn (vẫn hiện được, chỉ không có ảnh nền). */
+  thumbnail?: string | null;
   videos: ResolvedVideo[];
   loading?: boolean;
   error?: string | null;
@@ -23,7 +31,7 @@ interface Props {
 }
 
 /** Danh sách video của 1 playlist — dùng chung cho playlist YouTube, playlist tự tạo, và trang Kênh. */
-export function PlaylistVideosView({ title, videos, loading, error, playlistId, progressSourceId, onBack }: Props) {
+export function PlaylistVideosView({ title, thumbnail, videos, loading, error, playlistId, progressSourceId, onBack }: Props) {
   const { activeProfile } = useProfileContext();
   const { progressFor } = useWatchProgress(activeProfile?.id ?? null);
   // Ẩn riêng từng VIDEO đã bị phụ huynh chủ động chặn (khối "Chặn nội dung" trong khu Bố
@@ -33,6 +41,8 @@ export function PlaylistVideosView({ title, videos, loading, error, playlistId, 
   const blockedVideoIds = blockedIdsOfType('video');
   const visible = videos.filter((v) => !blockedVideoIds.has(v.videoId));
   const navigate = useNavigate();
+  const isPhone = useIsPhoneScreen();
+  const { playVideo } = useMobilePlayback();
 
   const sorted = progressSourceId
     ? [...visible].sort((a, b) => {
@@ -41,6 +51,49 @@ export function PlaylistVideosView({ title, videos, loading, error, playlistId, 
         return Number(pb > 0 && pb < 100) - Number(pa > 0 && pa < 100);
       })
     : visible;
+
+  /** Mọi video trong 1 playlist (thật hoặc tự tạo) luôn có videoId YouTube thật — playlist
+      không chứa được link trực tiếp (xem CustomPlaylistItem trong types/index.ts) — nên
+      dựng tham số phát luôn đi theo videoId, không cần nhánh directUrl. */
+  const buildVideoParams = (v: ResolvedVideo): PlayerEngineParams => ({
+    sourceId: progressSourceId,
+    title: v.title,
+    videoId: v.videoId,
+    directUrl: null,
+    playlistId: playlistId ?? null,
+    thumbnail: v.thumbnail,
+  });
+
+  if (isPhone) {
+    return (
+      <MobileStoryDetailShell
+        title={title}
+        thumbnail={thumbnail ?? null}
+        itemCountLabel={`${sorted.length} video`}
+        loading={loading}
+        error={error}
+        onBack={onBack}
+        onPlayAll={
+          sorted.length > 0
+            ? () => {
+                playVideo(buildVideoParams(sorted[0]));
+                navigate('/player');
+              }
+            : undefined
+        }
+        items={sorted.map((v) => ({
+          id: v.videoId,
+          title: v.title,
+          thumbnail: v.thumbnail,
+          progressPercent: progressSourceId ? progressFor(progressSourceId, v.videoId) : undefined,
+          onSelect: () => {
+            playVideo(buildVideoParams(v));
+            navigate('/player');
+          },
+        }))}
+      />
+    );
+  }
 
   return (
     <main className="main">

@@ -32,6 +32,7 @@ export function ChannelPlaylistPage() {
   return (
     <PlaylistVideosView
       title={params.get('title') ?? 'Playlist'}
+      thumbnail={params.get('thumbnail')}
       videos={videos}
       loading={loading}
       error={error}

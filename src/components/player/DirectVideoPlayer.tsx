@@ -43,6 +43,10 @@ interface Props {
       trên điện thoại (MobilePlayerHost). TV/desktop không truyền prop này — không đổi hành
       vi gì cả. Xem chú thích đầy đủ ở SafeYouTubePlayer.tsx (cùng ý nghĩa). */
   onAdapterReady?: (adapter: MobilePlayerAdapter) => void;
+  /** Ảnh đại diện (thumbnail) — CHỈ dùng để hiện trên màn hình khoá điện thoại (Media
+      Session API bên dưới), không ảnh hưởng gì tới hình trong app. null/không truyền =
+      màn hình khoá không có ảnh, vẫn hiện được tên video bình thường. */
+  artworkUrl?: string | null;
 }
 
 /** DirectVideoPlayer — phát link mp4 trực tiếp, hoặc m3u8 (HLS) qua thư viện hls.js khi trình duyệt chưa hỗ trợ sẵn. */
@@ -60,6 +64,7 @@ export function DirectVideoPlayer({
   playlistVideos,
   onSelectVideo,
   onAdapterReady,
+  artworkUrl,
 }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -191,6 +196,75 @@ export function DirectVideoPlayer({
     onAdapterReady?.(adapter);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adapter]);
+
+  // --- Media Session API: cho phép hiện tên video + ảnh + nút phát/dừng/trước/sau ngay
+  // trên MÀN HÌNH KHOÁ điện thoại (giống nghe nhạc/podcast bình thường) — CHỈ áp dụng cho
+  // video/link trực tiếp (SafeYouTubePlayer dùng iframe khác nguồn, trình duyệt không cho
+  // gắn Media Session vào đó, xem chú thích ở kế hoạch). Đây là bước cải thiện cơ hội phát
+  // nền/khoá màn hình được lâu hơn, KHÔNG PHẢI đảm bảo tuyệt đối — hệ điều hành (đặc biệt
+  // iOS Safari) vẫn có thể tự dừng video khi khoá máy, đây là giới hạn của nền tảng chứ
+  // không phải lỗi có thể sửa được ở đây.
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !navigator.mediaSession) return;
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title,
+        artist: 'Ytube',
+        artwork: artworkUrl ? [{ src: artworkUrl, sizes: '512x512', type: 'image/jpeg' }] : [],
+      });
+    } catch {
+      /* MediaMetadata không có sẵn trên 1 số trình duyệt cũ — bỏ qua, video vẫn phát bình thường */
+    }
+  }, [title, artworkUrl]);
+
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !navigator.mediaSession) return;
+    const session = navigator.mediaSession;
+    const safeSetHandler = (action: MediaSessionAction, handler: (() => void) | null) => {
+      try {
+        session.setActionHandler(action, handler);
+      } catch {
+        /* trình duyệt không hỗ trợ đúng action này — bỏ qua, không ảnh hưởng các nút khác */
+      }
+    };
+    safeSetHandler('play', () => videoRef.current?.play().catch(() => {}));
+    safeSetHandler('pause', () => videoRef.current?.pause());
+    safeSetHandler('seekbackward', () => {
+      const video = videoRef.current;
+      if (video) video.currentTime = Math.max(0, video.currentTime - 10);
+    });
+    safeSetHandler('seekforward', () => {
+      const video = videoRef.current;
+      if (video) video.currentTime = Math.min(video.duration || Infinity, video.currentTime + 10);
+    });
+    safeSetHandler('previoustrack', hasPrev ? () => onPrev?.() : null);
+    safeSetHandler('nexttrack', hasNext ? () => onNext?.() : null);
+
+    return () => {
+      safeSetHandler('play', null);
+      safeSetHandler('pause', null);
+      safeSetHandler('seekbackward', null);
+      safeSetHandler('seekforward', null);
+      safeSetHandler('previoustrack', null);
+      safeSetHandler('nexttrack', null);
+    };
+  }, [onPrev, onNext, hasPrev, hasNext]);
+
+  // Báo đúng trạng thái phát/dừng cho màn hình khoá (nút play/pause ở đó tự đổi hình theo).
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || typeof navigator === 'undefined' || !navigator.mediaSession) return;
+    const updatePlaybackState = () => {
+      navigator.mediaSession!.playbackState = video.paused ? 'paused' : 'playing';
+    };
+    video.addEventListener('play', updatePlaybackState);
+    video.addEventListener('pause', updatePlaybackState);
+    updatePlaybackState();
+    return () => {
+      video.removeEventListener('play', updatePlaybackState);
+      video.removeEventListener('pause', updatePlaybackState);
+    };
+  }, [url]);
 
   const hasTextTracks = (videoRef.current?.textTracks.length ?? 0) > 0;
   const actions: PanelAction[] = [

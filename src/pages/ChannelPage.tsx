@@ -5,6 +5,8 @@ import { useBlockedItems } from '@/hooks/useBlockedItems';
 import { extractChannelRef } from '@/utils/youtubeParser';
 import { fetchChannelPlaylists, resolveChannelHandle, type YtPlaylistInfo } from '@/lib/youtube';
 import { PlaylistCard } from '@/components/common/PlaylistCard';
+import { useIsPhoneScreen } from '@/lib/screenSize';
+import { MobileStoryDetailShell } from '@/pages/mobile/MobileStoryDetailShell';
 
 /**
  * Trang danh sách playlist thuộc 1 kênh đã whitelist — tin cả kênh thì xem được mọi playlist
@@ -24,6 +26,7 @@ export function ChannelPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const isPhone = useIsPhoneScreen();
 
   useEffect(() => {
     if (!source) return;
@@ -66,6 +69,31 @@ export function ChannelPage() {
   const blockedPlaylistIds = blockedIdsOfType('playlist');
   const visiblePlaylists = playlists.filter((p) => !blockedPlaylistIds.has(p.playlistId));
 
+  const openPlaylist = (p: YtPlaylistInfo) =>
+    navigate(
+      `/channel/${source.id}/playlist/${p.playlistId}?title=${encodeURIComponent(p.title)}` +
+        (p.thumbnail ? `&thumbnail=${encodeURIComponent(p.thumbnail)}` : '')
+    );
+
+  if (isPhone) {
+    return (
+      <MobileStoryDetailShell
+        title={source.title}
+        thumbnail={source.thumbnail}
+        itemCountLabel={`${visiblePlaylists.length} playlist`}
+        loading={loading}
+        error={error}
+        onBack={() => navigate(-1)}
+        items={visiblePlaylists.map((p) => ({
+          id: p.playlistId,
+          title: p.title,
+          thumbnail: p.thumbnail,
+          onSelect: () => openPlaylist(p),
+        }))}
+      />
+    );
+  }
+
   return (
     <main className="main">
       <button className="back-btn" data-region="detailback" tabIndex={0} onClick={() => navigate(-1)}>
@@ -86,9 +114,7 @@ export function ChannelPage() {
             thumbnail={p.thumbnail}
             type="youtube_playlist"
             region="playlist"
-            onClick={() =>
-              navigate(`/channel/${source.id}/playlist/${p.playlistId}?title=${encodeURIComponent(p.title)}`)
-            }
+            onClick={() => openPlaylist(p)}
           />
         ))}
       </div>

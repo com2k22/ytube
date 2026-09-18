@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { SafeYouTubePlayer } from '@/components/player/SafeYouTubePlayer';
 import { DirectVideoPlayer } from '@/components/player/DirectVideoPlayer';
 import { VideoCard } from '@/components/common/VideoCard';
-import { usePlayerEngine, type PlayerEngineParams } from '@/hooks/usePlayerEngine';
+import { usePlayerEngine, playerParamsToSearch, type PlayerEngineParams } from '@/hooks/usePlayerEngine';
 import { useIsPhoneScreen } from '@/lib/screenSize';
 import { useMobilePlayback } from '@/context/MobilePlaybackContext';
 
@@ -86,14 +86,7 @@ function PlayerPageDesktop() {
     playlistId: params.get('playlistId'),
   };
 
-  const buildPlayerUrl = (next: PlayerEngineParams) => {
-    const p = new URLSearchParams({ title: next.title ?? '' });
-    if (next.directUrl) p.set('directUrl', next.directUrl);
-    else if (next.videoId) p.set('videoId', next.videoId);
-    if (next.playlistId) p.set('playlistId', next.playlistId);
-    if (next.sourceId) p.set('sourceId', next.sourceId);
-    return `/player?${p.toString()}`;
-  };
+  const buildPlayerUrl = (next: PlayerEngineParams) => `/player?${playerParamsToSearch(next)}`;
 
   const engine = usePlayerEngine({
     params: engineParams,
