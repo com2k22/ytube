@@ -1926,19 +1926,27 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
   /* Nội dung mọi trang điện thoại phải chừa chỗ cho thanh này — cộng thêm khi trình phát
      nổi cũng đang hiện (xem MobilePlayerHost.tsx: class "has-mobile-mini-player" trên body). */
   .main { padding-bottom: 96px; }
-  body.has-mobile-mini-player .main { padding-bottom: 168px; }
+  /* Khối mini lớn hơn + đẩy cách xa thanh menu dưới đáy hơn (xem .mobile-player-host--mini
+     bên dưới) → chừa thêm chỗ tương ứng, không thì cuối trang bị nó che mất 1 phần. */
+  body.has-mobile-mini-player .main { padding-bottom: 200px; }
 
   /* --- Trình phát nổi: khung ngoài cùng, giữ chỗ cho khung phát ẩn (chế độ mini) --- */
   .mobile-player-host { position: fixed; left: 0; right: 0; z-index: 45; }
   /* display:flex ở đây (trước đây THIẾU dòng này — lỗi thật, không phải cố ý) là bắt buộc:
-     JSX vẽ khung phát (ảnh nhỏ 56×56) và thanh chạm (tên bài + 2 nút) là 2 phần tử NGANG
-     HÀNG nhau (MobilePlayerHost.tsx), không có flex thì trình duyệt xếp chúng CHỒNG DỌC lên
-     nhau theo mặc định — đây chính là lý do thanh mini trước đây trông vỡ bố cục ("xấu"). */
+     JSX vẽ khung phát (ảnh nhỏ) và thanh chạm (tên bài + 2 nút) là 2 phần tử NGANG HÀNG
+     nhau (MobilePlayerHost.tsx), không có flex thì trình duyệt xếp chúng CHỒNG DỌC lên nhau
+     theo mặc định — đây chính là lý do thanh mini trước đây trông vỡ bố cục ("xấu"). */
   .mobile-player-host--mini {
     display: flex; align-items: center;
-    bottom: calc(56px + env(safe-area-inset-bottom, 0px));
-    left: 8px; right: 8px;
-    border-radius: 22px; overflow: hidden;
+    /* Cộng thêm 14px vào khoảng cách đáy — trước đây thanh mini dính sát ngay lên trên
+       thanh menu dưới đáy (chỉ cách đúng bằng chiều cao thanh đó), nhìn dính cục, không có
+       khoảng thở. */
+    bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 14px);
+    left: 10px; right: 10px;
+    /* Giảm bo góc lại (trước 22px, hơi quá tròn so với các khối khác của trang — thẻ nội
+       dung/khối rỗng quanh đó đều bo 16-18px) — 18px vừa mềm mại vừa hài hoà với phần còn
+       lại của Trang chủ. */
+    border-radius: 18px; overflow: hidden;
     box-shadow: 0 10px 28px rgba(0, 0, 0, 0.32);
     /* Kính mờ (backdrop-filter) — nền trong suốt nhẹ THẤY ĐƯỢC nội dung trang phía sau mờ
        ảo qua lớp kính, khác hẳn màu phẳng của thẻ/nền app xung quanh (yêu cầu "khác màu so
@@ -1971,7 +1979,10 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
      CSS gốc của SafeYouTubePlayer/DirectVideoPlayer — 2 file đó tự lo iframe/video của
      chúng lấp đầy khung cha, xem .player-wrap trong theme.css). */
   .mobile-player-media { position: relative; overflow: hidden; flex-shrink: 0; }
-  .mobile-player-host--mini .mobile-player-media { width: 56px; height: 56px; border-radius: 12px; margin: 4px; }
+  /* Tăng cỡ ảnh đại diện trong thanh mini (56px → 68px) — cùng với padding/khoảng cách tăng
+     bên dưới, khiến cả khối to hẳn lên, cân đối hơn với các khối thẻ 128px ở Trang chủ thay
+     vì trông nhỏ/mỏng dính. */
+  .mobile-player-host--mini .mobile-player-media { width: 68px; height: 68px; border-radius: 14px; margin: 6px; }
   .mobile-player-host--mini .mobile-player-media .player-wrap,
   .mobile-player-host--mini .mobile-player-media iframe,
   .mobile-player-host--mini .mobile-player-media video { width: 100%; height: 100%; }
@@ -1989,33 +2000,34 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
 
   /* --- Thanh mini: chạm để mở toàn màn hình --- */
   .mobile-player-mini-tap {
-    display: flex; align-items: center; gap: 10px;
-    width: 100%; padding: 6px 12px 6px 0;
+    display: flex; align-items: center; gap: 14px;
+    width: 100%; padding: 8px 18px 8px 0;
     background: none; border: none; cursor: pointer; text-align: left;
     box-sizing: border-box;
   }
   .mobile-player-mini-title { flex: 1; min-width: 0; }
   .mobile-player-mini-name {
-    font-size: 13px; font-weight: 800;
+    font-size: 14px; font-weight: 800;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  .mobile-player-mini-sub { font-size: 11px; opacity: 0.65; }
+  .mobile-player-mini-sub { font-size: 11.5px; opacity: 0.65; margin-top: 2px; }
   [data-theme='dark'] .mobile-player-mini-name,
   :root:not([data-theme]) .mobile-player-mini-name { color: #f2f3f5; }
   [data-theme='chibi'] .mobile-player-mini-name { color: #c2447a; }
 
   /* Cụm 2 nút điều khiển — gom riêng thành 1 khối (thay vì thả trôi ngay trong hàng chính)
      để: (1) khoảng cách với chữ tên bài và với mép bo tròn bên phải LUÔN đều nhau, không
-     dính sát biên; (2) rảnh tay chỉnh khoảng cách/cỡ 2 nút mà không đụng gì tới phần tên
-     bài bên trái — đúng ý "đưa cụm phím điều khiển vào giữa" thay vì ép sát mép. */
-  .mobile-player-mini-controls { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+     dính sát biên (padding-right 18px ở .mobile-player-mini-tap phía trên chính là khoảng
+     đệm đó — trước đây chỉ 12px, vẫn còn cảm giác sát mép nên tăng thêm); (2) rảnh tay
+     chỉnh khoảng cách/cỡ 2 nút mà không đụng gì tới phần tên bài bên trái. */
+  .mobile-player-mini-controls { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
   .mobile-player-mini-btn {
     display: flex; align-items: center; justify-content: center;
-    width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+    width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
   }
-  /* Nút Phát/Tạm dừng — nút CHÍNH của thanh mini nên to hơn hẳn (46px, so với 38px của nút
+  /* Nút Phát/Tạm dừng — nút CHÍNH của thanh mini nên to hơn hẳn (50px, so với 40px của nút
      Đóng) + tô màu nổi bật (accent), vừa dễ bấm hơn vừa rõ đây là nút quan trọng nhất. */
-  .mobile-player-mini-btn--play { width: 46px; height: 46px; }
+  .mobile-player-mini-btn--play { width: 50px; height: 50px; }
   [data-theme='dark'] .mobile-player-mini-btn,
   :root:not([data-theme]) .mobile-player-mini-btn { background: rgba(255, 255, 255, 0.1); color: #f2f3f5; }
   [data-theme='chibi'] .mobile-player-mini-btn { background: rgba(255, 255, 255, 0.55); color: #ff5c9e; }
@@ -2147,7 +2159,14 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
     display: flex; align-items: center; justify-content: center;
     overflow: hidden;
   }
-  .mobile-content-card--round .mobile-content-thumb { border-radius: 50%; }
+  /* "Kênh yêu thích" dùng lại đúng .mobile-content-card (không tạo thẻ riêng) nhưng logo
+     kênh KHÔNG nên to bằng ảnh bìa playlist/video (128px) — 1 logo kênh tròn to hơn ảnh chữ
+     nhật/vuông cùng cỡ sẽ trông chiếm nhiều chỗ hơn hẳn, mất cân đối với "Danh sách truyện"
+     ngay phía trên. Thu nhỏ lại còn 76px (đúng tỉ lệ ~72/96 đã dùng cho hàng kênh ở bản
+     iPad/máy tính, xem ".channel-avatar"/".channel-shelf .channel-item" phía trên file này). */
+  .mobile-content-card--round { width: 92px; }
+  .mobile-content-card--round .mobile-content-thumb { width: 76px; height: 76px; border-radius: 50%; }
+  .mobile-content-card--round .mobile-content-thumb-fallback { font-size: 24px; }
   [data-theme='dark'] .mobile-content-thumb,
   :root:not([data-theme]) .mobile-content-thumb { background-color: #23242c; }
   [data-theme='chibi'] .mobile-content-thumb { background-color: #ffe0ee; }

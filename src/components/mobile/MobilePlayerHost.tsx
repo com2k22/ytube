@@ -229,7 +229,7 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
                 togglePlayPause();
               }}
             >
-              {paused ? <Play size={22} /> : <Pause size={22} />}
+              {paused ? <Play size={24} /> : <Pause size={24} />}
             </span>
             <span
               className="mobile-player-mini-btn"
@@ -240,7 +240,7 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
                 handleClose();
               }}
             >
-              <X size={19} />
+              <X size={20} />
             </span>
           </div>
         </button>
