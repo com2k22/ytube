@@ -1,48 +1,45 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Clock, ListPlus, Baby, BarChart3, User, Users, BellRing } from 'lucide-react';
+import { Clock, ListPlus, Baby, User, Users, ChevronRight } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useProfileContext } from '@/context/ProfileContext';
-import { useTimeRules } from '@/hooks/useTimeRules';
 import { useFamilyAuth } from '@/hooks/useFamilyAuth';
 import { SessionLiveCard } from '@/components/parent-dashboard/SessionLiveCard';
-import { TimeRuleGroupEditor } from '@/components/parent-dashboard/TimeRuleGroupEditor';
-import { BlockScreen } from '@/components/parent-dashboard/BlockScreen';
-import { ChangePinCard } from '@/components/parent-dashboard/ChangePinCard';
-import { AddSourceForm } from '@/components/parental/AddSourceForm';
-import { WeeklyReportTab } from '@/components/parent-dashboard/WeeklyReportTab';
 import { TimeRequestCard } from '@/components/parent-dashboard/TimeRequestCard';
-import { PushSetupCard } from '@/components/parent-dashboard/PushSetupCard';
-import { ProfilesManagerCard } from '@/components/parent-dashboard/ProfilesManagerCard';
-import { DeviceManagerCard } from '@/components/parent-dashboard/DeviceManagerCard';
-import { ContentDeviceManagerCard } from '@/components/parent-dashboard/ContentDeviceManagerCard';
-import { BackupExportCard } from '@/components/parent-dashboard/BackupExportCard';
-import { PairingCodeCard } from '@/components/parent-dashboard/PairingCodeCard';
-import { HomeBackgroundCard } from '@/components/parent-dashboard/HomeBackgroundCard';
-import { MobileAccordionSection } from '@/components/mobile/MobileAccordionSection';
+
+interface MenuItem {
+  icon: LucideIcon;
+  title: string;
+  subtitle: string;
+  path: string;
+}
+
+/** 4 khu vực chính, mỗi khu vực giờ là 1 TRANG RIÊNG (thay vì khối gập/mở trên cùng 1
+    trang) — bấm vào mới mở, có nhiều chỗ hiển thị hơn, theo đúng yêu cầu của bố. Xem các
+    trang MobileParentTimePage/ContentPage/KidsPage/AccountPage.tsx + route trong App.tsx. */
+const MENU: MenuItem[] = [
+  { icon: Clock, title: 'Thời gian xem', subtitle: 'Lịch xem và giới hạn thời gian', path: '/parent/time' },
+  { icon: ListPlus, title: 'Quản lý nội dung', subtitle: 'Thêm kênh, playlist, video cho bé', path: '/parent/content' },
+  { icon: Baby, title: 'Hồ sơ các bé', subtitle: 'Quản lý thông tin, báo cáo tuần', path: '/parent/kids' },
+  { icon: User, title: 'Tài khoản & thiết bị', subtitle: 'Ghép TV, thiết bị, sao lưu, mã PIN', path: '/parent/account' },
+];
 
 /**
- * Khu vực Bố mẹ trên điện thoại — gộp 4 tab cũ (Thời gian xem / Nội dung / Hồ sơ bé / Tài
- * khoản) thành 1 trang cuộn dọc duy nhất, chia thành các khối gập/mở, đúng thứ tự
- * UI_SPEC.md mục 3: Hồ sơ đang chọn → Lời xin thêm giờ (nếu có) → Đang xem trực tiếp (nếu
- * có) → Thời gian xem → Quản lý nội dung → Hồ sơ các bé + Báo cáo tuần → Tài khoản & thiết
- * bị → Đăng xuất.
- *
- * TẤT CẢ các thẻ con bên trong (TimeRuleGroupEditor, AddSourceForm, ProfilesManagerCard...)
- * được dùng lại NGUYÊN VẸN, không sửa bên trong — chỉ đổi cách sắp xếp/hiển thị bên ngoài.
- * TV/iPad/máy tính không đụng tới, vẫn dùng ParentDashboardPage.tsx như cũ (xem nhánh rẽ
- * isPhone ở đầu file đó).
+ * Khu vực Bố mẹ trên điện thoại — trang "mục lục" chính: hồ sơ đang chọn + trạng thái đang
+ * xem/lời xin thêm giờ (cần thấy NGAY, không phải bấm vào đâu cả) ở trên cùng, rồi tới 4 mục
+ * chính dạng danh sách — bấm vào mục nào mới mở TRANG RIÊNG của mục đó (xem
+ * MobileParentTimePage.tsx và 3 trang còn lại), thay vì gập/mở ngay trên trang này — nhiều
+ * chỗ hiển thị hơn, dễ dùng hơn trên màn hình nhỏ. TV/iPad/máy tính không đụng tới, vẫn dùng
+ * ParentDashboardPage.tsx như cũ (xem nhánh rẽ isPhone ở đầu file đó).
  */
 export function MobileParentDashboard() {
   const { profiles, activeProfile } = useProfileContext();
-  const { session: familySession, signOut } = useFamilyAuth();
+  const { signOut } = useFamilyAuth();
   const [configProfileId, setConfigProfileId] = useState(activeProfile?.id ?? profiles[0]?.id ?? '');
-  const [previewBlock, setPreviewBlock] = useState(false);
-  const { groups } = useTimeRules();
   const navigate = useNavigate();
 
   if (profiles.length === 0) return null;
   const configProfile = profiles.find((p) => p.id === configProfileId) ?? profiles[0];
-  const firstWindowStart = groups.flatMap((g) => g.windows)[0]?.start ?? null;
 
   return (
     <main className="main mobile-parent">
@@ -53,8 +50,9 @@ export function MobileParentDashboard() {
         <Users className="icon icon-lead" aria-hidden="true" /> Khu vực Bố mẹ
       </div>
 
-      {/* Chọn bé đang cấu hình — dùng chung cho khối "Đang xem trực tiếp" và "Thời gian
-          xem" bên dưới, đặt ngay từ đầu trang để thấy trước khi mở bất kỳ khối nào. */}
+      {/* Chọn bé đang xem trạng thái trực tiếp bên dưới — CHỈ dùng cho SessionLiveCard, các
+          quy định giờ giấc dùng CHUNG cho mọi bé nên không cần chọn ở đây (xem
+          MobileParentTimePage.tsx: TimeRuleGroupEditor không nhận profileId). */}
       {profiles.length > 1 && (
         <div className="mini-profiles" style={{ marginTop: 14 }}>
           {profiles.map((p) => (
@@ -71,56 +69,25 @@ export function MobileParentDashboard() {
         </div>
       )}
 
-      {/* Lời xin thêm giờ của bé — như bản máy tính/TV, đặt ngoài mọi khối gập/mở, tự ẩn
-          hoàn toàn khi không có ai đang xin. */}
+      {/* Lời xin thêm giờ + đang xem trực tiếp — cần thấy NGAY khi mở khu Bố mẹ, không bắt
+          bố mẹ phải bấm vào đâu cả. Tự ẩn hoàn toàn khi không có gì để báo. */}
       <TimeRequestCard />
-
       <SessionLiveCard profileId={configProfile.id} profileLabel={configProfile.name} />
 
-      <MobileAccordionSection icon={Clock} title="Thời gian xem" defaultOpen>
-        <TimeRuleGroupEditor />
-        <button
-          className="add-window-btn"
-          style={{ marginTop: 4 }}
-          data-region="ptime"
-          tabIndex={0}
-          onClick={() => setPreviewBlock(true)}
-        >
-          <BellRing className="icon icon-lead" aria-hidden="true" />
-          Xem thử màn hình chặn
-        </button>
-      </MobileAccordionSection>
-
-      <MobileAccordionSection icon={ListPlus} title="Quản lý nội dung">
-        <AddSourceForm />
-      </MobileAccordionSection>
-
-      <MobileAccordionSection icon={Baby} title="Hồ sơ các bé">
-        <ProfilesManagerCard />
-
-        <div className="section-title" style={{ marginTop: 28, display: 'flex', alignItems: 'center' }}>
-          <BarChart3 className="icon icon-lead" aria-hidden="true" /> Báo cáo tuần
-        </div>
-        <WeeklyReportTab />
-      </MobileAccordionSection>
-
-      <MobileAccordionSection icon={User} title="Tài khoản & thiết bị">
-        {/* Tài khoản Google đang đăng nhập trên THIẾT BỊ NÀY (xem useFamilyAuth.ts). */}
-        <div className="section-title" style={{ marginTop: 4, display: 'flex', alignItems: 'center' }}>
-          <User className="icon icon-lead" aria-hidden="true" /> Tài khoản gia đình
-        </div>
-        <p style={{ opacity: 0.75, margin: '4px 0 14px' }}>{familySession?.user?.email ?? '(không rõ)'}</p>
-
-        <div className="card-grid">
-          <PairingCodeCard />
-          <DeviceManagerCard />
-          <ContentDeviceManagerCard />
-          <PushSetupCard />
-          <HomeBackgroundCard />
-          <BackupExportCard />
-          <ChangePinCard />
-        </div>
-      </MobileAccordionSection>
+      <div className="mobile-parent-menu">
+        {MENU.map((item) => (
+          <button key={item.path} className="mobile-parent-menu-row" onClick={() => navigate(item.path)}>
+            <span className="mobile-parent-menu-icon">
+              <item.icon aria-hidden="true" />
+            </span>
+            <span className="mobile-parent-menu-text">
+              <span className="mobile-parent-menu-title">{item.title}</span>
+              <span className="mobile-parent-menu-subtitle">{item.subtitle}</span>
+            </span>
+            <ChevronRight className="mobile-parent-menu-chevron" aria-hidden="true" />
+          </button>
+        ))}
+      </div>
 
       <button
         className="add-window-btn mobile-parent-signout"
@@ -133,10 +100,6 @@ export function MobileParentDashboard() {
       >
         Đăng xuất khỏi thiết bị này
       </button>
-
-      {previewBlock && (
-        <BlockScreen nextWindowStart={firstWindowStart} onOpenParentGate={() => setPreviewBlock(false)} isPreview />
-      )}
     </main>
   );
 }

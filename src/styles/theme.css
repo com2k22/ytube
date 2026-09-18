@@ -2229,26 +2229,37 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
   [data-theme='chibi'] .mobile-story-item-progress-fill { background: #ff5c9e; }
   .mobile-story-item-play { flex: 0 0 auto; opacity: 0.5; }
 
-  /* --- Khu vực Bố mẹ trên điện thoại (MobileParentDashboard.tsx) — gộp 4 tab cũ thành 1
-     trang cuộn với các khối gập/mở, xem MobileAccordionSection.tsx. --- */
+  /* --- Khu vực Bố mẹ trên điện thoại — trang "mục lục" (MobileParentDashboard.tsx) liệt
+     kê 4 mục dạng danh sách, bấm vào mục nào mở TRANG RIÊNG của mục đó (MobileParentTimePage/
+     ContentPage/KidsPage/AccountPage.tsx) — nhiều chỗ hiển thị hơn hẳn so với gập/mở ngay
+     trên 1 trang. Các trang con dùng lại ".mobile-parent-sub" + ".mobile-story-back" (đã có
+     sẵn ở khối "Chi tiết playlist/kênh" phía trên) cho nút quay lại, không cần luật riêng. */
   .mobile-parent .mini-profiles { margin-bottom: 14px; }
-  .mobile-accordion { border-radius: 18px; margin-bottom: 12px; overflow: hidden; }
-  [data-theme='dark'] .mobile-accordion,
-  :root:not([data-theme]) .mobile-accordion { background: #1b1c22; }
-  [data-theme='chibi'] .mobile-accordion { background: #fffbfd; border: 2px solid #ffd6ea; }
 
-  .mobile-accordion-header {
-    width: 100%; display: flex; align-items: center; justify-content: space-between;
-    gap: 10px; padding: 16px 18px; border: none; background: none; cursor: pointer;
-    font-size: 15px; font-weight: 800; text-align: left;
+  .mobile-parent-menu { display: flex; flex-direction: column; gap: 10px; margin: 18px 0 22px; }
+  .mobile-parent-menu-row {
+    display: flex; align-items: center; gap: 14px;
+    width: 100%; padding: 14px 16px; border-radius: 18px; border: none; cursor: pointer; text-align: left;
   }
-  [data-theme='dark'] .mobile-accordion-header,
-  :root:not([data-theme]) .mobile-accordion-header { color: #f2f3f5; }
-  [data-theme='chibi'] .mobile-accordion-header { color: #c2447a; }
-  .mobile-accordion-header-left { display: flex; align-items: center; gap: 10px; }
-  .mobile-accordion-chevron { flex: 0 0 auto; transition: transform 0.18s ease; opacity: 0.6; }
-  .mobile-accordion-open .mobile-accordion-chevron { transform: rotate(180deg); }
-  .mobile-accordion-body { padding: 0 16px 18px; }
+  [data-theme='dark'] .mobile-parent-menu-row,
+  :root:not([data-theme]) .mobile-parent-menu-row { background: #1b1c22; }
+  [data-theme='chibi'] .mobile-parent-menu-row { background: #fffbfd; border: 2px solid #ffd6ea; }
+
+  .mobile-parent-menu-icon {
+    flex: 0 0 auto; width: 42px; height: 42px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+  }
+  [data-theme='dark'] .mobile-parent-menu-icon,
+  :root:not([data-theme]) .mobile-parent-menu-icon { background: rgba(124, 156, 255, 0.14); color: #7c9cff; }
+  [data-theme='chibi'] .mobile-parent-menu-icon { background: #ffe0ee; color: #ff5c9e; }
+
+  .mobile-parent-menu-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .mobile-parent-menu-title { font-size: 15px; font-weight: 800; }
+  [data-theme='dark'] .mobile-parent-menu-title,
+  :root:not([data-theme]) .mobile-parent-menu-title { color: #f2f3f5; }
+  [data-theme='chibi'] .mobile-parent-menu-title { color: #c2447a; }
+  .mobile-parent-menu-subtitle { font-size: 12px; opacity: 0.65; line-height: 1.3; }
+  .mobile-parent-menu-chevron { flex: 0 0 auto; opacity: 0.4; }
 
   .mobile-parent-signout {
     width: 100%; justify-content: center; margin: 8px 0 32px;
