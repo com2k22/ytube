@@ -20,7 +20,10 @@ import { useProfileContext } from '@/context/ProfileContext';
 import { notifyParentAboutRequest } from '@/lib/push';
 import { isSupabaseConfigured } from '@/lib/supabaseClient';
 import { getFamilyId } from '@/lib/familyId';
-import { isPhoneScreen } from '@/lib/screenSize';
+import { useIsPhoneScreen } from '@/lib/screenSize';
+import { MobileBottomNav } from '@/components/mobile/MobileBottomNav';
+import { MobilePlayerHost } from '@/components/mobile/MobilePlayerHost';
+import { MobilePlaybackProvider } from '@/context/MobilePlaybackContext';
 
 // Lưu ý: cố tình KHÔNG khai báo 'continue' và 'topbar' ở đây — vùng không khai báo sẽ mặc
 // định nằm trên đúng 1 hàng ngang (xem useTvNavigation), đúng ý muốn "Tiếp tục xem" tối đa
@@ -209,28 +212,13 @@ export function Layout() {
     if (showBlockScreen && location.pathname === '/player') navigate('/');
   }, [showBlockScreen, location.pathname, navigate]);
 
-  /*
-    Trên ĐIỆN THOẠI THẬT: khoá thẳng vào Khu vực Bố mẹ, không cho vào Trang chủ/xem video
-    nữa — giao diện xem video (lưới thẻ, trình phát...) chưa tối ưu cho màn hình điện thoại,
-    và trên thực tế bé chỉ xem trên TV, điện thoại chỉ để bố mẹ quản lý từ xa. iPad KHÔNG bị
-    ảnh hưởng (isPhoneScreen() chỉ đúng ở bề ngang ≤700px, mọi iPad đều rộng hơn — xem
-    src/lib/screenSize.ts). Không áp dụng lúc còn "Thiết lập lần đầu": lớp phủ đó đã tự khoá
-    kín mọi trang rồi, đợi thiết lập xong (needsFamilySetup=false) thì mới cần điều hướng.
-
-    Lắng nghe cả sự kiện resize (không chỉ chạy 1 lần lúc mount) — phòng khi trình duyệt bị
-    thu nhỏ ngang qua mốc điện thoại trong lúc đang mở (hiếm nhưng vẫn nên xử lý đúng).
-  */
-  useEffect(() => {
-    const enforcePhoneParentOnly = () => {
-      if (needsFamilySetup) return;
-      if (isPhoneScreen() && !location.pathname.startsWith('/parent')) {
-        navigate('/parent', { replace: true });
-      }
-    };
-    enforcePhoneParentOnly();
-    window.addEventListener('resize', enforcePhoneParentOnly);
-    return () => window.removeEventListener('resize', enforcePhoneParentOnly);
-  }, [location.pathname, needsFamilySetup, navigate]);
+  // ĐIỆN THOẠI THẬT giờ là 1 thiết bị xem THẬT SỰ (Trang chủ nghe truyện, trình phát âm
+  // thanh, Khu vực Bố mẹ gộp 1 trang cuộn...) — KHÔNG còn bị khoá thẳng vào /parent như
+  // trước nữa (đã bỏ hẳn đoạn tự điều hướng ở đây). /parent vẫn được bảo vệ y hệt mọi thiết
+  // bị khác bằng đăng nhập Google (xem showGoogleGate ở trên) — không đổi gì ở phần đó.
+  // Xem các trang trong `src/pages/mobile/` cho giao diện điện thoại mới, chọn qua
+  // `useIsPhoneScreen()`/`isPhoneScreen()` (src/lib/screenSize.ts).
+  const isPhone = useIsPhoneScreen();
 
   // Bố mẹ vừa duyệt lời xin từ điện thoại → TV tự mở khoá đúng số phút được cho.
   // useRef để chỉ ăn 1 lần cho mỗi lời xin, không mở lại mỗi lần vẽ lại màn hình.
@@ -254,6 +242,7 @@ export function Layout() {
   }, [location.pathname, pinOpen, showGoogleGate, showBlockScreen, showBreakScreen, needsFamilySetup, resetFocus]);
 
   return (
+    <MobilePlaybackProvider>
     <div className="layout" ref={layoutRef} data-bg-theme={homeBgTheme ?? undefined}>
       {!isSupabaseConfigured && (
         <div
@@ -274,7 +263,9 @@ export function Layout() {
           Vercel &gt; Settings &gt; Environment Variables rồi deploy lại (xem README, Bước D).
         </div>
       )}
-      <Sidebar onOpenParentGate={() => navigate('/parent')} />
+      {/* Điện thoại thật: thanh menu 4 mục dưới đáy (MobileBottomNav) thay cho Sidebar dọc —
+          TV/iPad/máy tính giữ NGUYÊN Sidebar như trước, không đổi gì. */}
+      {isPhone ? <MobileBottomNav /> : <Sidebar onOpenParentGate={() => navigate('/parent')} />}
       {/* class "content-col" để CSS chế độ TV chỉnh được cột nội dung này (cần khai báo
           min-width: 0 thì các hàng thẻ mới cuộn ngang được bên trong, thay vì đẩy phình
           cả trang ra ngang) */}
@@ -287,6 +278,11 @@ export function Layout() {
             không riêng /parent, vì chưa biết gia đình nào thì chưa có gì để hiện cả. */}
         {needsFamilySetup || (isParentRoute && !parentGateOk) ? null : <Outlet />}
       </div>
+
+      {/* Trình phát nổi trên điện thoại — xem MobilePlayerHost.tsx. Mount ở đây (ngoài
+          <Outlet/>) để không bị gỡ bỏ khi bé chuyển trang; tự vẽ null nếu chưa phát gì (và
+          luôn vậy trên TV/iPad/máy tính, vì chỉ các trang điện thoại mới gọi playVideo()). */}
+      <MobilePlayerHost />
 
       <PinModal
         open={pinOpen}
@@ -367,5 +363,6 @@ export function Layout() {
         <BreakScreen secondsLeft={breakSecondsLeft} onSkipRequest={() => setPinPurpose('skipbreak')} />
       )}
     </div>
+    </MobilePlaybackProvider>
   );
 }

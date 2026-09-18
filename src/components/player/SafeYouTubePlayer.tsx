@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { SkipBack, SkipForward, Play, Pause, Captions } from 'lucide-react';
-import { useTvPlayerControls, type PanelAction } from '@/hooks/useTvPlayerControls';
+import { useTvPlayerControls, type PanelAction, type MobilePlayerAdapter } from '@/hooks/useTvPlayerControls';
 import { PlayerControlBar } from './PlayerControlBar';
 import { PlayerPlaylistDrawer } from './PlayerPlaylistDrawer';
 import { WatchCountdownBadge } from './WatchCountdownBadge';
@@ -53,8 +53,18 @@ interface Props {
   onProgress?: (percent: number, seconds: number) => void;
   /** Gọi khi video phát xong — dùng cho "xem xong phiên rồi tắt" / tự chuyển video kế tiếp. */
   onEnded?: () => void;
-  /** true khi video được mở từ trong 1 playlist — tự phát + tự vào chế độ toàn màn hình. */
+  /** true khi video được mở từ trong 1 playlist — tự vào chế độ TOÀN MÀN HÌNH CỦA TRÌNH
+      DUYỆT (Fullscreen API). TV/desktop dùng đúng nghĩa này. Trình phát nổi trên điện thoại
+      (MobilePlayerHost) KHÔNG dùng Fullscreen API thật — nó tự vẽ giao diện "toàn màn hình"
+      riêng bằng CSS (để còn giữ được thanh trạng thái/nút thu nhỏ của app) — nên luôn truyền
+      false ở đó, và dùng riêng prop `autoplay` bên dưới để vẫn tự phát. */
   autoFullscreen?: boolean;
+  /** true = tự phát ngay khi vào (tắt tiếng trước rồi tự bật lại khi chạy được — xem trong
+      component). Mặc định LẤY THEO `autoFullscreen` nếu không truyền riêng — giữ nguyên hành
+      vi cũ cho TV/desktop (2 khái niệm trước đây gộp làm 1). Trình phát nổi trên điện thoại
+      truyền `autoFullscreen={false}` + `autoplay={true}` để tự phát mà KHÔNG bật Fullscreen
+      API thật. */
+  autoplay?: boolean;
   /** Chuyển sang video trước/sau trong playlist — chỉ còn gọi được qua nút trong bảng điều
       khiển (phím Lên) hoặc chọn thẳng trong danh sách playlist (phím Xuống), KHÔNG còn
       bấm nhả Trái/Phải nữa (xem useTvPlayerControls). */
@@ -70,6 +80,11 @@ interface Props {
   playlistVideos?: ResolvedVideo[];
   /** Bé chọn 1 video khác trong danh sách đó (bấm OK khi danh sách đang mở). */
   onSelectVideo?: (v: ResolvedVideo) => void;
+  /** Gọi 1 lần (mount) kèm "cầu nối" điều khiển trình phát thật — dùng cho trình phát nổi
+      trên điện thoại (MobilePlayerHost), để giao diện chạm (▶/⏸, kéo thanh tiến độ, tốc độ
+      phát...) điều khiển ĐÚNG trình phát YouTube này, không tạo trình phát thứ 2. TV/desktop
+      không truyền prop này — không đổi hành vi gì cả. */
+  onAdapterReady?: (adapter: MobilePlayerAdapter) => void;
 }
 
 /**
@@ -83,12 +98,14 @@ export function SafeYouTubePlayer({
   onProgress,
   onEnded,
   autoFullscreen,
+  autoplay = autoFullscreen,
   onPrev,
   onNext,
   hasPrev,
   hasNext,
   playlistVideos,
   onSelectVideo,
+  onAdapterReady,
 }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -188,7 +205,7 @@ export function SafeYouTubePlayer({
           modestbranding: 1,
           iv_load_policy: 3,
           playsinline: 1,
-          autoplay: autoFullscreen ? 1 : 0,
+          autoplay: autoplay ? 1 : 0,
           // cc_load_policy: 0 = KHÔNG chủ động bật phụ đề. Lưu ý: YouTube không có tham số
           // nào ép TẮT hẳn phụ đề — chỉ có tham số ép BẬT (đặt 1). Khi để 0, YouTube vẫn có
           // thể tự bật lại theo thói quen xem trước đó của thiết bị. Vì vậy còn phải gỡ hẳn
@@ -198,7 +215,7 @@ export function SafeYouTubePlayer({
         events: {
           onReady: () => {
             hideCaptions();
-            if (autoFullscreen) {
+            if (autoplay) {
               // Trình duyệt luôn cho phép tự phát nếu video đang TẮT TIẾNG — nên chủ động
               // tắt tiếng rồi tự bấm play qua API (đáng tin cậy hơn nhiều so với chỉ dựa
               // vào tham số autoplay=1 trên URL, vốn hay bị chặn). Bật lại tiếng ngay khi
@@ -272,19 +289,33 @@ export function SafeYouTubePlayer({
   // trở thành hàm rỗng), nên nút đó chỉ là nút giả. YouTube tự chọn chất lượng cao nhất
   // mà đường truyền chịu được — đúng việc cần làm cho TV.
 
-  const adapter = {
-    getCurrentTime: () => playerRef.current?.getCurrentTime?.() ?? 0,
-    getDuration: () => playerRef.current?.getDuration?.() ?? 0,
-    seekTo: (seconds: number, final: boolean) => playerRef.current?.seekTo?.(seconds, final),
-    isPaused: () => {
-      const p = playerRef.current;
-      const YT = window.YT;
-      if (!p?.getPlayerState || !YT?.PlayerState) return false;
-      return p.getPlayerState() !== YT.PlayerState.PLAYING;
-    },
-    play: () => playerRef.current?.playVideo?.(),
-    pause: () => playerRef.current?.pauseVideo?.(),
-  };
+  // useMemo (deps rỗng) để giữ ĐÚNG 1 object trong suốt vòng đời component — các hàm bên
+  // trong đọc playerRef.current lúc GỌI chứ không phải lúc TẠO, nên vẫn luôn điều khiển đúng
+  // trình phát hiện tại dù videoId đổi (xem effect [videoId] ở trên, tự huỷ/tạo lại
+  // playerRef.current). Giữ 1 object cố định là vì onAdapterReady chỉ nên bắn ra 1 lần — nơi
+  // nhận (MobilePlayerHost) lưu lại đúng 1 "cầu nối" cho suốt phiên nghe/xem.
+  const adapter = useMemo<MobilePlayerAdapter>(
+    () => ({
+      getCurrentTime: () => playerRef.current?.getCurrentTime?.() ?? 0,
+      getDuration: () => playerRef.current?.getDuration?.() ?? 0,
+      seekTo: (seconds: number, final: boolean) => playerRef.current?.seekTo?.(seconds, final),
+      isPaused: () => {
+        const p = playerRef.current;
+        const YT = window.YT;
+        if (!p?.getPlayerState || !YT?.PlayerState) return false;
+        return p.getPlayerState() !== YT.PlayerState.PLAYING;
+      },
+      play: () => playerRef.current?.playVideo?.(),
+      pause: () => playerRef.current?.pauseVideo?.(),
+      setPlaybackRate: (rate: number) => playerRef.current?.setPlaybackRate?.(rate),
+    }),
+    []
+  );
+
+  useEffect(() => {
+    onAdapterReady?.(adapter);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adapter]);
 
   const actions: PanelAction[] = [
     { key: 'prev', label: 'Video trước', icon: SkipBack, disabled: !hasPrev, onSelect: () => onPrev?.() },

@@ -1444,8 +1444,15 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
 }
 
 /* ====================================================================================
-   THANH MENU DƯỚI ĐÁY — chỉ dành cho ĐIỆN THOẠI
+   THANH MENU DƯỚI ĐÁY (Sidebar) — CHỈ CÒN ÁP DỤNG CHO TV/iPad/máy tính khi thu hẹp cửa sổ,
+   KHÔNG còn khớp với điện thoại thật nữa.
    ------------------------------------------------------------------------------------
+   Từ bản nâng cấp giao diện điện thoại, Layout.tsx không còn render <Sidebar> trên điện
+   thoại thật nữa (thay bằng <MobileBottomNav>, class ".mobile-tabbar" riêng — xem
+   MobileBottomNav.tsx) nên các luật ".sidebar" dưới đây thực chất không còn phần tử nào để
+   khớp trên điện thoại (vô hại, không xoá để đỡ ảnh hưởng nếu có nơi khác còn dựa vào). Giữ
+   lại đoạn giải thích gốc bên dưới cho rõ lịch sử:
+
    Trên điện thoại, menu dọc bên trái vừa chiếm mất bề ngang vốn đã hẹp, vừa nằm ở chỗ
    ngón cái khó với tới. Ở đây lật nó thành thanh ngang dưới đáy — đúng kiểu mọi app điện
    thoại vẫn làm. Vẫn dùng CHUNG một đoạn mã Sidebar, chỉ đổi cách bày ra bằng CSS.
@@ -1510,59 +1517,22 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
 }
 
 /* =====================================================================
-   KHU BỐ MẸ TRÊN ĐIỆN THOẠI — trên điện thoại thật, app CHỈ còn đúng 1 trang (Khu Bố mẹ,
-   xem Layout.tsx phần "khoá thẳng vào Khu vực Bố mẹ") — Trang chủ/xem video không dùng tới
-   nữa. Vì vậy:
-     1) Ẩn hẳn thanh menu Trang chủ/Bố mẹ của Sidebar (khối "THANH MENU DƯỚI ĐÁY" ở trên) —
-        không còn tác dụng gì (Trang chủ không dẫn tới đâu, Bố mẹ thì đã sẵn ở đây rồi).
-     2) Các mục CỦA CHÍNH Khu Bố mẹ (.parent-tabs) THAY THẾ vai trò "thanh dưới đáy" đó —
-        đúng khoảng trống .main{padding-bottom:96px} đã chừa sẵn ở trên, không cần thêm gì.
-   Cùng mốc 700px với khối trên (không phải 760px) — mọi iPad đều rộng hơn mốc này nên giữ
-   nguyên bố cục hiện có, chỉ điện thoại thật mới đổi. */
-@media (max-width: 700px) {
-  .sidebar { display: none; }
-  /* TopBar chỉ có logo (đã ẩn từ trước) + nút chọn hồ sơ — nút đó cũng chỉ có ý nghĩa cho
-     việc XEM VIDEO (đổi hồ sơ đang xem), không còn trang xem nào trên điện thoại nữa nên
-     ẩn LUÔN cả thanh này, nhường hết chỗ phía trên cho tiêu đề "Khu vực Bố mẹ". */
-  .topbar { display: none; }
-
-  .parent-tabs {
-    position: fixed; left: 0; right: 0; bottom: 0; top: auto;
-    display: flex; flex-direction: row; justify-content: space-around; align-items: stretch;
-    width: auto; margin: 0; gap: 0;
-    padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
-    z-index: 40;
-    box-sizing: border-box;
-  }
-  [data-theme='dark'] .parent-tabs { background: #16171d; border-top: 1px solid #23242c; }
-  [data-theme='chibi'] .parent-tabs { background: #fff0f6; border-top: 3px dashed #ffb6d5; }
-
-  .parent-tabs .tab-btn {
-    flex: 1; min-width: 0;
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
-    background: none !important; border: none;
-    padding: 7px 2px; border-radius: 14px; font-size: 10.5px; font-weight: 800;
-  }
-  .parent-tabs .tab-btn-icon { font-size: 20px; line-height: 1; margin-right: 0; }
-  .parent-tabs .tab-btn-label {
-    display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
-  }
-  [data-theme='dark'] .parent-tabs .tab-btn { color: #c7c9d1; }
-  [data-theme='dark'] .parent-tabs .tab-btn.active { color: #7c9cff; }
-  [data-theme='chibi'] .parent-tabs .tab-btn { color: #c2447a; }
-  [data-theme='chibi'] .parent-tabs .tab-btn.active { color: #ff5c9e; }
-
-  /* Không còn trang nào để "Quay lại" nữa (Trang chủ đã ẩn khỏi điện thoại) — ẩn luôn nút
-     này trên Khu Bố mẹ, đỡ bấm vào rồi bị tự động đưa quay lại đây (xem Layout.tsx). */
-  .parent-page .back-btn { display: none; }
-
-  /* .topbar đã ẩn ở trên nên dòng "Khu vực Bố mẹ" giờ là thứ TRÊN CÙNG màn hình — cần cộng
-     thêm khoảng đệm an toàn env(safe-area-inset-top) (tránh tai thỏ/viên thuốc đục lỗ) cộng
-     thêm chút đệm nhỏ cho đẹp. Bản trước cộng dồn 2 lớp đệm (padding của .main + margin-top
-     20px có sẵn của .greet) nên bị đẩy xuống quá xa — ở đây giảm cả 2 lại cho vừa mắt. */
-  .main.parent-page { padding-top: calc(env(safe-area-inset-top, 0px) + 10px); }
-  .parent-page .parent-greet { margin-top: 6px; }
-}
+   KHU BỐ MẸ TRÊN ĐIỆN THOẠI — ĐÃ NGƯNG DÙNG (xem bản nâng cấp giao diện điện thoại,
+   MobileBottomNav.tsx + MobilePlayerHost.tsx).
+   ------------------------------------------------------------------------------------
+   Khối này TỪNG dựa trên tiền đề "điện thoại chỉ có đúng 1 trang, luôn khoá thẳng vào
+   /parent" (ẩn hẳn Sidebar + TopBar, biến .parent-tabs thành thanh dưới đáy). Tiền đề đó
+   không còn đúng nữa: điện thoại giờ là 1 thiết bị xem thật sự, có Trang chủ/Khám phá/Đã
+   tải/Khu vực Bố mẹ riêng, với 1 thanh menu dưới đáy DÙNG CHUNG cho cả 4 mục
+   (.mobile-tabbar, xem MobileBottomNav.tsx) — không còn đúng để "biến .parent-tabs (4 tab
+   con BÊN TRONG khu Bố mẹ) thành thanh điều hướng chính" như trước, sẽ đè/chồng lên
+   .mobile-tabbar.
+   Tạm thời XOÁ các luật CSS cũ ở đây (ẩn Sidebar/TopBar, đóng khung .parent-tabs) — trang
+   Khu vực Bố mẹ trên điện thoại tạm hiện theo đúng bố cục thu nhỏ dùng chung với iPad/máy
+   tính (không đẹp bằng bản gộp 1 trang cuộn dự kiến), cho tới khi có MobileParentDashboard
+   (trang gộp Thời gian/Nội dung/Hồ sơ bé/Tài khoản thành 1 khối cuộn riêng cho điện thoại,
+   theo UI_SPEC.md mục 3) thay thế hẳn — lúc đó khối @media này có thể xoá luôn.
+   ===================================================================== */
 
 /* =====================================================================
    KHU BỐ MẸ TRÊN MÁY TÍNH (ParentDashboardPage) — màn rộng, KHÔNG áp dụng cho TV.
@@ -1894,3 +1864,198 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
 
 [data-tv] .bg-theme-pick { width: 140px; font-size: 20px; gap: 10px; }
 [data-tv] .bg-swatch { width: 110px; height: 110px; font-size: 40px; border-radius: 26px; }
+
+/* ====================================================================================
+   GIAO DIỆN ĐIỆN THOẠI (bản nâng cấp) — mọi lớp mới cho phần này đều tiền tố "mobile-",
+   và mọi luật đều nằm trong @media (max-width: 700px) — TRÙNG mốc đã dùng cho
+   useIsPhoneScreen()/isPhoneScreen() (xem src/lib/screenSize.ts) — để chắc chắn không đụng
+   tới TV/iPad/máy tính dù có lỡ tay đặt sai chỗ. Các component tương ứng (MobileBottomNav,
+   MobilePlayerHost, và các trang trong src/pages/mobile/ sẽ thêm ở các bước sau) đã tự kiểm
+   tra `useIsPhoneScreen()` trước khi vẽ ra — khối CSS này chỉ là lớp bảo hiểm thứ 2.
+
+   Bảng màu lấy theo UI_SPEC.md mục 10 (dark iOS-style) cho theme mặc định/"dark"; theme
+   "chibi" (hồng, thân thiện cho bé nhỏ tuổi) dùng lại đúng bảng màu chibi đã có sẵn trong
+   file này (xem các luật `[data-theme='chibi']` phía trên) thay vì bịa màu mới.
+   ==================================================================================== */
+@media (max-width: 700px) {
+  /* --- Thanh menu chính dưới đáy (Trang chủ/Khám phá/Đã tải/Khu vực Bố mẹ) --- */
+  .mobile-tabbar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+    display: flex; flex-direction: row; justify-content: space-around; align-items: stretch;
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
+    box-sizing: border-box;
+  }
+  [data-theme='dark'] .mobile-tabbar,
+  :root:not([data-theme]) .mobile-tabbar { background: #16171d; border-top: 1px solid #2a2c38; }
+  [data-theme='chibi'] .mobile-tabbar { background: #fff7fb; border-top: 3px dashed #ffb6d5; }
+
+  .mobile-tabbar-item {
+    flex: 1; min-width: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    padding: 7px 2px; border-radius: 14px; text-decoration: none;
+    font-size: 10.5px; font-weight: 800;
+  }
+  .mobile-tabbar-icon { width: 21px; height: 21px; }
+  .mobile-tabbar-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+
+  [data-theme='dark'] .mobile-tabbar-item,
+  :root:not([data-theme]) .mobile-tabbar-item { color: #9a9ca5; }
+  [data-theme='dark'] .mobile-tabbar-item.active,
+  :root:not([data-theme]) .mobile-tabbar-item.active { color: #7c9cff; background: rgba(124, 156, 255, 0.14); }
+  [data-theme='chibi'] .mobile-tabbar-item { color: #c2447a; }
+  [data-theme='chibi'] .mobile-tabbar-item.active { color: #ff5c9e; background: #ffe0ee; }
+
+  /* Nội dung mọi trang điện thoại phải chừa chỗ cho thanh này — cộng thêm khi trình phát
+     nổi cũng đang hiện (xem MobilePlayerHost.tsx: class "has-mobile-mini-player" trên body). */
+  .main { padding-bottom: 96px; }
+  body.has-mobile-mini-player .main { padding-bottom: 168px; }
+
+  /* --- Trình phát nổi: khung ngoài cùng, giữ chỗ cho khung phát ẩn (chế độ mini) --- */
+  .mobile-player-host { position: fixed; left: 0; right: 0; z-index: 45; }
+  .mobile-player-host--mini {
+    bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+    left: 8px; right: 8px;
+    border-radius: 16px; overflow: hidden;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  }
+  .mobile-player-host--full { top: 0; bottom: 0; z-index: 60; display: flex; flex-direction: column; }
+
+  [data-theme='dark'] .mobile-player-host--mini,
+  :root:not([data-theme]) .mobile-player-host--mini { background: #1b1c22; border: 1px solid #2a2c38; }
+  [data-theme='chibi'] .mobile-player-host--mini { background: #fffbfd; border: 3px solid #ffd6ea; }
+  [data-theme='dark'] .mobile-player-host--full,
+  :root:not([data-theme]) .mobile-player-host--full { background: #0e0f13; }
+  [data-theme='chibi'] .mobile-player-host--full { background: #fff0f6; }
+
+  /* Khung chứa trình phát YouTube/video thật — mini: ô vuông nhỏ bên trái thanh; toàn màn
+     hình: chiếm phần trên. `position:relative` để ảnh đại diện (chế độ Âm thanh) phủ vừa
+     khít lên trên bằng absolute. iframe/video bên trong luôn kéo full 100%/100% (không sửa
+     CSS gốc của SafeYouTubePlayer/DirectVideoPlayer — 2 file đó tự lo iframe/video của
+     chúng lấp đầy khung cha, xem .player-wrap trong theme.css). */
+  .mobile-player-media { position: relative; overflow: hidden; flex-shrink: 0; }
+  .mobile-player-host--mini .mobile-player-media { width: 56px; height: 56px; border-radius: 12px; margin: 4px; }
+  .mobile-player-host--mini .mobile-player-media .player-wrap,
+  .mobile-player-host--mini .mobile-player-media iframe,
+  .mobile-player-host--mini .mobile-player-media video { width: 100%; height: 100%; }
+  .mobile-player-host--full .mobile-player-media { width: 100%; aspect-ratio: 1 / 1; max-height: 46vh; }
+  .mobile-player-host--full .mobile-player-media .player-wrap,
+  .mobile-player-host--full .mobile-player-media iframe,
+  .mobile-player-host--full .mobile-player-media video { width: 100%; height: 100%; }
+
+  .mobile-player-artwork {
+    position: absolute; inset: 0;
+    background-size: cover; background-position: center;
+    background-color: #23242c;
+  }
+  [data-theme='chibi'] .mobile-player-artwork { background-color: #ffe0ee; }
+
+  /* --- Thanh mini: chạm để mở toàn màn hình --- */
+  .mobile-player-mini-tap {
+    display: flex; align-items: center; gap: 8px;
+    width: 100%; padding: 4px 10px 4px 0;
+    background: none; border: none; cursor: pointer; text-align: left;
+    box-sizing: border-box;
+  }
+  .mobile-player-mini-title { flex: 1; min-width: 0; }
+  .mobile-player-mini-name {
+    font-size: 13px; font-weight: 800;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .mobile-player-mini-sub { font-size: 11px; opacity: 0.65; }
+  [data-theme='dark'] .mobile-player-mini-name,
+  :root:not([data-theme]) .mobile-player-mini-name { color: #f2f3f5; }
+  [data-theme='chibi'] .mobile-player-mini-name { color: #c2447a; }
+  .mobile-player-mini-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+  }
+  [data-theme='dark'] .mobile-player-mini-btn,
+  :root:not([data-theme]) .mobile-player-mini-btn { background: #23242c; color: #f2f3f5; }
+  [data-theme='chibi'] .mobile-player-mini-btn { background: #ffe0ee; color: #ff5c9e; }
+
+  /* --- Toàn màn hình --- */
+  .mobile-player-full { flex: 1; display: flex; flex-direction: column; padding: calc(env(safe-area-inset-top, 0px) + 10px) 20px 20px; box-sizing: border-box; overflow-y: auto; }
+  .mobile-player-full-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  .mobile-player-full-header-title { font-size: 13px; font-weight: 800; opacity: 0.7; }
+  .mobile-player-icon-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px; border-radius: 50%; border: none; flex-shrink: 0;
+  }
+  .mobile-player-icon-btn:disabled { opacity: 0.35; }
+  [data-theme='dark'] .mobile-player-icon-btn,
+  :root:not([data-theme]) .mobile-player-icon-btn { background: #23242c; color: #f2f3f5; }
+  [data-theme='chibi'] .mobile-player-icon-btn { background: #ffe0ee; color: #ff5c9e; }
+
+  .mobile-player-full-title {
+    font-size: 18px; font-weight: 800; text-align: center; margin: 8px 0 16px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  [data-theme='dark'] .mobile-player-full-title,
+  :root:not([data-theme]) .mobile-player-full-title { color: #f2f3f5; }
+  [data-theme='chibi'] .mobile-player-full-title { color: #c2447a; }
+
+  .mobile-player-progress { margin-bottom: 14px; }
+  .mobile-player-progress input[type='range'] { width: 100%; accent-color: #7c9cff; }
+  [data-theme='chibi'] .mobile-player-progress input[type='range'] { accent-color: #ff5c9e; }
+  .mobile-player-progress-labels { display: flex; justify-content: space-between; font-size: 11.5px; opacity: 0.65; margin-top: 2px; }
+
+  .mobile-player-transport { display: flex; align-items: center; justify-content: center; gap: 18px; margin: 8px 0 18px; }
+  .mobile-player-play-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 62px; height: 62px; border-radius: 50%; border: none; flex-shrink: 0;
+  }
+  [data-theme='dark'] .mobile-player-play-btn,
+  :root:not([data-theme]) .mobile-player-play-btn { background: #7c9cff; color: #0e0f13; }
+  [data-theme='chibi'] .mobile-player-play-btn { background: #ff5c9e; color: #fff; }
+
+  .mobile-player-utility-row { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; position: relative; }
+  .mobile-player-utility-btn {
+    display: flex; align-items: center; gap: 5px;
+    padding: 8px 12px; border-radius: 20px; border: none; font-size: 12px; font-weight: 700;
+  }
+  [data-theme='dark'] .mobile-player-utility-btn,
+  :root:not([data-theme]) .mobile-player-utility-btn { background: #23242c; color: #c7c9d1; }
+  [data-theme='chibi'] .mobile-player-utility-btn { background: #fff0f6; color: #c2447a; }
+
+  .mobile-player-sleep-wrap { position: relative; }
+  .mobile-player-sleep-menu {
+    position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+    display: flex; flex-direction: column; gap: 2px;
+    padding: 6px; border-radius: 14px; z-index: 5;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+    min-width: 140px;
+  }
+  [data-theme='dark'] .mobile-player-sleep-menu,
+  :root:not([data-theme]) .mobile-player-sleep-menu { background: #23242c; }
+  [data-theme='chibi'] .mobile-player-sleep-menu { background: #fffbfd; border: 2px solid #ffd6ea; }
+  .mobile-player-sleep-item { text-align: left; padding: 8px 10px; border-radius: 10px; border: none; background: none; font-size: 12.5px; font-weight: 700; }
+  [data-theme='dark'] .mobile-player-sleep-item,
+  :root:not([data-theme]) .mobile-player-sleep-item { color: #c7c9d1; }
+  [data-theme='dark'] .mobile-player-sleep-item.active,
+  :root:not([data-theme]) .mobile-player-sleep-item.active { color: #7c9cff; background: rgba(124, 156, 255, 0.14); }
+  [data-theme='chibi'] .mobile-player-sleep-item { color: #c2447a; }
+  [data-theme='chibi'] .mobile-player-sleep-item.active { color: #ff5c9e; background: #ffe0ee; }
+
+  .mobile-player-sleep-note { text-align: center; font-size: 11.5px; opacity: 0.6; margin-top: 10px; }
+
+  .mobile-player-autonext {
+    margin-top: 16px; padding: 12px 14px; border-radius: 14px;
+    font-size: 12.5px; display: flex; flex-direction: column; gap: 8px; align-items: center; text-align: center;
+  }
+  [data-theme='dark'] .mobile-player-autonext,
+  :root:not([data-theme]) .mobile-player-autonext { background: #23242c; color: #c7c9d1; }
+  [data-theme='chibi'] .mobile-player-autonext { background: #fff0f6; color: #c2447a; }
+  .mobile-player-autonext button {
+    padding: 6px 14px; border-radius: 20px; border: none; font-weight: 800; font-size: 12px;
+  }
+  [data-theme='dark'] .mobile-player-autonext button,
+  :root:not([data-theme]) .mobile-player-autonext button { background: #7c9cff; color: #0e0f13; }
+  [data-theme='chibi'] .mobile-player-autonext button { background: #ff5c9e; color: #fff; }
+
+  /* --- Trạng thái rỗng dùng chung (tab Khám phá/Đã tải) --- */
+  .mobile-empty-page { display: flex; align-items: center; justify-content: center; min-height: 60vh; }
+  .mobile-empty-state { text-align: center; max-width: 320px; margin: 0 auto; }
+  .mobile-empty-icon { margin-bottom: 12px; opacity: 0.5; }
+  .mobile-empty-title { font-size: 16px; font-weight: 800; margin-bottom: 8px; }
+  .mobile-empty-text { font-size: 13px; opacity: 0.65; line-height: 1.5; }
+}

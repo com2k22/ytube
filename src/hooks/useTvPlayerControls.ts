@@ -12,6 +12,18 @@ export interface PlayerAdapter {
   pause: () => void;
 }
 
+/**
+ * MobilePlayerAdapter — PlayerAdapter + `setPlaybackRate`, dùng cho trình phát nổi trên điện
+ * thoại (MobilePlayerHost — tốc độ phát 1x/1.25x/1.5x cho phần nghe truyện). TV/desktop
+ * KHÔNG cần tốc độ phát nên vẫn dùng PlayerAdapter thường; cả 2 trình phát
+ * (SafeYouTubePlayer/DirectVideoPlayer) đưa ra adapter này qua prop `onAdapterReady` — không
+ * tạo trình phát thứ 2, chỉ "lộ" thêm 1 khả năng có sẵn của trình phát thật (YT.Player /
+ * thẻ <video>).
+ */
+export interface MobilePlayerAdapter extends PlayerAdapter {
+  setPlaybackRate: (rate: number) => void;
+}
+
 export interface PanelAction {
   key: string;
   label: string;
