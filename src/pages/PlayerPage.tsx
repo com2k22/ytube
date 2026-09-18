@@ -1,9 +1,11 @@
+import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { SafeYouTubePlayer } from '@/components/player/SafeYouTubePlayer';
 import { DirectVideoPlayer } from '@/components/player/DirectVideoPlayer';
 import { VideoCard } from '@/components/common/VideoCard';
 import { usePlayerEngine, type PlayerEngineParams } from '@/hooks/usePlayerEngine';
 import { useIsPhoneScreen } from '@/lib/screenSize';
+import { useMobilePlayback } from '@/context/MobilePlaybackContext';
 
 /**
  * PlayerPage — trang phát 1 video, dùng chung cho: video trong playlist đã whitelist,
@@ -20,21 +22,55 @@ import { useIsPhoneScreen } from '@/lib/screenSize';
  * xem chú thích ở hook đó. File này chỉ còn phần GIAO DIỆN cho TV/iPad/máy tính, giữ NGUYÊN
  * VẸN như trước.
  *
- * Trên ĐIỆN THOẠI THẬT: màn hình này không vẽ gì cả (trả về null ngay, xem PlayerPage bên
+ * Trên ĐIỆN THOẠI THẬT: màn hình này không tự vẽ trình phát (xem PlayerPageMobileBridge bên
  * dưới) — MobilePlayerHost (mount trong Layout.tsx, sống ngoài router nên không bị tắt khi
- * bé lướt sang trang khác) mới là nơi vẽ trình phát. Nơi điều hướng bé tới `/player` (các
- * trang trong `src/pages/mobile/`) phải tự báo cho MobilePlaybackContext biết "hãy phát bài
- * này" TRƯỚC khi điều hướng.
+ * bé lướt sang trang khác) mới là nơi vẽ. Các trang CHƯA kịp nâng cấp riêng cho điện thoại
+ * (HomePage/ChannelPage/PlaylistVideosView... hiện vẫn điều hướng thẳng bằng URL
+ * `/player?videoId=...` y hệt trước đây) vẫn phải chạy được — nên PlayerPageMobileBridge tự
+ * đọc lại đúng query string đó rồi báo cho MobilePlaybackContext biết "phát bài này", KHÔNG
+ * bắt buộc nơi điều hướng phải gọi context trước. Các trang điện thoại mới sau này (task
+ * "Trang chủ điện thoại"...) có thể gọi thẳng `playVideo()` trước khi điều hướng để có sẵn
+ * ảnh đại diện — bridge này vẫn chạy vô hại (đọc lại đúng những gì vừa gán).
  */
 export function PlayerPage() {
-  // Tách hẳn ra 1 component con phía dưới (PlayerPageDesktop) thay vì chỉ "return null" giữa
-  // chừng ở đây: usePlayerEngine bên trong nó mở phiên xem + lưu tiến độ + đếm mạch xem liên
-  // tục — nếu gọi hook đó ngay tại đây rồi mới quyết định ẩn đi thì trên điện thoại sẽ có
-  // ĐẾN 2 nơi cùng chạy các việc đó (component này + MobilePlayerHost), ghi trùng lặp. Tách
-  // thành 2 component riêng (mount/unmount hẳn, không phải if giữa các hook) mới an toàn.
+  // Tách hẳn ra các component con phía dưới thay vì chỉ "return null"/rẽ nhánh giữa chừng ở
+  // đây: usePlayerEngine bên trong PlayerPageDesktop mở phiên xem + lưu tiến độ + đếm mạch
+  // xem liên tục — nếu gọi hook đó ngay tại đây rồi mới quyết định ẩn đi thì trên điện thoại
+  // sẽ có ĐẾN 2 nơi cùng chạy các việc đó (component này + MobilePlayerHost), ghi trùng lặp.
+  // Tách thành các component riêng (mount/unmount hẳn, không phải if giữa các hook) mới an toàn.
   const isPhone = useIsPhoneScreen();
-  if (isPhone) return null;
+  if (isPhone) return <PlayerPageMobileBridge />;
   return <PlayerPageDesktop />;
+}
+
+/**
+ * PlayerPageMobileBridge — SỬA LỖI "bấm phát ra màn hình đen trên điện thoại": trước đây
+ * component này chỉ return null, không ai báo cho MobilePlaybackContext biết cần phát video
+ * nào cả, nên MobilePlayerHost cũng không có gì để vẽ. Giờ tự đọc query string (giống hệt
+ * PlayerPageDesktop) và gọi `playVideo()` — mọi nơi điều hướng CŨ (HomePage, ChannelPage,
+ * PlaylistVideosView...) vẫn hoạt động nguyên vẹn trên điện thoại mà không cần sửa gì thêm.
+ *
+ * Bỏ qua khi query string RỖNG (mở `/player` không kèm gì) — đây là trường hợp
+ * MobilePlayerHost tự điều hướng tới đây để MỞ TOÀN MÀN HÌNH video đang phát sẵn (bấm vào
+ * thanh mini, xem MobilePlayerHost.tsx: `openFull`) — không được ghi đè "đang phát gì" bằng
+ * dữ liệu rỗng, không thì bấm mở to sẽ tự tắt luôn video đang nghe.
+ */
+function PlayerPageMobileBridge() {
+  const [params] = useSearchParams();
+  const { playVideo } = useMobilePlayback();
+  const sourceId = params.get('sourceId');
+  const videoId = params.get('videoId');
+  const directUrl = params.get('directUrl');
+  const title = params.get('title');
+  const playlistId = params.get('playlistId');
+
+  useEffect(() => {
+    if (!videoId && !directUrl && !sourceId) return;
+    playVideo({ sourceId, videoId, directUrl, title, playlistId, thumbnail: null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sourceId, videoId, directUrl, title, playlistId]);
+
+  return null;
 }
 
 function PlayerPageDesktop() {
