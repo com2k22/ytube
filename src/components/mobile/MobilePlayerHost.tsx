@@ -208,34 +208,41 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
       </div>
 
       {!isFull && (
-        // --- THANH MINI: chạm để mở toàn màn hình, có sẵn play/pause + đóng ---
+        // --- THANH MINI: chạm để mở toàn màn hình, có sẵn play/pause + đóng. 2 nút điều
+        // khiển gom vào 1 cụm riêng (.mobile-player-mini-controls) thay vì để trôi tự do —
+        // vừa có khoảng đệm rõ ràng với mép bo tròn bên phải (không còn dính sát góc), vừa
+        // dễ tăng cỡ 2 nút mà không phá bố cục. Nút Phát/Tạm dừng là nút CHÍNH nên to hơn +
+        // tô màu nổi bật (accent), nút Đóng phụ nên nhỏ hơn 1 chút — cả 2 đều to hơn hẳn bản
+        // cũ (34px) để bấm bằng ngón tay chắc chắn hơn. ---
         <button className="mobile-player-mini-tap" onClick={openFull} aria-label={`Mở trình phát: ${title}`}>
           <div className="mobile-player-mini-title">
             <div className="mobile-player-mini-name">{title}</div>
             <div className="mobile-player-mini-sub">{paused ? 'Đã tạm dừng' : 'Đang phát'}</div>
           </div>
-          <span
-            className="mobile-player-mini-btn"
-            role="button"
-            aria-label={paused ? 'Phát tiếp' : 'Tạm dừng'}
-            onClick={(e) => {
-              e.stopPropagation();
-              togglePlayPause();
-            }}
-          >
-            {paused ? <Play size={18} /> : <Pause size={18} />}
-          </span>
-          <span
-            className="mobile-player-mini-btn"
-            role="button"
-            aria-label="Đóng"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleClose();
-            }}
-          >
-            <X size={18} />
-          </span>
+          <div className="mobile-player-mini-controls">
+            <span
+              className="mobile-player-mini-btn mobile-player-mini-btn--play"
+              role="button"
+              aria-label={paused ? 'Phát tiếp' : 'Tạm dừng'}
+              onClick={(e) => {
+                e.stopPropagation();
+                togglePlayPause();
+              }}
+            >
+              {paused ? <Play size={22} /> : <Pause size={22} />}
+            </span>
+            <span
+              className="mobile-player-mini-btn"
+              role="button"
+              aria-label="Đóng"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleClose();
+              }}
+            >
+              <X size={19} />
+            </span>
+          </div>
         </button>
       )}
 

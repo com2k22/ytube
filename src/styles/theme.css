@@ -1930,17 +1930,37 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
 
   /* --- Trình phát nổi: khung ngoài cùng, giữ chỗ cho khung phát ẩn (chế độ mini) --- */
   .mobile-player-host { position: fixed; left: 0; right: 0; z-index: 45; }
+  /* display:flex ở đây (trước đây THIẾU dòng này — lỗi thật, không phải cố ý) là bắt buộc:
+     JSX vẽ khung phát (ảnh nhỏ 56×56) và thanh chạm (tên bài + 2 nút) là 2 phần tử NGANG
+     HÀNG nhau (MobilePlayerHost.tsx), không có flex thì trình duyệt xếp chúng CHỒNG DỌC lên
+     nhau theo mặc định — đây chính là lý do thanh mini trước đây trông vỡ bố cục ("xấu"). */
   .mobile-player-host--mini {
+    display: flex; align-items: center;
     bottom: calc(56px + env(safe-area-inset-bottom, 0px));
     left: 8px; right: 8px;
-    border-radius: 16px; overflow: hidden;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+    border-radius: 22px; overflow: hidden;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.32);
+    /* Kính mờ (backdrop-filter) — nền trong suốt nhẹ THẤY ĐƯỢC nội dung trang phía sau mờ
+       ảo qua lớp kính, khác hẳn màu phẳng của thẻ/nền app xung quanh (yêu cầu "khác màu so
+       với màu app, có độ trong suốt nhẹ"). -webkit- cho Safari/iOS (không có tiền tố này
+       thì Safari bỏ qua toàn bộ hiệu ứng, coi như trong suốt bình thường không mờ). */
+    backdrop-filter: blur(18px) saturate(1.4);
+    -webkit-backdrop-filter: blur(18px) saturate(1.4);
   }
   .mobile-player-host--full { top: 0; bottom: 0; z-index: 60; display: flex; flex-direction: column; }
 
+  /* Nền kính mờ MÀU RIÊNG (ánh xanh accent ở giao diện tối, ánh hồng ở Chibi) — cố ý KHÔNG
+     dùng lại đúng màu nền thẻ/thanh menu (#1b1c22) hay nền app (#0e0f13) nữa, để thanh mini
+     nổi bật rõ ràng là 1 khối "đang phát" riêng, không lẫn vào các khối tĩnh khác. */
   [data-theme='dark'] .mobile-player-host--mini,
-  :root:not([data-theme]) .mobile-player-host--mini { background: #1b1c22; border: 1px solid #2a2c38; }
-  [data-theme='chibi'] .mobile-player-host--mini { background: #fffbfd; border: 3px solid #ffd6ea; }
+  :root:not([data-theme]) .mobile-player-host--mini {
+    background: rgba(52, 62, 102, 0.62);
+    border: 1px solid rgba(124, 156, 255, 0.35);
+  }
+  [data-theme='chibi'] .mobile-player-host--mini {
+    background: rgba(255, 214, 234, 0.72);
+    border: 1px solid rgba(255, 159, 196, 0.55);
+  }
   [data-theme='dark'] .mobile-player-host--full,
   :root:not([data-theme]) .mobile-player-host--full { background: #0e0f13; }
   [data-theme='chibi'] .mobile-player-host--full { background: #fff0f6; }
@@ -1969,8 +1989,8 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
 
   /* --- Thanh mini: chạm để mở toàn màn hình --- */
   .mobile-player-mini-tap {
-    display: flex; align-items: center; gap: 8px;
-    width: 100%; padding: 4px 10px 4px 0;
+    display: flex; align-items: center; gap: 10px;
+    width: 100%; padding: 6px 12px 6px 0;
     background: none; border: none; cursor: pointer; text-align: left;
     box-sizing: border-box;
   }
@@ -1983,13 +2003,25 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
   [data-theme='dark'] .mobile-player-mini-name,
   :root:not([data-theme]) .mobile-player-mini-name { color: #f2f3f5; }
   [data-theme='chibi'] .mobile-player-mini-name { color: #c2447a; }
+
+  /* Cụm 2 nút điều khiển — gom riêng thành 1 khối (thay vì thả trôi ngay trong hàng chính)
+     để: (1) khoảng cách với chữ tên bài và với mép bo tròn bên phải LUÔN đều nhau, không
+     dính sát biên; (2) rảnh tay chỉnh khoảng cách/cỡ 2 nút mà không đụng gì tới phần tên
+     bài bên trái — đúng ý "đưa cụm phím điều khiển vào giữa" thay vì ép sát mép. */
+  .mobile-player-mini-controls { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
   .mobile-player-mini-btn {
     display: flex; align-items: center; justify-content: center;
-    width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+    width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
   }
+  /* Nút Phát/Tạm dừng — nút CHÍNH của thanh mini nên to hơn hẳn (46px, so với 38px của nút
+     Đóng) + tô màu nổi bật (accent), vừa dễ bấm hơn vừa rõ đây là nút quan trọng nhất. */
+  .mobile-player-mini-btn--play { width: 46px; height: 46px; }
   [data-theme='dark'] .mobile-player-mini-btn,
-  :root:not([data-theme]) .mobile-player-mini-btn { background: #23242c; color: #f2f3f5; }
-  [data-theme='chibi'] .mobile-player-mini-btn { background: #ffe0ee; color: #ff5c9e; }
+  :root:not([data-theme]) .mobile-player-mini-btn { background: rgba(255, 255, 255, 0.1); color: #f2f3f5; }
+  [data-theme='chibi'] .mobile-player-mini-btn { background: rgba(255, 255, 255, 0.55); color: #ff5c9e; }
+  [data-theme='dark'] .mobile-player-mini-btn--play,
+  :root:not([data-theme]) .mobile-player-mini-btn--play { background: #7c9cff; color: #0e0f13; }
+  [data-theme='chibi'] .mobile-player-mini-btn--play { background: #ff5c9e; color: #fff; }
 
   /* --- Toàn màn hình --- */
   .mobile-player-full { flex: 1; display: flex; flex-direction: column; padding: calc(env(safe-area-inset-top, 0px) + 10px) 20px 20px; box-sizing: border-box; overflow-y: auto; }
