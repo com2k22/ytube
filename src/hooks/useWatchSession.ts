@@ -34,8 +34,19 @@ export function useWatchSession(profileId: string | null) {
     refresh();
     if (!profileId) return;
 
+    // Tên kênh phải KHÁC NHAU cho mỗi chỗ dùng (giống hệt lý do ở useTimeRequests.ts): hook
+    // này giờ chạy ở 2 nơi CÙNG LÚC cho CÙNG 1 bé trên điện thoại — trình phát nổi
+    // (MobilePlayerHost, sống xuyên suốt lúc chuyển trang) VÀ thẻ "Phiên xem hiện tại"
+    // (SessionLiveCard) khi bố mẹ mở Khu vực Bố mẹ ngay trên chính điện thoại đang phát.
+    // Đặt CHUNG 1 tên kênh (`watch_session_<id>`) thì Supabase coi là 1 kênh — gọi
+    // `.subscribe()` lần 2 lên kênh đã tham gia rồi sẽ THẢY LỖI ĐỒNG BỘ (throw, không phải
+    // reject promise) ngay trong useEffect, mà app này không có ErrorBoundary nào nên lỗi đó
+    // sẽ gỡ bỏ TOÀN BỘ giao diện — đúng lỗi "vào Khu vực Bố mẹ lúc đang phát nhạc thì hiện
+    // màn hình đen". Thêm hậu tố ngẫu nhiên là đủ: bộ lọc `filter: profile_id=eq.${profileId}`
+    // bên dưới vẫn giữ nguyên, cả 2 nơi vẫn nhận đúng sự kiện đổi phiên xem của bé đó.
+    const channelName = `watch_session_${profileId}_${Math.random().toString(36).slice(2, 10)}`;
     const channel = supabase
-      .channel(`watch_session_${profileId}`)
+      .channel(channelName)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'watch_sessions', filter: `profile_id=eq.${profileId}` },

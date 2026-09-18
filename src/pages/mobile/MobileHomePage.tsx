@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, PlayCircle, Clock, Tv, ChevronRight, Moon, Play } from 'lucide-react';
+import { Sparkles, Clock, Tv, ChevronRight, Moon, Play } from 'lucide-react';
 import { useHomeContent } from '@/hooks/useHomeContent';
 import { useMobilePlayback } from '@/context/MobilePlaybackContext';
 import { ProfileSwitcher } from '@/components/navigation/ProfileSwitcher';
@@ -20,9 +20,13 @@ const RECENT_PREVIEW = 5;
 
 /**
  * MobileHomePage — Trang chủ trên điện thoại thật, tối ưu cho việc NGHE TRUYỆN (UI_SPEC.md
- * mục 4): mặc định nổi bật nội dung gắn nhãn "Truyện", cộng thêm "Tiếp tục nghe" và "Gần
- * đây". Dùng LẠI ĐÚNG useHomeContent (cùng hook với Trang chủ TV/iPad/máy tính) — không tự
- * lọc/sắp xếp lại theo cách khác, không tạo nguồn dữ liệu song song.
+ * mục 4): mặc định nổi bật "Danh sách truyện" (playlist gắn CẢ 2 nhãn "Truyện" + "Mobile"),
+ * cộng thêm "Gần đây" (video/playlist gắn nhãn "Mobile", mới thêm gần đây nhất) — KHÔNG còn
+ * khối "Tiếp tục nghe" nữa (đã bỏ theo yêu cầu). Dùng LẠI ĐÚNG useHomeContent (cùng hook với
+ * Trang chủ TV/iPad/máy tính) — không tự lọc/sắp xếp lại theo cách khác, không tạo nguồn dữ
+ * liệu song song; riêng việc lọc thêm theo nhãn "Mobile" cho 2 khối trên làm ngay trong file
+ * này (xem phoneOnlyLabelId/storyItems/recentItems bên dưới), vì đây là quy tắc RIÊNG của
+ * Trang chủ điện thoại, không áp dụng cho TV/iPad/máy tính.
  *
  * Bố cục (banner chào (kèm nút đổi hồ sơ) + dải danh mục + các khối "Xem tất cả") bám theo
  * bộ ảnh tham khảo trong tài liệu thiết kế — CHỈ lấy Ý TƯỞNG bố cục, không nhúng lại hình ảnh
@@ -44,20 +48,37 @@ export function MobileHomePage() {
     allLabels,
     labelsOf,
     channels,
-    continuingVideos,
     playable,
     isListSource,
     buildSourcePlayerParams,
-    buildContinuingPlayerParams,
   } = home;
+
+  /** Nhãn "Mobile" (is_phone_only) — xem supabase/019_device_visibility_labels.sql. Dùng để
+      lọc riêng cho "Danh sách truyện" + "Gần đây" bên dưới (chỉ hiện nội dung bố mẹ đã CHỦ
+      ĐỘNG gắn nhãn này, không phải "mọi thứ không bị ẩn trên điện thoại" như useHomeContent
+      vẫn dùng cho các khối khác — 2 việc khác nhau, xem chú thích ở từng khối). */
+  const phoneOnlyLabelId = allLabels.find((l) => l.is_phone_only)?.id ?? null;
 
   const storyLabel: ContentLabel | undefined = allLabels.find(
     (l) => l.name.trim().toLowerCase() === STORY_LABEL_NAME
   );
-  const storyItems = storyLabel ? playable.filter((s) => s.label_ids.includes(storyLabel.id)) : [];
-  /** "Gần đây" — sources đã được Supabase trả về sắp theo created_at giảm dần sẵn (xem
-      useAllowedSources.ts), chỉ cần cắt bớt. */
-  const recentItems = playable.slice(0, RECENT_LIMIT);
+  /** "Danh sách truyện" — CHỈ hiện PLAYLIST (không phải video/link lẻ) vừa gắn nhãn "Truyện"
+      VỪA gắn nhãn "Mobile" (bố mẹ chủ động chọn playlist nào dùng cho khu nghe truyện trên
+      điện thoại), theo đúng yêu cầu — không còn gộp mọi loại nội dung gắn nhãn "Truyện" như
+      trước nữa. */
+  const storyItems =
+    storyLabel && phoneOnlyLabelId
+      ? playable.filter(
+          (s) => isListSource(s) && s.label_ids.includes(storyLabel.id) && s.label_ids.includes(phoneOnlyLabelId)
+        )
+      : [];
+  /** "Gần đây" — CHỈ video/playlist đã gắn nhãn "Mobile" (bố mẹ chủ động chọn cho điện
+      thoại), lấy MỚI THÊM GẦN ĐÂY NHẤT trước — sources đã được Supabase trả về sắp theo
+      created_at giảm dần sẵn (xem useAllowedSources.ts), lọc xong chỉ cần cắt bớt, không
+      cần sắp lại. */
+  const recentItems = phoneOnlyLabelId
+    ? playable.filter((s) => s.label_ids.includes(phoneOnlyLabelId)).slice(0, RECENT_LIMIT)
+    : [];
 
   /** Dải danh mục ngay dưới banner — TOÀN BỘ nhãn thường (không tính 2 nhãn hành vi đặc
       biệt "Ưu tiên"/"Ẩn" và 2 nhãn giới hạn thiết bị "Mobile"/"TV", xem useContentLabels.ts),
@@ -77,10 +98,6 @@ export function MobileHomePage() {
     const p = buildSourcePlayerParams(source);
     if (!p) return;
     playVideo(p);
-    navigate('/player');
-  };
-  const openContinuing = (entry: (typeof continuingVideos)[number]) => {
-    playVideo(buildContinuingPlayerParams(entry));
     navigate('/player');
   };
   /** Mở 1 mục bất kỳ trong 1 shelf — playlist/playlist tự tạo thì vào trang danh sách video,
@@ -139,11 +156,13 @@ export function MobileHomePage() {
         </p>
       )}
 
-      {/* --- Khu Truyện — trọng tâm của Trang chủ điện thoại (UI_SPEC.md mục 4) --- */}
+      {/* --- Danh sách truyện — trọng tâm của Trang chủ điện thoại (UI_SPEC.md mục 4). CHỈ
+          hiện playlist vừa gắn nhãn "Truyện" vừa gắn nhãn "Mobile" (2 điều kiện, xem
+          storyItems phía trên) — không phải mọi nội dung gắn nhãn "Truyện" như trước. --- */}
       <div className="mobile-shelf-block">
         <div className="mobile-shelf-header">
           <div className="mobile-shelf-title">
-            <Sparkles size={18} aria-hidden="true" /> Truyện cho bé
+            <Sparkles size={18} aria-hidden="true" /> Danh sách truyện
           </div>
           {storyItems.length > 0 && (
             <button
@@ -163,30 +182,11 @@ export function MobileHomePage() {
         ) : (
           <div className="mobile-shelf-empty">
             {storyLabel
-              ? 'Chưa có nội dung nào được gắn nhãn "Truyện" — vào Khu vực Bố mẹ ➜ Nội dung để gắn nhãn cho playlist/video bé hay nghe.'
-              : 'Chưa có nhãn "Truyện" — vào Khu vực Bố mẹ ➜ Nội dung ➜ Quản lý nhãn để tạo nhãn tên "Truyện" rồi gắn cho playlist/video muốn hiện ở đây.'}
+              ? 'Chưa có playlist nào gắn ĐỦ CẢ 2 nhãn "Truyện" và "Mobile" — vào Khu vực Bố mẹ ➜ Nội dung để gắn thêm nhãn cho playlist truyện muốn hiện ở đây.'
+              : 'Chưa có nhãn "Truyện" — vào Khu vực Bố mẹ ➜ Nội dung ➜ Quản lý nhãn để tạo nhãn tên "Truyện" rồi gắn (cùng nhãn "Mobile") cho playlist muốn hiện ở đây.'}
           </div>
         )}
       </div>
-
-      {continuingVideos.length > 0 && (
-        <div className="mobile-shelf-block">
-          <div className="mobile-shelf-title">
-            <PlayCircle size={18} aria-hidden="true" /> Tiếp tục nghe
-          </div>
-          <div className="mobile-shelf">
-            {continuingVideos.map((entry) => (
-              <MobileContentCard
-                key={`${entry.source.id}:${entry.row.video_ref}`}
-                title={entry.title}
-                thumbnail={entry.thumbnail}
-                progressPercent={entry.row.progress_percent}
-                onClick={() => openContinuing(entry)}
-              />
-            ))}
-          </div>
-        </div>
-      )}
 
       {recentItems.length > 0 && (
         <div className="mobile-shelf-block">
