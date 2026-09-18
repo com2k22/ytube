@@ -39,12 +39,16 @@ export interface AllowedSource {
 
 /**
  * ContentLabel — 1 nhãn dùng để gán cho video/playlist đã thêm (VD: "Học tập", "Giải
- * trí"...), xem supabase/010_content_labels.sql.
+ * trí"...), xem supabase/010_content_labels.sql + supabase/019_device_visibility_labels.sql.
  *
- * 2 nhãn có sẵn giữ HÀNH VI ĐẶC BIỆT cố định (is_builtin = true, không xoá được):
+ * 4 nhãn có sẵn giữ HÀNH VI ĐẶC BIỆT cố định (is_builtin = true, không xoá được):
  *  - is_priority: nội dung gán nhãn này hiện ĐẦU TIÊN trong mỗi mục ở Trang chủ.
  *  - is_hidden: nội dung gán nhãn này KHÔNG hiện ở Trang chủ nữa (vẫn xem được nếu vào
  *    thẳng trang Kênh chứa nó).
+ *  - is_phone_only: nội dung gán nhãn này CHỈ hiện ở Trang chủ/Khám phá trên ĐIỆN THOẠI —
+ *    ẩn khỏi TV/iPad/máy tính (vẫn không phải xoá hẳn, giống is_hidden).
+ *  - is_desktop_only: ngược lại is_phone_only — CHỈ hiện trên TV/iPad/máy tính, ẩn khỏi
+ *    điện thoại.
  * Nhãn khác (kể cả do phụ huynh tự đặt tên) chỉ là nhãn mô tả thường.
  */
 export interface ContentLabel {
@@ -52,6 +56,8 @@ export interface ContentLabel {
   name: string;
   is_priority: boolean;
   is_hidden: boolean;
+  is_phone_only: boolean;
+  is_desktop_only: boolean;
   is_builtin: boolean;
   created_at: string;
 }

@@ -83,15 +83,18 @@ export function FamilyBindingScreen({ session, onBound }: Props) {
     // tạo). Lỗi ở bước nào cũng không chặn thiết lập — bố mẹ tự thêm lại trong khu Bố mẹ.
     //  1) 1 hồ sơ bé đầu tiên.
     await supabase.from('profiles').insert({ name: 'Bé 1', avatar: PROFILE_EMOJI_PRESETS[0] });
-    //  2) 2 nhãn đặc biệt "Ưu tiên"/"Ẩn" (is_builtin) — không có thì Trang chủ mất tính
-    //     năng ưu tiên/ẩn nội dung, và khu Bố mẹ > Quản lý nhãn cũng thiếu 2 nhãn mặc định
-    //     mọi gia đình khác đều có (xem supabase/010_content_labels.sql, seed gốc).
+    //  2) 4 nhãn đặc biệt "Ưu tiên"/"Ẩn"/"Chỉ điện thoại"/"Chỉ TV/iPad/máy tính" (is_builtin)
+    //     — không có thì Trang chủ mất các tính năng ưu tiên/ẩn/giới hạn theo thiết bị, và
+    //     khu Bố mẹ > Quản lý nhãn cũng thiếu các nhãn mặc định mọi gia đình khác đều có
+    //     (xem supabase/010_content_labels.sql + 019_device_visibility_labels.sql, seed gốc).
     await supabase.from('content_labels').insert([
-      { name: 'Ưu tiên', is_priority: true, is_hidden: false, is_builtin: true },
-      { name: 'Ẩn', is_priority: false, is_hidden: true, is_builtin: true },
-      { name: 'Học tập', is_priority: false, is_hidden: false, is_builtin: false },
-      { name: 'Giải trí', is_priority: false, is_hidden: false, is_builtin: false },
-      { name: 'Khác', is_priority: false, is_hidden: false, is_builtin: false },
+      { name: 'Ưu tiên', is_priority: true, is_hidden: false, is_phone_only: false, is_desktop_only: false, is_builtin: true },
+      { name: 'Ẩn', is_priority: false, is_hidden: true, is_phone_only: false, is_desktop_only: false, is_builtin: true },
+      { name: 'Chỉ điện thoại', is_priority: false, is_hidden: false, is_phone_only: true, is_desktop_only: false, is_builtin: true },
+      { name: 'Chỉ TV/iPad/máy tính', is_priority: false, is_hidden: false, is_phone_only: false, is_desktop_only: true, is_builtin: true },
+      { name: 'Học tập', is_priority: false, is_hidden: false, is_phone_only: false, is_desktop_only: false, is_builtin: false },
+      { name: 'Giải trí', is_priority: false, is_hidden: false, is_phone_only: false, is_desktop_only: false, is_builtin: false },
+      { name: 'Khác', is_priority: false, is_hidden: false, is_phone_only: false, is_desktop_only: false, is_builtin: false },
     ]);
     //  3) 1 khung giờ xem mặc định — không có thì tab "Quản lý thời gian" trống trơn, và
     //     tuỳ cách useTimeGate.ts xử lý "chưa có khung giờ nào" có thể vô tình khoá bé xem

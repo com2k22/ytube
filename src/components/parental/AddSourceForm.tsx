@@ -15,6 +15,8 @@ import {
   Ban,
   ListVideo,
   Film,
+  Smartphone,
+  Tv,
 } from 'lucide-react';
 import { useAllowedSources } from '@/hooks/useAllowedSources';
 import { useContentLabels } from '@/hooks/useContentLabels';
@@ -67,6 +69,17 @@ const GROUP_ICON = SOURCE_TYPE_ICON_SVG;
 
 /** URL giả dùng làm chỗ trống cho playlist tự tạo — loại này không có 1 link duy nhất, ghép từ nhiều video. */
 const CUSTOM_PLAYLIST_URL = 'internal://custom-playlist';
+
+/** Icon riêng cho 4 nhãn đặc biệt (is_builtin) — nhãn tự đặt tên dùng icon Tag mặc định.
+    Dùng chung ở cả khối "Nhãn" (chọn lúc thêm nội dung) và "Quản lý nhãn" bên dưới, tránh
+    lặp lại cùng 1 chuỗi if/else ở 2 nơi. */
+function labelIcon(l: { is_priority: boolean; is_hidden: boolean; is_phone_only: boolean; is_desktop_only: boolean }) {
+  if (l.is_priority) return Star;
+  if (l.is_hidden) return EyeOff;
+  if (l.is_phone_only) return Smartphone;
+  if (l.is_desktop_only) return Tv;
+  return Tag;
+}
 
 /** Mỗi nhóm trong "Nội dung đã thêm" chỉ hiện tối đa từng này mục, nhiều hơn thì phải bấm
     "Xem thêm" mới thấy hết — đỡ danh sách dài chiếm hết màn hình (đặc biệt trên điện thoại),
@@ -602,7 +615,9 @@ export function AddSourceForm() {
           <div className="form-row">
             <label>Nhãn (không bắt buộc)</label>
             <div className="day-pills">
-              {labels.map((l) => (
+              {labels.map((l) => {
+                const LabelIcon = labelIcon(l);
+                return (
                 <div
                   key={l.id}
                   className={`day-pill ${selectedLabelIds.includes(l.id) ? 'on' : ''}`}
@@ -610,16 +625,10 @@ export function AddSourceForm() {
                   tabIndex={0}
                   onClick={() => toggleLabel(l.id)}
                 >
-                  {l.is_priority ? (
-                    <Star className="icon" aria-hidden="true" />
-                  ) : l.is_hidden ? (
-                    <EyeOff className="icon" aria-hidden="true" />
-                  ) : (
-                    <Tag className="icon" aria-hidden="true" />
-                  )}{' '}
-                  {l.name}
+                  <LabelIcon className="icon" aria-hidden="true" /> {l.name}
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
@@ -647,7 +656,9 @@ export function AddSourceForm() {
       <div className="settings-card">
         <h4><Tag className="icon icon-lead" aria-hidden="true" /> Quản lý nhãn</h4>
         <div className="added-list">
-          {labels.map((l) => (
+          {labels.map((l) => {
+            const LabelIcon = labelIcon(l);
+            return (
             <div className="added-item" key={l.id} style={{ justifyContent: 'space-between' }}>
               {renamingLabelId === l.id ? (
                 <div style={{ display: 'flex', gap: 8, flex: 1, minWidth: 0 }}>
@@ -675,13 +686,7 @@ export function AddSourceForm() {
               ) : (
                 <>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', minWidth: 0 }}>
-                    {l.is_priority ? (
-                      <Star className="icon" aria-hidden="true" />
-                    ) : l.is_hidden ? (
-                      <EyeOff className="icon" aria-hidden="true" />
-                    ) : (
-                      <Tag className="icon" aria-hidden="true" />
-                    )}
+                    <LabelIcon className="icon" aria-hidden="true" />
                     <span className="ellip">{l.name}</span>
                     {l.is_builtin && (
                       <span style={{ fontSize: 11, opacity: 0.55, flexShrink: 0 }}>(đặc biệt)</span>
@@ -712,7 +717,8 @@ export function AddSourceForm() {
                 </>
               )}
             </div>
-          ))}
+            );
+          })}
         </div>
         <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
           <input

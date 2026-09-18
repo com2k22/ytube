@@ -4,6 +4,7 @@ import { useProfileContext } from '@/context/ProfileContext';
 import { useAllowedSources } from '@/hooks/useAllowedSources';
 import { useWatchProgress } from '@/hooks/useWatchProgress';
 import { useContentLabels } from '@/hooks/useContentLabels';
+import { useIsPhoneScreen } from '@/lib/screenSize';
 import { loadYouTubeApi } from '@/components/player/SafeYouTubePlayer';
 import { extractVideoId, extractPlaylistId } from '@/utils/youtubeParser';
 import { fetchVideoInfo } from '@/lib/youtube';
@@ -32,6 +33,11 @@ export function useHomeContent() {
   const { rows: progressRows } = useWatchProgress(activeProfile?.id ?? null);
   const { labels: allLabels } = useContentLabels();
   const navigate = useNavigate();
+  // Điện thoại thật hay không — dùng để lọc theo 2 nhãn "Chỉ điện thoại"/"Chỉ TV/iPad/máy
+  // tính" bên dưới (xem supabase/019_device_visibility_labels.sql). Gọi lại đúng hook này ở
+  // cả nhánh TV/desktop lẫn nhánh điện thoại (branch-at-the-top, xem HomePage.tsx) nên luôn
+  // đọc đúng loại thiết bị đang thật sự hiển thị trang này.
+  const isPhone = useIsPhoneScreen();
   /** Cache tên thật + ảnh đại diện của từng VIDEO trong 1 playlist YouTube thật/1 kênh (xem
       continuingVideos bên dưới) — cần gọi riêng YouTube Data API theo videoId. */
   const [videoInfoCache, setVideoInfoCache] = useState<Record<string, { title: string; thumbnail: string | null } | null>>(
@@ -46,10 +52,22 @@ export function useHomeContent() {
 
   const hiddenLabelId = allLabels.find((l) => l.is_hidden)?.id ?? null;
   const priorityLabelId = allLabels.find((l) => l.is_priority)?.id ?? null;
+  // "Chỉ điện thoại"/"Chỉ TV/iPad/máy tính" — 2 nhãn đặc biệt mới, cùng cơ chế với Ưu
+  // tiên/Ẩn ở trên (xem supabase/019_device_visibility_labels.sql). Không gán nhãn nào
+  // trong 2 nhãn này thì nội dung hiện ở MỌI thiết bị như trước giờ, không đổi gì.
+  const phoneOnlyLabelId = allLabels.find((l) => l.is_phone_only)?.id ?? null;
+  const desktopOnlyLabelId = allLabels.find((l) => l.is_desktop_only)?.id ?? null;
   const labelsOf = (s: AllowedSource): ContentLabel[] =>
     s.label_ids.map((id) => allLabels.find((l) => l.id === id)).filter((l): l is ContentLabel => !!l && !l.is_hidden);
   const isHidden = (s: AllowedSource) => !!hiddenLabelId && s.label_ids.includes(hiddenLabelId);
   const isPriority = (s: AllowedSource) => !!priorityLabelId && s.label_ids.includes(priorityLabelId);
+  /** true = nội dung này bị giới hạn theo thiết bị và thiết bị ĐANG XEM không thuộc nhóm
+      được phép — VD gán "Chỉ điện thoại" mà đang mở trên TV/máy tính thì true. Giống hệt
+      is_hidden: chỉ ẩn khỏi Trang chủ/Khám phá, vào thẳng trang Kênh/Playlist vẫn xem được
+      bình thường (những trang đó không gọi hàm này). */
+  const isHiddenOnThisDevice = (s: AllowedSource) =>
+    (!!phoneOnlyLabelId && s.label_ids.includes(phoneOnlyLabelId) && !isPhone) ||
+    (!!desktopOnlyLabelId && s.label_ids.includes(desktopOnlyLabelId) && isPhone);
   const sortPriorityFirst = <T,>(items: T[], getSource: (item: T) => AllowedSource): T[] =>
     [...items].sort((a, b) => Number(isPriority(getSource(b))) - Number(isPriority(getSource(a))));
 
@@ -58,20 +76,22 @@ export function useHomeContent() {
       (s) =>
         s.type === 'youtube_playlist' || s.type === 'youtube_video' || s.type === 'direct_url' || s.type === 'custom_playlist'
     )
-    .filter((s) => !isHidden(s));
-  const channels = sources.filter((s) => s.type === 'youtube_channel').filter((s) => !isHidden(s));
+    .filter((s) => !isHidden(s) && !isHiddenOnThisDevice(s));
+  const channels = sources
+    .filter((s) => s.type === 'youtube_channel')
+    .filter((s) => !isHidden(s) && !isHiddenOnThisDevice(s));
 
   const continuingRows = useMemo(() => {
     return progressRows
       .filter((r) => r.progress_percent > 0 && r.progress_percent < 100)
       .filter((r) => {
         const src = sources.find((s) => s.id === r.source_id);
-        return !!src && !(hiddenLabelId && src.label_ids.includes(hiddenLabelId));
+        return !!src && !(hiddenLabelId && src.label_ids.includes(hiddenLabelId)) && !isHiddenOnThisDevice(src);
       })
       .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
       .slice(0, CONTINUE_LIMIT);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [progressRows, sources, hiddenLabelId]);
+  }, [progressRows, sources, hiddenLabelId, phoneOnlyLabelId, desktopOnlyLabelId, isPhone]);
 
   useEffect(() => {
     const missingIds = continuingRows
