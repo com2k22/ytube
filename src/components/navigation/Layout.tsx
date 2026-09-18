@@ -186,10 +186,19 @@ export function Layout() {
   // unlocked = bố mẹ đã cho xem ngay (nhập PIN tại chỗ, hoặc duyệt lời xin từ xa) → bỏ
   // qua mọi giới hạn giờ cho tới khi hết suất. "needsFamilySetup" luôn ưu tiên cao nhất —
   // chưa xác định được gia đình thì chưa có gì để tính giờ giấc cả, khỏi hiện chồng lớp.
-  const showBlockScreen = !needsFamilySetup && !isParentRoute && !gate.allowed && !unlocked && !pinOpen;
+  //
+  // "parentGateOk" (đã đăng nhập đúng tài khoản Google gia đình TRÊN CHÍNH THIẾT BỊ NÀY,
+  // xem khai báo ở trên) giờ cũng bỏ qua luôn mọi màn hình chặn theo giờ — đây LÀ thiết bị
+  // của bố mẹ (đã tự tay đăng nhập Google 1 lần), không phải máy riêng của bé, nên không có
+  // lý do gì tự khoá chính bố mẹ lại. Vẫn CHẠY BÌNH THƯỜNG useTimeGate/useBreakGate phía
+  // trên (không tắt hẳn 2 hook đó) để số phút đã xem/báo cáo tuần vẫn được ghi nhận đúng —
+  // chỉ ẩn 2 lớp phủ chặn màn hình đi trên riêng thiết bị này.
+  const showBlockScreen =
+    !needsFamilySetup && !isParentRoute && !gate.allowed && !unlocked && !pinOpen && !parentGateOk;
   // Màn hình nghỉ giải lao nhường chỗ cho màn hình hết giờ: hết giờ hẳn thì nghỉ hay không
   // cũng chẳng còn ý nghĩa, hiện 2 lớp phủ chồng nhau chỉ tổ rối.
-  const showBreakScreen = !needsFamilySetup && !isParentRoute && !showBlockScreen && onBreak && !pinOpen;
+  const showBreakScreen =
+    !needsFamilySetup && !isParentRoute && !showBlockScreen && onBreak && !pinOpen && !parentGateOk;
 
   /*
     Tới giờ nghỉ giải lao mà bé đang ở trang phát → RỜI HẲN về trang chủ.
@@ -204,8 +213,12 @@ export function Layout() {
     mỗi giây, ngay trên trang nặng nhất (đang phát video) và trên cái máy yếu nhất (TV).
   */
   useEffect(() => {
-    if (onBreak && location.pathname === '/player') navigate('/');
-  }, [onBreak, location.pathname, navigate]);
+    // Thêm "!parentGateOk" — thiết bị của bố mẹ (đã đăng nhập Google) thì không tự đẩy về
+    // Trang chủ vì "hết mạch xem liên tục" nữa, khớp với việc ẩn hẳn màn hình nghỉ giải lao
+    // ở showBreakScreen phía trên. Không gate thì dù ẩn được lớp phủ, bố mẹ vẫn bị văng khỏi
+    // trang phát mỗi khi tới giờ nghỉ — coi như restriction vẫn còn tác dụng nửa vời.
+    if (onBreak && !parentGateOk && location.pathname === '/player') navigate('/');
+  }, [onBreak, parentGateOk, location.pathname, navigate]);
 
   /*
     HẾT GIỜ XEM HẲN (ngoài khung giờ cho phép, hoặc dùng hết hạn mức trong ngày) mà bé đang
