@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { TouchEvent as ReactTouchEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Play,
@@ -140,6 +141,55 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
     if (isFull) navigate('/');
   };
 
+  /**
+   * Vuốt PHẢI SANG TRÁI trong khối THU NHỎ để tắt hẳn trình phát — cử chỉ quen thuộc của
+   * các app nghe nhạc (Spotify/Apple Music...). CHỈ áp dụng ở chế độ thu nhỏ (`isFull` false
+   * thì bỏ qua toàn bộ) — toàn màn hình đã có sẵn nút Đóng riêng, thêm cử chỉ ở đó dễ vuốt
+   * nhầm lúc đang tua/thao tác khác.
+   *
+   * Ngưỡng `SWIPE_CLOSE_PX` mới coi là "đủ ý định tắt" — vuốt nhẹ/lỡ tay chạm thì tự bật lại
+   * đúng vị trí cũ (snap back), không tắt nhầm khi bé chỉ định bấm mở toàn màn hình hoặc lỡ
+   * tay quệt qua. `miniSwiping` chỉ bật SAU KHI xác định rõ đây là 1 cú vuốt NGANG thật sự
+   * (di chuyển đủ xa VÀ ngang nhiều hơn dọc) — nhờ vậy ngón tay chạm vào khối này lúc đang
+   * cuộn trang DỌC không bị hiểu nhầm thành vuốt ngang.
+   */
+  const SWIPE_CLOSE_PX = 90;
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const [miniSwipeX, setMiniSwipeX] = useState(0);
+  const [miniSwiping, setMiniSwiping] = useState(false);
+
+  const onMiniTouchStart = (e: ReactTouchEvent) => {
+    if (isFull) return;
+    const t = e.touches[0];
+    touchStartRef.current = { x: t.clientX, y: t.clientY };
+  };
+  const onMiniTouchMove = (e: ReactTouchEvent) => {
+    if (isFull || !touchStartRef.current) return;
+    const t = e.touches[0];
+    const dx = t.clientX - touchStartRef.current.x;
+    const dy = t.clientY - touchStartRef.current.y;
+    if (!miniSwiping) {
+      if (Math.abs(dx) < 12 || Math.abs(dx) < Math.abs(dy)) return;
+      setMiniSwiping(true);
+    }
+    // Chỉ cho trôi sang TRÁI (dx âm) — vuốt phải thì đứng yên, không có ý nghĩa gì ở đây.
+    if (dx < 0) setMiniSwipeX(dx);
+  };
+  const onMiniTouchEnd = () => {
+    touchStartRef.current = null;
+    if (isFull) return;
+    if (miniSwiping && miniSwipeX < -SWIPE_CLOSE_PX) {
+      // Đủ xa rồi → cho trôi nốt hẳn ra khỏi màn hình rồi mới thật sự đóng, đỡ giật (thấy nó
+      // bay đi trước khi biến mất, không phải đột ngột "mất tăm" giữa chừng cú vuốt).
+      setMiniSwiping(false);
+      setMiniSwipeX(-480);
+      setTimeout(handleClose, 180);
+    } else {
+      setMiniSwiping(false);
+      setMiniSwipeX(0);
+    }
+  };
+
   const sleepLabel: Record<SleepTimerOption, string> = {
     off: 'Hẹn giờ ngủ',
     15: '15 phút',
@@ -162,7 +212,26 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
   const artUrl = nowPlaying.thumbnail || undefined;
 
   return (
-    <div className={`mobile-player-host ${isFull ? 'mobile-player-host--full' : 'mobile-player-host--mini'}`}>
+    <div
+      className={`mobile-player-host ${isFull ? 'mobile-player-host--full' : 'mobile-player-host--mini'}`}
+      // Cử chỉ vuốt-để-tắt CHỈ có ý nghĩa ở chế độ thu nhỏ, nhưng vẫn gắn handler ở đây bất
+      // kể (mỗi hàm tự kiểm tra `isFull` bên trong) — đơn giản hơn là tạo hẳn 1 wrapper
+      // riêng chỉ cho mini, mà không tốn gì thêm vì toàn màn hình luôn thoát sớm ngay dòng
+      // đầu của mỗi hàm.
+      onTouchStart={onMiniTouchStart}
+      onTouchMove={onMiniTouchMove}
+      onTouchEnd={onMiniTouchEnd}
+      onTouchCancel={onMiniTouchEnd}
+      style={
+        !isFull
+          ? {
+              transform: `translateX(${miniSwipeX}px)`,
+              opacity: 1 - Math.min(0.7, Math.abs(miniSwipeX) / 220),
+              transition: miniSwiping ? 'none' : 'transform 0.2s ease, opacity 0.2s ease',
+            }
+          : undefined
+      }
+    >
       {/* Khung chứa trình phát thật — LUÔN gắn trong DOM (không unmount khi thu nhỏ), chỉ
           đổi kích thước bằng CSS, để video/âm thanh không bị ngắt khi bé chuyển trang. Ở chế
           độ "Âm thanh", ảnh đại diện phủ lên trên che khung hình, KHÔNG che tiếng. */}
@@ -208,42 +277,49 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
       </div>
 
       {!isFull && (
-        // --- THANH MINI: chạm để mở toàn màn hình, có sẵn play/pause + đóng. 2 nút điều
-        // khiển gom vào 1 cụm riêng (.mobile-player-mini-controls) thay vì để trôi tự do —
-        // vừa có khoảng đệm rõ ràng với mép bo tròn bên phải (không còn dính sát góc), vừa
-        // dễ tăng cỡ 2 nút mà không phá bố cục. Nút Phát/Tạm dừng là nút CHÍNH nên to hơn +
-        // tô màu nổi bật (accent), nút Đóng phụ nên nhỏ hơn 1 chút — cả 2 đều to hơn hẳn bản
-        // cũ (34px) để bấm bằng ngón tay chắc chắn hơn. ---
-        <button className="mobile-player-mini-tap" onClick={openFull} aria-label={`Mở trình phát: ${title}`}>
-          <div className="mobile-player-mini-title">
-            <div className="mobile-player-mini-name">{title}</div>
-            <div className="mobile-player-mini-sub">{paused ? 'Đã tạm dừng' : 'Đang phát'}</div>
+        // --- THANH MINI: xếp theo dạng LƯỚI (CSS grid, xem .mobile-player-host--mini trong
+        // theme.css) với 3 ô: "title" (hàng trên, chạy suốt chiều ngang), "media" và
+        // "controls" (hàng dưới, ảnh nhỏ bên trái + cụm nút giữa). Nhờ dùng grid-area, thứ
+        // tự trong DOM ở đây KHÔNG quyết định vị trí hiển thị — nên .mobile-player-media (ảnh
+        // nhỏ, PHẢI luôn nằm y nguyên 1 chỗ trong cây DOM để video/âm thanh không bị dựng lại
+        // mỗi lần thu nhỏ/phóng to) vẫn đứng nguyên vị trí cũ trong JSX, chỉ đổi chỗ hiển thị
+        // bằng CSS. Tên bài không còn chung 1 hàng chật hẹp với ảnh/nút nữa mà được đẩy hẳn
+        // lên hàng riêng trên cùng, chạy hết chiều ngang — dễ đọc hơn hẳn khi tên dài. Cụm nút
+        // điều khiển đẩy vào GIỮA hàng dưới (justify-self: center) thay vì dồn sát mép phải
+        // như trước. Tên bài vẫn bấm được để mở toàn màn hình (giữ hành vi cũ); 2 nút bấm
+        // riêng của nó nên không cần stopPropagation nữa vì không còn lồng trong 1 <button>
+        // cha bao trùm cả cụm nút như trước. ---
+        <>
+          <div
+            className="mobile-player-mini-titlebar"
+            role="button"
+            tabIndex={0}
+            onClick={openFull}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                openFull();
+              }
+            }}
+            aria-label={`Mở trình phát: ${title}`}
+          >
+            <span className="mobile-player-mini-name">{title}</span>
+            <span className="mobile-player-mini-sub"> · {paused ? 'Đã tạm dừng' : 'Đang phát'}</span>
           </div>
           <div className="mobile-player-mini-controls">
             <span
               className="mobile-player-mini-btn mobile-player-mini-btn--play"
               role="button"
               aria-label={paused ? 'Phát tiếp' : 'Tạm dừng'}
-              onClick={(e) => {
-                e.stopPropagation();
-                togglePlayPause();
-              }}
+              onClick={togglePlayPause}
             >
               {paused ? <Play size={24} /> : <Pause size={24} />}
             </span>
-            <span
-              className="mobile-player-mini-btn"
-              role="button"
-              aria-label="Đóng"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleClose();
-              }}
-            >
+            <span className="mobile-player-mini-btn" role="button" aria-label="Đóng" onClick={handleClose}>
               <X size={20} />
             </span>
           </div>
-        </button>
+        </>
       )}
 
       {isFull && (

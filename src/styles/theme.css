@@ -1932,12 +1932,24 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
 
   /* --- Trình phát nổi: khung ngoài cùng, giữ chỗ cho khung phát ẩn (chế độ mini) --- */
   .mobile-player-host { position: fixed; left: 0; right: 0; z-index: 45; }
-  /* display:flex ở đây (trước đây THIẾU dòng này — lỗi thật, không phải cố ý) là bắt buộc:
-     JSX vẽ khung phát (ảnh nhỏ) và thanh chạm (tên bài + 2 nút) là 2 phần tử NGANG HÀNG
-     nhau (MobilePlayerHost.tsx), không có flex thì trình duyệt xếp chúng CHỒNG DỌC lên nhau
-     theo mặc định — đây chính là lý do thanh mini trước đây trông vỡ bố cục ("xấu"). */
+  /* Bố cục LƯỚI (grid) 2 cột × 2 hàng cho thanh mini: hàng trên "title" chạy suốt 2 cột
+     (tên bài lên hẳn hàng riêng trên cùng, chạy hết chiều ngang thay vì chen chúc ngang
+     hàng với ảnh/nút như trước); hàng dưới chia "media" (ảnh nhỏ, cột 68px cố định) và
+     "controls" (cụm nút, chiếm phần còn lại). Dùng grid-area nên .mobile-player-media
+     (MobilePlayerHost.tsx) không cần đổi chỗ trong cây DOM giữa 2 chế độ mini/toàn màn
+     hình — video/âm thanh không bị dựng lại. Trước đây dùng flex hàng ngang đơn giản (tên
+     bài phải chen cùng hàng với ảnh), giờ đổi hẳn sang grid để tách tên bài ra riêng. */
   .mobile-player-host--mini {
-    display: flex; align-items: center;
+    display: grid;
+    grid-template-columns: 68px 1fr;
+    grid-template-rows: auto auto;
+    grid-template-areas:
+      'title title'
+      'media controls';
+    align-items: center;
+    column-gap: 12px; row-gap: 4px;
+    padding: 10px 14px;
+    box-sizing: border-box;
     /* Cộng thêm 14px vào khoảng cách đáy — trước đây thanh mini dính sát ngay lên trên
        thanh menu dưới đáy (chỉ cách đúng bằng chiều cao thanh đó), nhìn dính cục, không có
        khoảng thở. */
@@ -1948,10 +1960,10 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
        lại của Trang chủ. */
     border-radius: 18px; overflow: hidden;
     box-shadow: 0 10px 28px rgba(0, 0, 0, 0.32);
-    /* Kính mờ (backdrop-filter) — nền trong suốt nhẹ THẤY ĐƯỢC nội dung trang phía sau mờ
-       ảo qua lớp kính, khác hẳn màu phẳng của thẻ/nền app xung quanh (yêu cầu "khác màu so
-       với màu app, có độ trong suốt nhẹ"). -webkit- cho Safari/iOS (không có tiền tố này
-       thì Safari bỏ qua toàn bộ hiệu ứng, coi như trong suốt bình thường không mờ). */
+    /* Kính mờ (backdrop-filter) — nền trong suốt THẤY ĐƯỢC nội dung trang phía sau mờ ảo
+       qua lớp kính, khác hẳn màu phẳng của thẻ/nền app xung quanh. -webkit- cho Safari/iOS
+       (không có tiền tố này thì Safari bỏ qua toàn bộ hiệu ứng, coi như trong suốt bình
+       thường không mờ). */
     backdrop-filter: blur(18px) saturate(1.4);
     -webkit-backdrop-filter: blur(18px) saturate(1.4);
   }
@@ -1962,11 +1974,13 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
      nổi bật rõ ràng là 1 khối "đang phát" riêng, không lẫn vào các khối tĩnh khác. */
   [data-theme='dark'] .mobile-player-host--mini,
   :root:not([data-theme]) .mobile-player-host--mini {
-    background: rgba(52, 62, 102, 0.62);
+    /* Tăng thêm độ trong suốt theo yêu cầu (trước 0.62) — nhìn xuyên rõ nội dung trang phía
+       sau qua lớp kính mờ hơn, thay vì gần như 1 khối màu đặc. */
+    background: rgba(52, 62, 102, 0.4);
     border: 1px solid rgba(124, 156, 255, 0.35);
   }
   [data-theme='chibi'] .mobile-player-host--mini {
-    background: rgba(255, 214, 234, 0.72);
+    background: rgba(255, 214, 234, 0.5);
     border: 1px solid rgba(255, 159, 196, 0.55);
   }
   [data-theme='dark'] .mobile-player-host--full,
@@ -1982,7 +1996,7 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
   /* Tăng cỡ ảnh đại diện trong thanh mini (56px → 68px) — cùng với padding/khoảng cách tăng
      bên dưới, khiến cả khối to hẳn lên, cân đối hơn với các khối thẻ 128px ở Trang chủ thay
      vì trông nhỏ/mỏng dính. */
-  .mobile-player-host--mini .mobile-player-media { width: 68px; height: 68px; border-radius: 14px; margin: 6px; }
+  .mobile-player-host--mini .mobile-player-media { grid-area: media; width: 68px; height: 68px; border-radius: 14px; margin: 0; }
   .mobile-player-host--mini .mobile-player-media .player-wrap,
   .mobile-player-host--mini .mobile-player-media iframe,
   .mobile-player-host--mini .mobile-player-media video { width: 100%; height: 100%; }
@@ -1998,29 +2012,28 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
   }
   [data-theme='chibi'] .mobile-player-artwork { background-color: #ffe0ee; }
 
-  /* --- Thanh mini: chạm để mở toàn màn hình --- */
-  .mobile-player-mini-tap {
-    display: flex; align-items: center; gap: 14px;
-    width: 100%; padding: 8px 18px 8px 0;
-    background: none; border: none; cursor: pointer; text-align: left;
-    box-sizing: border-box;
-  }
-  .mobile-player-mini-title { flex: 1; min-width: 0; }
-  .mobile-player-mini-name {
-    font-size: 14px; font-weight: 800;
+  /* --- Thanh mini: hàng TÊN BÀI chạy suốt chiều ngang, đứng trên cùng (grid-area "title",
+     xem .mobile-player-host--mini) — bấm vào để mở toàn màn hình, giống hành vi cũ. Tên bài
+     + trạng thái gộp chung 1 hàng, dùng nowrap/ellipsis nên luôn gọn trong 1 dòng dù tên dài
+     cỡ nào (min-width:0 bắt buộc — mặc định ô lưới không tự co nhỏ hơn nội dung, thiếu dòng
+     này thì ellipsis sẽ không có tác dụng, chữ tràn ra ngoài khối). --- */
+  .mobile-player-mini-titlebar {
+    grid-area: title; min-width: 0; width: 100%;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    cursor: pointer;
   }
-  .mobile-player-mini-sub { font-size: 11.5px; opacity: 0.65; margin-top: 2px; }
+  .mobile-player-mini-name { font-size: 14px; font-weight: 800; }
+  .mobile-player-mini-sub { font-size: 11.5px; opacity: 0.65; }
   [data-theme='dark'] .mobile-player-mini-name,
   :root:not([data-theme]) .mobile-player-mini-name { color: #f2f3f5; }
   [data-theme='chibi'] .mobile-player-mini-name { color: #c2447a; }
 
-  /* Cụm 2 nút điều khiển — gom riêng thành 1 khối (thay vì thả trôi ngay trong hàng chính)
-     để: (1) khoảng cách với chữ tên bài và với mép bo tròn bên phải LUÔN đều nhau, không
-     dính sát biên (padding-right 18px ở .mobile-player-mini-tap phía trên chính là khoảng
-     đệm đó — trước đây chỉ 12px, vẫn còn cảm giác sát mép nên tăng thêm); (2) rảnh tay
-     chỉnh khoảng cách/cỡ 2 nút mà không đụng gì tới phần tên bài bên trái. */
-  .mobile-player-mini-controls { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+  /* Cụm 2 nút điều khiển — đứng ở hàng dưới, ô "controls" (bên phải ảnh nhỏ). Đẩy vào GIỮA
+     ô này (justify-self: center) thay vì dồn sát mép phải như trước, theo đúng yêu cầu. */
+  .mobile-player-mini-controls {
+    grid-area: controls; justify-self: center;
+    display: flex; align-items: center; gap: 12px;
+  }
   .mobile-player-mini-btn {
     display: flex; align-items: center; justify-content: center;
     width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
