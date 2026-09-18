@@ -1,5 +1,6 @@
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, PlayCircle, Clock, Tv } from 'lucide-react';
+import { Sparkles, PlayCircle, Clock, Tv, Users, Search, ChevronRight, Moon, Play } from 'lucide-react';
 import { useHomeContent } from '@/hooks/useHomeContent';
 import { useMobilePlayback } from '@/context/MobilePlaybackContext';
 import type { AllowedSource, ContentLabel } from '@/types';
@@ -10,16 +11,23 @@ import type { AllowedSource, ContentLabel } from '@/types';
     bố mẹ chưa từng tạo nhãn "Truyện" thì khối này tự hiện gợi ý cách tạo (xem bên dưới). */
 const STORY_LABEL_NAME = 'truyện';
 
-/** Tối đa bao nhiêu mục hiện trong khối "Gần đây" trên điện thoại — Trang chủ TV/máy tính
-    không giới hạn khối này (chỉ giới hạn "Tiếp tục xem"), nhưng màn hình điện thoại hẹp hơn
-    nhiều nên cần chặn bớt để khỏi cuộn quá dài. */
+/** Tối đa bao nhiêu mục lấy về cho khối "Gần đây" (Trang chủ TV/máy tính không giới hạn
+    khối này) — chỉ hiện RECENT_PREVIEW mục đầu trên điện thoại, bấm "Xem tất cả" mới thấy
+    hết trong Khám phá, tránh cuộn quá dài trên màn hình hẹp. */
 const RECENT_LIMIT = 12;
+const RECENT_PREVIEW = 5;
 
 /**
  * MobileHomePage — Trang chủ trên điện thoại thật, tối ưu cho việc NGHE TRUYỆN (UI_SPEC.md
  * mục 4): mặc định nổi bật nội dung gắn nhãn "Truyện", cộng thêm "Tiếp tục nghe" và "Gần
  * đây". Dùng LẠI ĐÚNG useHomeContent (cùng hook với Trang chủ TV/iPad/máy tính) — không tự
  * lọc/sắp xếp lại theo cách khác, không tạo nguồn dữ liệu song song.
+ *
+ * Bố cục (thanh trên cùng + banner chào + dải danh mục + các khối "Xem tất cả") bám theo bộ
+ * ảnh tham khảo trong tài liệu thiết kế — CHỈ lấy Ý TƯỞNG bố cục, không nhúng lại hình ảnh
+ * minh hoạ gốc (tài liệu ghi rõ PNG chỉ để tham khảo): banner dùng icon trăng/sao có sẵn
+ * (lucide-react) thay cho tranh vẽ, dải danh mục dựng từ NHÃN THẬT bố mẹ đã tạo (không có
+ * danh mục "Nhạc/Học tập/Giải trí" cứng nào cả — nhãn nào có thật thì hiện đúng nhãn đó).
  */
 export function MobileHomePage() {
   const navigate = useNavigate();
@@ -30,6 +38,7 @@ export function MobileHomePage() {
     loading,
     sources,
     allLabels,
+    labelsOf,
     channels,
     continuingVideos,
     playable,
@@ -46,6 +55,18 @@ export function MobileHomePage() {
       useAllowedSources.ts), chỉ cần cắt bớt. */
   const recentItems = playable.slice(0, RECENT_LIMIT);
 
+  /** Dải danh mục ngay dưới banner — TOÀN BỘ nhãn thường (không tính 2 nhãn hành vi đặc
+      biệt "Ưu tiên"/"Ẩn" và 2 nhãn giới hạn thiết bị "Mobile"/"TV", xem useContentLabels.ts),
+      "Truyện" (nếu có) luôn đứng đầu vì đó là trọng tâm của Trang chủ điện thoại. */
+  const categories = useMemo(
+    () => allLabels.filter((l) => !l.is_builtin),
+    [allLabels]
+  );
+  const orderedCategories = useMemo(() => {
+    if (!storyLabel) return categories;
+    return [storyLabel, ...categories.filter((c) => c.id !== storyLabel.id)];
+  }, [categories, storyLabel]);
+
   /** Mở 1 video đơn lẻ/link trực tiếp — báo cho trình phát nổi biết TRƯỚC (có sẵn ảnh đại
       diện ngay), rồi mới mở trang /player để MobilePlayerHost vẽ toàn màn hình. */
   const openVideoSource = (source: AllowedSource) => {
@@ -58,8 +79,8 @@ export function MobileHomePage() {
     playVideo(buildContinuingPlayerParams(entry));
     navigate('/player');
   };
-  /** Mở 1 mục bất kỳ trong 1 shelf — playlist/playlist tự tạo thì vào trang danh sách video
-      (chưa có bản tối ưu riêng cho điện thoại — task kế tiếp), còn lại phát thẳng. */
+  /** Mở 1 mục bất kỳ trong 1 shelf — playlist/playlist tự tạo thì vào trang danh sách video,
+      còn lại phát thẳng. */
   const openAny = (source: AllowedSource) => {
     if (isListSource(source)) {
       navigate(`/playlist/${source.id}`);
@@ -72,9 +93,42 @@ export function MobileHomePage() {
 
   return (
     <main className="main mobile-home">
-      <div className="mobile-home-greet">
-        Xin chào, <span className="accent">{activeProfile.name}</span> 👋
+      {/* --- Thanh trên cùng: lối tắt vào Khu vực Bố mẹ + nút Tìm kiếm --- */}
+      <div className="mobile-home-topbar">
+        <button className="mobile-home-topbar-link" onClick={() => navigate('/parent')}>
+          <Users size={16} aria-hidden="true" />
+          Khu vực Bố mẹ
+          <ChevronRight size={15} aria-hidden="true" />
+        </button>
+        <button className="mobile-home-topbar-icon" onClick={() => navigate('/discover')} aria-label="Tìm kiếm">
+          <Search size={19} aria-hidden="true" />
+        </button>
       </div>
+
+      {/* --- Banner chào — icon trăng/sao thay cho tranh minh hoạ (xem chú thích đầu file) --- */}
+      <div className="mobile-home-banner">
+        <div className="mobile-home-banner-icon">
+          <Moon size={26} aria-hidden="true" />
+        </div>
+        <div className="mobile-home-banner-text">
+          <div className="mobile-home-banner-title">Chào {activeProfile.name}!</div>
+          <div className="mobile-home-banner-sub">Cùng nghe truyện hay và có một ngày thật vui nhé 💛</div>
+        </div>
+      </div>
+
+      {orderedCategories.length > 0 && (
+        <div className="mobile-discover-chips mobile-home-categories">
+          {orderedCategories.map((l) => (
+            <button
+              key={l.id}
+              className={`mobile-discover-chip ${storyLabel && l.id === storyLabel.id ? 'active' : ''}`}
+              onClick={() => navigate(`/discover?label=${l.id}`)}
+            >
+              {l.name}
+            </button>
+          ))}
+        </div>
+      )}
 
       {loading && <p style={{ opacity: 0.6 }}>Đang tải nội dung...</p>}
 
@@ -87,8 +141,18 @@ export function MobileHomePage() {
 
       {/* --- Khu Truyện — trọng tâm của Trang chủ điện thoại (UI_SPEC.md mục 4) --- */}
       <div className="mobile-shelf-block">
-        <div className="mobile-shelf-title">
-          <Sparkles size={18} aria-hidden="true" /> Truyện cho bé
+        <div className="mobile-shelf-header">
+          <div className="mobile-shelf-title">
+            <Sparkles size={18} aria-hidden="true" /> Truyện cho bé
+          </div>
+          {storyItems.length > 0 && (
+            <button
+              className="mobile-shelf-viewall"
+              onClick={() => navigate(storyLabel ? `/discover?label=${storyLabel.id}` : '/discover')}
+            >
+              Xem tất cả <ChevronRight size={14} aria-hidden="true" />
+            </button>
+          )}
         </div>
         {storyItems.length > 0 ? (
           <div className="mobile-shelf">
@@ -126,12 +190,29 @@ export function MobileHomePage() {
 
       {recentItems.length > 0 && (
         <div className="mobile-shelf-block">
-          <div className="mobile-shelf-title">
-            <Clock size={18} aria-hidden="true" /> Gần đây
+          <div className="mobile-shelf-header">
+            <div className="mobile-shelf-title">
+              <Clock size={18} aria-hidden="true" /> Gần đây
+            </div>
+            <button className="mobile-shelf-viewall" onClick={() => navigate('/discover')}>
+              Xem tất cả <ChevronRight size={14} aria-hidden="true" />
+            </button>
           </div>
-          <div className="mobile-shelf">
-            {recentItems.map((s) => (
-              <MobileContentCard key={s.id} title={s.title} thumbnail={s.thumbnail} onClick={() => openAny(s)} />
+          <div className="mobile-story-list">
+            {recentItems.slice(0, RECENT_PREVIEW).map((s) => (
+              <button key={s.id} className="mobile-story-item" onClick={() => openAny(s)}>
+                <div
+                  className="mobile-story-item-thumb"
+                  style={s.thumbnail ? { backgroundImage: `url(${s.thumbnail})` } : undefined}
+                >
+                  {!s.thumbnail && <span className="mobile-content-thumb-fallback">🎵</span>}
+                </div>
+                <div className="mobile-story-item-info">
+                  <div className="mobile-story-item-title">{s.title}</div>
+                  {labelsOf(s)[0] && <span className="mobile-recent-tag">{labelsOf(s)[0].name}</span>}
+                </div>
+                <Play size={16} className="mobile-story-item-play" aria-hidden="true" />
+              </button>
             ))}
           </div>
         </div>

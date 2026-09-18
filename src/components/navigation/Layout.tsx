@@ -146,10 +146,21 @@ export function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // ĐIỆN THOẠI THẬT — cần biết SỚM (trước cả useTvNavigation ngay dưới đây) để tắt hẳn hệ
+  // thống điều hướng D-pad trên điện thoại (xem "enabled: !isPhone" + đoạn resetFocus() phía
+  // dưới). Không di chuyển khai báo này xuống dưới như trước nữa.
+  const isPhone = useIsPhoneScreen();
+
   const { resetFocus } = useTvNavigation(layoutRef, SECTION_COLS, {
     onEscape: () => {
       if (location.pathname !== '/') navigate(-1);
     },
+    // Hệ thống này (bấm mũi tên di chuyển "ô đang chọn") chỉ dành cho điều khiển kiểu D-pad
+    // (TV/điều khiển từ xa) — điện thoại thật dùng CHẠM TAY, không cần gì cả. Tắt hẳn ở đây
+    // (không chỉ tắt phím mũi tên mà còn không gắn listener) để chắc chắn không còn tác dụng
+    // phụ gì trên điện thoại (xem thêm đoạn resetFocus() phía dưới — nguyên nhân THẬT SỰ của
+    // lỗi "vừa vào trang Quản lý nội dung là tự bật menu Loại nguồn").
+    enabled: !isPhone,
   });
 
   // Hình nền Trang chủ theo mùa/dịp lễ (xem useHomeBackground.ts) — CỐ Ý chỉ áp dụng đúng
@@ -218,7 +229,7 @@ export function Layout() {
   // bị khác bằng đăng nhập Google (xem showGoogleGate ở trên) — không đổi gì ở phần đó.
   // Xem các trang trong `src/pages/mobile/` cho giao diện điện thoại mới, chọn qua
   // `useIsPhoneScreen()`/`isPhoneScreen()` (src/lib/screenSize.ts).
-  const isPhone = useIsPhoneScreen();
+  // (isPhone đã khai báo SỚM HƠN, ngay trên useTvNavigation — xem đó.)
 
   // Bố mẹ vừa duyệt lời xin từ điện thoại → TV tự mở khoá đúng số phút được cho.
   // useRef để chỉ ăn 1 lần cho mỗi lời xin, không mở lại mỗi lần vẽ lại màn hình.
@@ -237,9 +248,18 @@ export function Layout() {
   // Đặt lại ô đang chọn mỗi khi: đổi trang, HOẶC mở/đóng 1 lớp phủ khoá màn hình (bảng
   // PIN, màn hình đăng nhập Google, màn hình Chưa đến giờ xem). Lớp phủ mở ra thì ô chọn
   // phải nhảy vào bên trong nó; đóng lại thì quay về nội dung chính.
+  //
+  // CHỈ làm việc này khi KHÔNG PHẢI điện thoại — đây chính là nguyên nhân lỗi "vừa bấm vào
+  // trang Quản lý nội dung là tự bật menu Loại nguồn": resetFocus() tự gọi
+  // el.focus({preventScroll:true}) vào PHẦN TỬ NỘI DUNG ĐẦU TIÊN của trang mới (để bé dùng
+  // điều khiển TV bấm mũi tên/OK được ngay) — nhưng phần tử đầu tiên trong AddSourceForm lại
+  // là 1 thẻ <select> ("Loại nguồn"), mà gọi .focus() thẳng vào <select> trên nhiều trình
+  // duyệt di động sẽ tự BẬT LUÔN danh sách xổ xuống, dù bé chưa chạm gì cả. Điện thoại dùng
+  // chạm tay, không cần "ô đang chọn" nào hết — tắt hẳn ở đây, không đụng gì tới TV/iPad/máy
+  // tính (vẫn cần y hệt như cũ để bấm mũi tên/điều khiển từ xa đi lại được).
   useEffect(() => {
-    resetFocus();
-  }, [location.pathname, pinOpen, showGoogleGate, showBlockScreen, showBreakScreen, needsFamilySetup, resetFocus]);
+    if (!isPhone) resetFocus();
+  }, [location.pathname, pinOpen, showGoogleGate, showBlockScreen, showBreakScreen, needsFamilySetup, resetFocus, isPhone]);
 
   return (
     <MobilePlaybackProvider>

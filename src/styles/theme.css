@@ -2264,4 +2264,109 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
   .mobile-parent-signout {
     width: 100%; justify-content: center; margin: 8px 0 32px;
   }
+
+  /* --- Trang chủ điện thoại — thanh trên cùng + banner chào (bám theo bố cục tài liệu
+     thiết kế, xem chú thích ở MobileHomePage.tsx). --- */
+  .mobile-home-topbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 4px; }
+  .mobile-home-topbar-link {
+    display: flex; align-items: center; gap: 5px;
+    border: none; background: none; padding: 6px 0; font-size: 13px; font-weight: 800; cursor: pointer;
+  }
+  [data-theme='dark'] .mobile-home-topbar-link,
+  :root:not([data-theme]) .mobile-home-topbar-link { color: #9a9ca5; }
+  [data-theme='chibi'] .mobile-home-topbar-link { color: #c2447a; }
+  .mobile-home-topbar-icon {
+    flex: 0 0 auto; width: 38px; height: 38px; border-radius: 50%; border: none;
+    display: flex; align-items: center; justify-content: center;
+  }
+  [data-theme='dark'] .mobile-home-topbar-icon,
+  :root:not([data-theme]) .mobile-home-topbar-icon { background: #1b1c22; color: #f2f3f5; }
+  [data-theme='chibi'] .mobile-home-topbar-icon { background: #ffe0ee; color: #ff5c9e; }
+
+  .mobile-home-banner {
+    display: flex; align-items: center; gap: 14px;
+    margin: 12px 0 18px; padding: 18px; border-radius: 22px;
+  }
+  [data-theme='dark'] .mobile-home-banner,
+  :root:not([data-theme]) .mobile-home-banner {
+    background: linear-gradient(135deg, rgba(124, 156, 255, 0.18), rgba(124, 156, 255, 0.04));
+    border: 1px solid rgba(124, 156, 255, 0.25);
+  }
+  [data-theme='chibi'] .mobile-home-banner {
+    background: linear-gradient(135deg, #ffe0ee, #fff0f6);
+    border: 1px solid #ffd6ea;
+  }
+  .mobile-home-banner-icon {
+    flex: 0 0 auto; width: 48px; height: 48px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+  }
+  [data-theme='dark'] .mobile-home-banner-icon,
+  :root:not([data-theme]) .mobile-home-banner-icon { background: rgba(124, 156, 255, 0.22); color: #7c9cff; }
+  [data-theme='chibi'] .mobile-home-banner-icon { background: #ffd6ea; color: #ff5c9e; }
+  .mobile-home-banner-text { min-width: 0; }
+  .mobile-home-banner-title { font-size: 18px; font-weight: 800; }
+  [data-theme='dark'] .mobile-home-banner-title,
+  :root:not([data-theme]) .mobile-home-banner-title { color: #f2f3f5; }
+  [data-theme='chibi'] .mobile-home-banner-title { color: #c2447a; }
+  .mobile-home-banner-sub { font-size: 12.5px; opacity: 0.7; line-height: 1.4; margin-top: 2px; }
+
+  .mobile-home-categories { margin-bottom: 22px; }
+
+  /* --- Tiêu đề khối kèm link "Xem tất cả" (Trang chủ) — thay cho .mobile-shelf-title đơn
+     lẻ khi khối đó cần link, 2 lớp cùng tồn tại: .mobile-shelf-header bọc ngoài, chỉnh lại
+     margin-bottom của .mobile-shelf-title bên trong về 0 (đã có margin ở lớp ngoài). --- */
+  .mobile-shelf-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+  .mobile-shelf-header .mobile-shelf-title { margin-bottom: 0; }
+  .mobile-shelf-viewall {
+    flex: 0 0 auto; display: flex; align-items: center; gap: 2px;
+    border: none; background: none; font-size: 12.5px; font-weight: 800; cursor: pointer; padding: 0;
+  }
+  [data-theme='dark'] .mobile-shelf-viewall,
+  :root:not([data-theme]) .mobile-shelf-viewall { color: #7c9cff; }
+  [data-theme='chibi'] .mobile-shelf-viewall { color: #ff5c9e; }
+
+  /* Nhãn nhỏ dưới tên video trong khối "Gần đây" (danh sách dọc, dùng chung .mobile-story-*
+     với khối "Chi tiết playlist/kênh" phía trên) — CHỈ hiện khi video đó thật sự có gán ít
+     nhất 1 nhãn thường (labelsOf đã tự loại nhãn "Ẩn", xem useHomeContent.ts). */
+  .mobile-recent-tag {
+    display: inline-block; margin-top: 5px; padding: 2px 9px; border-radius: 8px;
+    font-size: 10.5px; font-weight: 800;
+  }
+  [data-theme='dark'] .mobile-recent-tag,
+  :root:not([data-theme]) .mobile-recent-tag { background: rgba(124, 156, 255, 0.16); color: #7c9cff; }
+  [data-theme='chibi'] .mobile-recent-tag { background: #ffe0ee; color: #ff5c9e; }
+
+  /* --- Khám phá điện thoại — lưới ô "chủ đề" (từ nhãn thật) + thanh quay lại khi đang xem
+     kết quả (xem chú thích ở MobileDiscoverPage.tsx). Màu 4 ô luân phiên TÁI DÙNG đúng bộ
+     màu biểu đồ đã có sẵn của theme (--chart-1..4, xem đầu file) — không tự bịa màu mới. --- */
+  .mobile-discover-tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .mobile-discover-tile {
+    display: flex; align-items: center; gap: 10px;
+    padding: 16px 14px; border-radius: 18px; border: none; font-size: 13.5px; font-weight: 800; text-align: left; cursor: pointer;
+  }
+  [data-theme='dark'] .mobile-discover-tile,
+  :root:not([data-theme]) .mobile-discover-tile { background: #1b1c22; color: #f2f3f5; }
+  [data-theme='chibi'] .mobile-discover-tile { background: #fffbfd; color: #c2447a; border: 2px solid #ffd6ea; }
+  /* Icon riêng từng ô tô theo màu biểu đồ (luân phiên 4 màu), CHỮ tên danh mục vẫn giữ màu
+     đọc chính của thẻ (không bị nhuộm theo) — chỉ nhắm đúng thẻ <svg> bên trong. */
+  .mobile-discover-tile-c0 svg { color: var(--chart-1); }
+  .mobile-discover-tile-c1 svg { color: var(--chart-2); }
+  .mobile-discover-tile-c2 svg { color: var(--chart-3); }
+  .mobile-discover-tile-c3 svg { color: var(--chart-4); }
+
+  .mobile-discover-browsebar { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+  .mobile-discover-browsebar .mobile-story-back { margin-bottom: 0; }
+  .mobile-discover-activelabel {
+    padding: 3px 11px; border-radius: 10px; font-size: 12px; font-weight: 800;
+  }
+  [data-theme='dark'] .mobile-discover-activelabel,
+  :root:not([data-theme]) .mobile-discover-activelabel { background: rgba(124, 156, 255, 0.16); color: #7c9cff; }
+  [data-theme='chibi'] .mobile-discover-activelabel { background: #ffe0ee; color: #ff5c9e; }
+
+  /* Tiêu đề đầu trang dùng chung cho các trang điện thoại không có banner riêng (hiện chỉ
+     "Đã tải" — Trang chủ có banner riêng, Khám phá không cần tiêu đề vì đã có ô tìm kiếm). */
+  .mobile-page-title { font-size: 18px; font-weight: 800; margin: 4px 0 4px; }
+  [data-theme='dark'] .mobile-page-title,
+  :root:not([data-theme]) .mobile-page-title { color: #f2f3f5; }
+  [data-theme='chibi'] .mobile-page-title { color: #c2447a; }
 }

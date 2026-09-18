@@ -52,9 +52,9 @@ export function useHomeContent() {
 
   const hiddenLabelId = allLabels.find((l) => l.is_hidden)?.id ?? null;
   const priorityLabelId = allLabels.find((l) => l.is_priority)?.id ?? null;
-  // "Chỉ điện thoại"/"Chỉ TV/iPad/máy tính" — 2 nhãn đặc biệt mới, cùng cơ chế với Ưu
-  // tiên/Ẩn ở trên (xem supabase/019_device_visibility_labels.sql). Không gán nhãn nào
-  // trong 2 nhãn này thì nội dung hiện ở MỌI thiết bị như trước giờ, không đổi gì.
+  // "Mobile"/"TV" — 2 nhãn đặc biệt mới, cùng cơ chế với Ưu tiên/Ẩn ở trên (xem
+  // supabase/019_device_visibility_labels.sql). Không gán nhãn nào trong 2 nhãn này thì
+  // nội dung hiện ở MỌI thiết bị như trước giờ, không đổi gì.
   const phoneOnlyLabelId = allLabels.find((l) => l.is_phone_only)?.id ?? null;
   const desktopOnlyLabelId = allLabels.find((l) => l.is_desktop_only)?.id ?? null;
   const labelsOf = (s: AllowedSource): ContentLabel[] =>
