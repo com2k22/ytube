@@ -1,4 +1,5 @@
 import { ProfileSwitcher } from './ProfileSwitcher';
+import { useIsPhoneScreen } from '@/lib/screenSize';
 
 /**
  * Thanh trên cùng.
@@ -9,12 +10,12 @@ import { ProfileSwitcher } from './ProfileSwitcher';
  *
  * • TV / máy tính / iPad → chỉ hiện LOGO Ytube (góc phải). Nút chọn hồ sơ đã dời hẳn sang
  *   Sidebar.
- * • Điện thoại (≤700px) → logo ẩn đi (đã ẩn từ trước, xem theme.css), thay vào đó hiện lại
- *   nút chọn hồ sơ ở đúng góc phải này — chỗ quen thuộc trên điện thoại, vì trên điện thoại
- *   Sidebar đã biến thành thanh menu dưới đáy, không phải chỗ hợp lý để đặt nút này.
- *
- * Cả 2 phần bên dưới CÙNG NẰM TRONG MÃ, CSS quyết định cái nào hiện theo bề ngang màn hình
- * — xem .topbar-profile trong theme.css.
+ * • Điện thoại (≤700px) → KHÔNG hiện gì cả nữa (logo đã ẩn từ trước; nút chọn hồ sơ trước
+ *   đây quay lại góc phải, giờ đã dời hẳn xuống banner chào ở Trang chủ — xem
+ *   MobileHomePage.tsx, region "homebanner"). Thanh này trên điện thoại giờ chỉ còn tác
+ *   dụng duy nhất: chừa đúng khoảng đệm an toàn (tai thỏ/thanh trạng thái), thu nhỏ + để
+ *   trong suốt (xem theme.css) — không còn nội dung nào bên trong nên không cần render
+ *   ProfileSwitcher lãng phí (dù có render CSS cũng ẩn hẳn) — bỏ luôn cho gọn.
  *
  * Logo: khối đỏ bo góc + tam giác play trắng (vẽ bằng SVG) + chữ "Ytube" đứng sau — ĐỒNG
  * BỘ với bộ icon app (icon màn hình chính điện thoại/TV, xem scripts/gen-icons.py): cùng
@@ -23,6 +24,7 @@ import { ProfileSwitcher } from './ProfileSwitcher';
  * từng máy/TV, vốn có thể hiện lệch/mỏng khác nhau tuỳ thiết bị).
  */
 export function TopBar() {
+  const isPhone = useIsPhoneScreen();
   return (
     <div className="topbar">
       <div className="brand">
@@ -33,7 +35,7 @@ export function TopBar() {
         </span>
         <span className="brand-text">Ytube</span>
       </div>
-      <ProfileSwitcher region="topbar" className="topbar-profile" />
+      {!isPhone && <ProfileSwitcher region="topbar" className="topbar-profile" />}
     </div>
   );
 }

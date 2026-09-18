@@ -1,8 +1,9 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, PlayCircle, Clock, Tv, Search, ChevronRight, Moon, Play } from 'lucide-react';
+import { Sparkles, PlayCircle, Clock, Tv, ChevronRight, Moon, Play } from 'lucide-react';
 import { useHomeContent } from '@/hooks/useHomeContent';
 import { useMobilePlayback } from '@/context/MobilePlaybackContext';
+import { ProfileSwitcher } from '@/components/navigation/ProfileSwitcher';
 import type { AllowedSource, ContentLabel } from '@/types';
 
 /** Tên nhãn dùng làm nguồn cho khu Truyện trên điện thoại — so khớp không phân biệt hoa/
@@ -23,11 +24,14 @@ const RECENT_PREVIEW = 5;
  * đây". Dùng LẠI ĐÚNG useHomeContent (cùng hook với Trang chủ TV/iPad/máy tính) — không tự
  * lọc/sắp xếp lại theo cách khác, không tạo nguồn dữ liệu song song.
  *
- * Bố cục (thanh trên cùng + banner chào + dải danh mục + các khối "Xem tất cả") bám theo bộ
- * ảnh tham khảo trong tài liệu thiết kế — CHỈ lấy Ý TƯỞNG bố cục, không nhúng lại hình ảnh
+ * Bố cục (banner chào (kèm nút đổi hồ sơ) + dải danh mục + các khối "Xem tất cả") bám theo
+ * bộ ảnh tham khảo trong tài liệu thiết kế — CHỈ lấy Ý TƯỞNG bố cục, không nhúng lại hình ảnh
  * minh hoạ gốc (tài liệu ghi rõ PNG chỉ để tham khảo): banner dùng icon trăng/sao có sẵn
  * (lucide-react) thay cho tranh vẽ, dải danh mục dựng từ NHÃN THẬT bố mẹ đã tạo (không có
  * danh mục "Nhạc/Học tập/Giải trí" cứng nào cả — nhãn nào có thật thì hiện đúng nhãn đó).
+ * KHÔNG còn thanh riêng ở đầu trang (nút Tìm kiếm/"Khu vực Bố mẹ") — cả 2 đều đã có lối vào
+ * riêng ở thanh menu dưới đáy, để thêm ở đây chỉ trùng lặp; nút chọn hồ sơ cũng dời hẳn
+ * xuống ghép vào banner (xem ProfileSwitcher region="homebanner").
  */
 export function MobileHomePage() {
   const navigate = useNavigate();
@@ -93,22 +97,21 @@ export function MobileHomePage() {
 
   return (
     <main className="main mobile-home">
-      {/* --- Thanh trên cùng: nút Tìm kiếm. (Lối tắt "Khu vực Bố mẹ" đã bỏ khỏi đây — đã có
-          sẵn đúng 1 chỗ vào khu này là tab "Khu vực Bố mẹ" ở thanh menu dưới đáy, để 2 lối
-          tắt trùng nhau ở Trang chủ chỉ gây rối mắt, không thêm ích lợi gì.) --- */}
-      <div className="mobile-home-topbar">
-        <button className="mobile-home-topbar-icon" onClick={() => navigate('/discover')} aria-label="Tìm kiếm">
-          <Search size={19} aria-hidden="true" />
-        </button>
-      </div>
-
-      {/* --- Banner chào — icon trăng/sao thay cho tranh minh hoạ (xem chú thích đầu file) --- */}
+      {/* --- Banner chào — icon trăng/sao thay cho tranh minh hoạ (xem chú thích đầu file).
+          Thanh trên cùng riêng (nút Tìm kiếm + lối tắt "Khu vực Bố mẹ") đã bỏ hẳn: tìm kiếm
+          đã có sẵn ở tab "Khám phá" dưới đáy, "Khu vực Bố mẹ" cũng đã có tab riêng — 2 lối
+          tắt trùng nhau ở đầu Trang chủ chỉ gây rối mắt. Avatar/tên hồ sơ (nút đổi giữa
+          Cốm/Mina) cũng dời hẳn xuống đây, ghép ngay vào dòng chào — vừa gọn (không cần 1
+          khu riêng ở đầu trang) vừa dễ thấy hơn (đúng chỗ đang đọc). --- */}
       <div className="mobile-home-banner">
         <div className="mobile-home-banner-icon">
           <Moon size={26} aria-hidden="true" />
         </div>
         <div className="mobile-home-banner-text">
-          <div className="mobile-home-banner-title">Chào {activeProfile.name}!</div>
+          <div className="mobile-home-banner-greet">
+            <span>Chào</span>
+            <ProfileSwitcher region="homebanner" className="mobile-home-banner-profile" />
+          </div>
           <div className="mobile-home-banner-sub">Cùng nghe truyện hay và có một ngày thật vui nhé 💛</div>
         </div>
       </div>

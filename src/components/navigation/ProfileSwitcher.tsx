@@ -5,12 +5,18 @@ import { profileEmoji } from '@/constants';
 interface Props {
   /**
    * Vùng điều hướng bằng điều khiển TV cho nút chính:
-   *  - 'side'   → đặt trong Sidebar (TV/máy tính/iPad): nằm chung 1 cột dọc với menu bên,
-   *               bấm lên/xuống mà tới (xem SECTION_COLS.side trong Layout.tsx).
-   *  - 'topbar' → đặt trong TopBar (chỉ hiện trên ĐIỆN THOẠI, xem .topbar-profile trong
-   *               theme.css): cố tình KHÔNG khai ở SECTION_COLS → mặc định 1 hàng ngang.
+   *  - 'side'      → đặt trong Sidebar (TV/máy tính/iPad): nằm chung 1 cột dọc với menu bên,
+   *                  bấm lên/xuống mà tới (xem SECTION_COLS.side trong Layout.tsx).
+   *  - 'topbar'    → đặt trong TopBar. KHÔNG còn dùng trên điện thoại thật (đã dời xuống
+   *                  banner Trang chủ, xem 'homebanner' — TopBar.tsx tự bỏ qua khi phone).
+   *  - 'homebanner' → đặt ngay trong banner chào ở Trang chủ điện thoại (MobileHomePage.tsx),
+   *                  ghép chung dòng với chữ "Chào" để bấm đổi hồ sơ tại chỗ, không cần 1
+   *                  khu riêng ở đầu trang nữa (xem .mobile-home-banner-profile trong
+   *                  theme.css). Cả 'topbar' và 'homebanner' đều CỐ TÌNH KHÔNG khai ở
+   *                  SECTION_COLS → mặc định 1 hàng ngang (D-pad TV không đụng tới 2 vùng
+   *                  này vì chỉ hiện trên điện thoại, nơi hệ D-pad đã tắt hẳn).
    */
-  region: 'side' | 'topbar';
+  region: 'side' | 'topbar' | 'homebanner';
   /** Class bọc ngoài — để CSS quyết định đặt ở đâu (đầu Sidebar hay góc phải TopBar) và
       hiện/ẩn theo bề ngang màn hình (xem .sidebar-profile / .topbar-profile). */
   className: string;

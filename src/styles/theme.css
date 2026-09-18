@@ -1491,35 +1491,28 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
   .sidebar-deco { display: none; }
 
   /* Nút chọn hồ sơ: ẩn khỏi thanh dưới đáy (không phải chỗ hợp lý — bàn tay bấm nhầm sang
-     mục khác ngay cạnh), quay lại góc phải thanh trên cùng — chỗ quen thuộc trên điện
-     thoại từ trước tới giờ. */
+     mục khác ngay cạnh). KHÔNG quay lại thanh trên cùng nữa — đã dời hẳn xuống banner chào ở
+     Trang chủ (ProfileSwitcher region="homebanner", xem MobileHomePage.tsx + TopBar.tsx: trên
+     điện thoại TopBar không còn render bản "topbar" nữa nên .topbar-profile không bao giờ có
+     nội dung — khai display:none lại đây cho chắc, đề phòng còn CSS cũ nào tham chiếu). */
   .sidebar-profile { display: none; }
-  .topbar-profile { display: flex; }
+  .topbar-profile { display: none; }
 
-  /* Khôi phục khoảng đệm an toàn cho .topbar trên điện thoại — khối "≤760px" ở trên (dùng
-     chung cho cả điện thoại lẫn iPad ngang hẹp) đã ghi đè .topbar về "height:58px;
-     padding:0 12px", KHÔNG cộng env(safe-area-inset-top) như luật gốc (dòng ~231) nữa. Trên
-     điện thoại có tai thỏ/viên thuốc đục lỗ (và cả khi cài app ra màn hình chính, thanh
-     trạng thái trong suốt đè lên nội dung), thiếu dòng này làm nút chọn hồ sơ ở góc phải bị
-     giờ/pin/sóng của máy đè lên, nhìn rối. Khối "≥701px" (dòng ~1662) đã tự cộng lại đúng
-     kiểu này cho iPad/máy tính — ở đây làm y hệt, riêng cho điện thoại thật. */
+  /* Thanh trên cùng (.topbar) giờ KHÔNG còn gì bên trong (logo đã ẩn từ khối "≤760px", nút
+     hồ sơ đã dời xuống banner) — thu nhỏ hẳn lại, chỉ còn đúng tác dụng chừa khoảng đệm an
+     toàn (tai thỏ/thanh trạng thái điện thoại) rồi để TRONG SUỐT, giống các ảnh mẫu thiết kế
+     (không có thanh header riêng ở đầu trang, nội dung/nền cuộn xuyên thẳng qua vùng này).
+     Không dùng display:none hẳn — vẫn cần 1 khoảng trống đúng bằng safe-area-inset-top để
+     đẩy nội dung xuống dưới vùng tai thỏ, .topbar vốn đã "position:sticky" sẵn nên tận dụng
+     luôn cho việc này thay vì phải sửa lại .main ở nơi khác. */
   .topbar {
-    height: calc(58px + env(safe-area-inset-top, 0px));
-    padding: env(safe-area-inset-top, 0px) 12px 0;
+    height: env(safe-area-inset-top, 0px);
+    min-height: 0;
+    padding: 0;
+    background: transparent !important;
+    border-bottom: none !important;
+    box-shadow: none !important;
   }
-
-  /* Nút chọn hồ sơ trên điện thoại — tối giản lại: bỏ hẳn viền bo quanh (trước đây luôn có
-     viền màu vì .profile-btn luôn mang class "active", xem ProfileSwitcher.tsx — hợp lý bên
-     TV/Sidebar để biết đang bấm chọn ô nào bằng điều khiển, nhưng trên điện thoại chỉ có 1
-     nút bấm tay, viền bo màu quanh nó trông nặng nề/cũ, không cần thiết). Giữ avatar + tên +
-     mũi tên xổ, chỉ đổi màu chữ khi bấm mở danh sách (không cần khung viền báo trạng thái). */
-  .topbar-profile .profile-btn.active {
-    border-color: transparent !important;
-    background: none !important;
-    padding: 4px 6px 4px 2px;
-  }
-  .topbar-profile .avatar { width: 34px; height: 34px; font-size: 18px; }
-  .topbar-profile .profile-name-text { font-weight: 800; }
 
   .side-item {
     flex: 1; min-width: 0;
@@ -2290,19 +2283,9 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
     width: 100%; justify-content: center; margin: 8px 0 32px;
   }
 
-  /* --- Trang chủ điện thoại — thanh trên cùng + banner chào (bám theo bố cục tài liệu
-     thiết kế, xem chú thích ở MobileHomePage.tsx). Chỉ còn đúng 1 nút (Tìm kiếm) nên đẩy hẳn
-     sang phải, cùng phía với nút chọn hồ sơ ở .topbar ngay phía trên — gọn thành 1 cụm góc
-     phải, không dàn 2 đầu như trước (hồi còn thêm cả nút "Khu vực Bố mẹ" ở đây). --- */
-  .mobile-home-topbar { display: flex; align-items: center; justify-content: flex-end; margin-top: 4px; }
-  .mobile-home-topbar-icon {
-    flex: 0 0 auto; width: 38px; height: 38px; border-radius: 50%; border: none;
-    display: flex; align-items: center; justify-content: center;
-  }
-  [data-theme='dark'] .mobile-home-topbar-icon,
-  :root:not([data-theme]) .mobile-home-topbar-icon { background: #1b1c22; color: #f2f3f5; }
-  [data-theme='chibi'] .mobile-home-topbar-icon { background: #ffe0ee; color: #ff5c9e; }
-
+  /* --- Trang chủ điện thoại — banner chào (bám theo bố cục tài liệu thiết kế, xem chú
+     thích ở MobileHomePage.tsx). Thanh trên cùng riêng (nút Tìm kiếm/"Khu vực Bố mẹ") đã bỏ
+     hẳn — xem MobileHomePage.tsx. --- */
   .mobile-home-banner {
     display: flex; align-items: center; gap: 14px;
     margin: 12px 0 18px; padding: 18px; border-radius: 22px;
@@ -2324,10 +2307,36 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
   :root:not([data-theme]) .mobile-home-banner-icon { background: rgba(124, 156, 255, 0.22); color: #7c9cff; }
   [data-theme='chibi'] .mobile-home-banner-icon { background: #ffd6ea; color: #ff5c9e; }
   .mobile-home-banner-text { min-width: 0; }
-  .mobile-home-banner-title { font-size: 18px; font-weight: 800; }
-  [data-theme='dark'] .mobile-home-banner-title,
-  :root:not([data-theme]) .mobile-home-banner-title { color: #f2f3f5; }
-  [data-theme='chibi'] .mobile-home-banner-title { color: #c2447a; }
+
+  /* --- Dòng "Chào <tên bé>" — giờ ghép chung với nút đổi hồ sơ (ProfileSwitcher,
+     region="homebanner") ngay trong banner, thay vì để rời ở 1 thanh riêng đầu trang (xem
+     MobileHomePage.tsx). font-size/weight giữ NGUYÊN như tiêu đề banner cũ (18px/800) để
+     chữ "Chào" và tên hồ sơ đọc liền mạch, cùng 1 cỡ, như đúng 1 câu chào. --- */
+  .mobile-home-banner-greet {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
+    font-size: 18px; font-weight: 800;
+  }
+  [data-theme='dark'] .mobile-home-banner-greet,
+  :root:not([data-theme]) .mobile-home-banner-greet { color: #f2f3f5; }
+  [data-theme='chibi'] .mobile-home-banner-greet { color: #c2447a; }
+
+  /* --- Nút đổi hồ sơ ghép trong banner: bỏ hẳn khung/nền nút mặc định (.profile-btn luôn
+     có class "active", vốn tính để tô khung màu bên TV/Sidebar) — ở đây để trong suốt,
+     hoà thẳng vào chữ "Chào", chỉ còn avatar to bằng đúng chữ + mũi tên xổ nhỏ báo hiệu bấm
+     được, đúng tinh thần "gọn, hiện đại" thay cho khung viền cũ. */
+  .mobile-home-banner-profile { display: inline-flex; }
+  .mobile-home-banner-profile .profile-btn.active {
+    border-color: transparent !important;
+    background: none !important;
+    padding: 0; gap: 6px; font-size: 18px; font-weight: 800;
+  }
+  .mobile-home-banner-profile .avatar { width: 26px; height: 26px; font-size: 16px; }
+  .mobile-home-banner-profile .profile-caret { font-size: 0.7em; opacity: 0.55; }
+  /* Danh sách xổ xuống khi bấm đổi hồ sơ — canh theo mép trái nút thay vì mép phải (mặc
+     định .profile-menu xổ sang phải, hợp với nút nằm ở góc phải màn hình như bản cũ; nút
+     này giờ nằm bên trong banner, gần mép trái, xổ theo mặc định dễ bị tràn ra ngoài banner
+     bên phải). */
+  .mobile-home-banner-profile .profile-menu { left: 0; right: auto; }
   .mobile-home-banner-sub { font-size: 12.5px; opacity: 0.7; line-height: 1.4; margin-top: 2px; }
 
   .mobile-home-categories { margin-bottom: 22px; }
