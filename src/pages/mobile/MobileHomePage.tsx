@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, PlayCircle, Clock, Tv, Users, Search, ChevronRight, Moon, Play } from 'lucide-react';
+import { Sparkles, PlayCircle, Clock, Tv, Search, ChevronRight, Moon, Play } from 'lucide-react';
 import { useHomeContent } from '@/hooks/useHomeContent';
 import { useMobilePlayback } from '@/context/MobilePlaybackContext';
 import type { AllowedSource, ContentLabel } from '@/types';
@@ -93,13 +93,10 @@ export function MobileHomePage() {
 
   return (
     <main className="main mobile-home">
-      {/* --- Thanh trên cùng: lối tắt vào Khu vực Bố mẹ + nút Tìm kiếm --- */}
+      {/* --- Thanh trên cùng: nút Tìm kiếm. (Lối tắt "Khu vực Bố mẹ" đã bỏ khỏi đây — đã có
+          sẵn đúng 1 chỗ vào khu này là tab "Khu vực Bố mẹ" ở thanh menu dưới đáy, để 2 lối
+          tắt trùng nhau ở Trang chủ chỉ gây rối mắt, không thêm ích lợi gì.) --- */}
       <div className="mobile-home-topbar">
-        <button className="mobile-home-topbar-link" onClick={() => navigate('/parent')}>
-          <Users size={16} aria-hidden="true" />
-          Khu vực Bố mẹ
-          <ChevronRight size={15} aria-hidden="true" />
-        </button>
         <button className="mobile-home-topbar-icon" onClick={() => navigate('/discover')} aria-label="Tìm kiếm">
           <Search size={19} aria-hidden="true" />
         </button>

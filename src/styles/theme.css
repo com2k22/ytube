@@ -1496,6 +1496,31 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
   .sidebar-profile { display: none; }
   .topbar-profile { display: flex; }
 
+  /* Khôi phục khoảng đệm an toàn cho .topbar trên điện thoại — khối "≤760px" ở trên (dùng
+     chung cho cả điện thoại lẫn iPad ngang hẹp) đã ghi đè .topbar về "height:58px;
+     padding:0 12px", KHÔNG cộng env(safe-area-inset-top) như luật gốc (dòng ~231) nữa. Trên
+     điện thoại có tai thỏ/viên thuốc đục lỗ (và cả khi cài app ra màn hình chính, thanh
+     trạng thái trong suốt đè lên nội dung), thiếu dòng này làm nút chọn hồ sơ ở góc phải bị
+     giờ/pin/sóng của máy đè lên, nhìn rối. Khối "≥701px" (dòng ~1662) đã tự cộng lại đúng
+     kiểu này cho iPad/máy tính — ở đây làm y hệt, riêng cho điện thoại thật. */
+  .topbar {
+    height: calc(58px + env(safe-area-inset-top, 0px));
+    padding: env(safe-area-inset-top, 0px) 12px 0;
+  }
+
+  /* Nút chọn hồ sơ trên điện thoại — tối giản lại: bỏ hẳn viền bo quanh (trước đây luôn có
+     viền màu vì .profile-btn luôn mang class "active", xem ProfileSwitcher.tsx — hợp lý bên
+     TV/Sidebar để biết đang bấm chọn ô nào bằng điều khiển, nhưng trên điện thoại chỉ có 1
+     nút bấm tay, viền bo màu quanh nó trông nặng nề/cũ, không cần thiết). Giữ avatar + tên +
+     mũi tên xổ, chỉ đổi màu chữ khi bấm mở danh sách (không cần khung viền báo trạng thái). */
+  .topbar-profile .profile-btn.active {
+    border-color: transparent !important;
+    background: none !important;
+    padding: 4px 6px 4px 2px;
+  }
+  .topbar-profile .avatar { width: 34px; height: 34px; font-size: 18px; }
+  .topbar-profile .profile-name-text { font-weight: 800; }
+
   .side-item {
     flex: 1; min-width: 0;
     flex-direction: column; gap: 3px;
@@ -2266,15 +2291,10 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
   }
 
   /* --- Trang chủ điện thoại — thanh trên cùng + banner chào (bám theo bố cục tài liệu
-     thiết kế, xem chú thích ở MobileHomePage.tsx). --- */
-  .mobile-home-topbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 4px; }
-  .mobile-home-topbar-link {
-    display: flex; align-items: center; gap: 5px;
-    border: none; background: none; padding: 6px 0; font-size: 13px; font-weight: 800; cursor: pointer;
-  }
-  [data-theme='dark'] .mobile-home-topbar-link,
-  :root:not([data-theme]) .mobile-home-topbar-link { color: #9a9ca5; }
-  [data-theme='chibi'] .mobile-home-topbar-link { color: #c2447a; }
+     thiết kế, xem chú thích ở MobileHomePage.tsx). Chỉ còn đúng 1 nút (Tìm kiếm) nên đẩy hẳn
+     sang phải, cùng phía với nút chọn hồ sơ ở .topbar ngay phía trên — gọn thành 1 cụm góc
+     phải, không dàn 2 đầu như trước (hồi còn thêm cả nút "Khu vực Bố mẹ" ở đây). --- */
+  .mobile-home-topbar { display: flex; align-items: center; justify-content: flex-end; margin-top: 4px; }
   .mobile-home-topbar-icon {
     flex: 0 0 auto; width: 38px; height: 38px; border-radius: 50%; border: none;
     display: flex; align-items: center; justify-content: center;
