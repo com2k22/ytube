@@ -190,6 +190,54 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
     }
   };
 
+  /**
+   * Vuốt TỪ TRÊN XUỐNG DƯỚI ngay trong vùng video/ảnh (chỉ khi đang TOÀN MÀN HÌNH) để THU
+   * NHỎ trình phát — cùng cách phân biệt "vuốt thật sự" như cử chỉ đóng ở thanh mini phía
+   * trên (di chuyển đủ xa VÀ dọc nhiều hơn ngang mới tính), nhưng đây là vuốt DỌC và chỉ THU
+   * NHỎ chứ không tắt hẳn. Không kéo ảnh theo ngón tay khi đang vuốt (khác thanh mini) — khu
+   * vực này là khung phát video thật, đổi transform liên tục trong lúc kéo dễ giật hình hơn
+   * là chỉ đơn giản "chạm đủ ngưỡng thì thu nhỏ" ngay khi nhấc tay.
+   *
+   * LƯU Ý kỹ thuật: khi đang phát video YouTube ở chế độ "Video" (audioMode tắt, xem hình
+   * thật thay vì ảnh đại diện), video nằm trong 1 khung <iframe> của YouTube — trình duyệt
+   * KHÔNG cho trang cha nhận sự kiện chạm xảy ra bên trong iframe khác nguồn, nên vuốt sẽ
+   * không có tác dụng trong đúng trường hợp đó (giới hạn của trình duyệt, không sửa được).
+   * Ở chế độ "Âm thanh" (mặc định) và với video tải trực tiếp, phần phủ trên cùng luôn là 1
+   * ảnh/thẻ <video> bình thường của chính trang nên cử chỉ vẫn hoạt động đầy đủ.
+   */
+  const FULL_SWIPE_MINIMIZE_PX = 70;
+  const fullTouchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const [fullSwiping, setFullSwiping] = useState(false);
+
+  const onFullMediaTouchStart = (e: ReactTouchEvent) => {
+    if (!isFull) return;
+    const t = e.touches[0];
+    fullTouchStartRef.current = { x: t.clientX, y: t.clientY };
+  };
+  const onFullMediaTouchMove = (e: ReactTouchEvent) => {
+    if (!isFull || !fullTouchStartRef.current) return;
+    const t = e.touches[0];
+    const dx = t.clientX - fullTouchStartRef.current.x;
+    const dy = t.clientY - fullTouchStartRef.current.y;
+    if (!fullSwiping) {
+      if (dy < 14 || Math.abs(dy) < Math.abs(dx)) return;
+      setFullSwiping(true);
+    }
+  };
+  const onFullMediaTouchEnd = (e: ReactTouchEvent) => {
+    if (!isFull || !fullTouchStartRef.current) return;
+    const t = e.changedTouches[0];
+    const dy = t.clientY - fullTouchStartRef.current.y;
+    fullTouchStartRef.current = null;
+    const wasSwiping = fullSwiping;
+    setFullSwiping(false);
+    if (wasSwiping && dy > FULL_SWIPE_MINIMIZE_PX) minimize();
+  };
+  const onFullMediaTouchCancel = () => {
+    fullTouchStartRef.current = null;
+    setFullSwiping(false);
+  };
+
   const sleepLabel: Record<SleepTimerOption, string> = {
     off: 'Hẹn giờ ngủ',
     15: '15 phút',
@@ -234,8 +282,27 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
     >
       {/* Khung chứa trình phát thật — LUÔN gắn trong DOM (không unmount khi thu nhỏ), chỉ
           đổi kích thước bằng CSS, để video/âm thanh không bị ngắt khi bé chuyển trang. Ở chế
-          độ "Âm thanh", ảnh đại diện phủ lên trên che khung hình, KHÔNG che tiếng. */}
-      <div className="mobile-player-media">
+          độ "Âm thanh", ảnh đại diện phủ lên trên che khung hình, KHÔNG che tiếng. Cụm nút
+          Thu nhỏ/Đóng (chỉ hiện khi toàn màn hình) và cử chỉ vuốt-xuống-để-thu-nhỏ đều gắn
+          NGAY TRONG khối này thay vì ở .mobile-player-full bên dưới — theo đúng yêu cầu đưa
+          2 nút này nổi ngay trên vùng video/ảnh, chừa hẳn phần dưới media cho tên bài. */}
+      <div
+        className="mobile-player-media"
+        onTouchStart={onFullMediaTouchStart}
+        onTouchMove={onFullMediaTouchMove}
+        onTouchEnd={onFullMediaTouchEnd}
+        onTouchCancel={onFullMediaTouchCancel}
+      >
+        {isFull && (
+          <div className="mobile-player-media-header">
+            <button className="mobile-player-icon-btn" onClick={minimize} aria-label="Thu nhỏ">
+              <ChevronDown size={22} />
+            </button>
+            <button className="mobile-player-icon-btn" onClick={handleClose} aria-label="Đóng">
+              <X size={22} />
+            </button>
+          </div>
+        )}
         {kind === 'youtube' && ytVideoId && (
           <SafeYouTubePlayer
             videoId={ytVideoId}
@@ -279,16 +346,15 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
       {!isFull && (
         // --- THANH MINI: xếp theo dạng LƯỚI (CSS grid, xem .mobile-player-host--mini trong
         // theme.css) với 3 ô: "title" (hàng trên, chạy suốt chiều ngang), "media" và
-        // "controls" (hàng dưới, ảnh nhỏ bên trái + cụm nút giữa). Nhờ dùng grid-area, thứ
-        // tự trong DOM ở đây KHÔNG quyết định vị trí hiển thị — nên .mobile-player-media (ảnh
+        // "controls" (hàng dưới, ảnh nhỏ bên trái + nút giữa). Nhờ dùng grid-area, thứ tự
+        // trong DOM ở đây KHÔNG quyết định vị trí hiển thị — nên .mobile-player-media (ảnh
         // nhỏ, PHẢI luôn nằm y nguyên 1 chỗ trong cây DOM để video/âm thanh không bị dựng lại
         // mỗi lần thu nhỏ/phóng to) vẫn đứng nguyên vị trí cũ trong JSX, chỉ đổi chỗ hiển thị
         // bằng CSS. Tên bài không còn chung 1 hàng chật hẹp với ảnh/nút nữa mà được đẩy hẳn
-        // lên hàng riêng trên cùng, chạy hết chiều ngang — dễ đọc hơn hẳn khi tên dài. Cụm nút
-        // điều khiển đẩy vào GIỮA hàng dưới (justify-self: center) thay vì dồn sát mép phải
-        // như trước. Tên bài vẫn bấm được để mở toàn màn hình (giữ hành vi cũ); 2 nút bấm
-        // riêng của nó nên không cần stopPropagation nữa vì không còn lồng trong 1 <button>
-        // cha bao trùm cả cụm nút như trước. ---
+        // lên hàng riêng trên cùng, chạy hết chiều ngang — dễ đọc hơn hẳn khi tên dài. Tên bài
+        // vẫn bấm được để mở toàn màn hình (giữ hành vi cũ). BỎ nút Đóng riêng ở đây — đã có
+        // cử chỉ vuốt trái-để-tắt (xem onMiniTouchStart/Move/End phía trên), thêm nút Đóng
+        // nữa là thừa, chỉ còn lại đúng 1 nút Phát/Tạm dừng. ---
         <>
           <div
             className="mobile-player-mini-titlebar"
@@ -315,28 +381,38 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
             >
               {paused ? <Play size={24} /> : <Pause size={24} />}
             </span>
-            <span className="mobile-player-mini-btn" role="button" aria-label="Đóng" onClick={handleClose}>
-              <X size={20} />
-            </span>
           </div>
         </>
       )}
 
       {isFull && (
-        // --- TOÀN MÀN HÌNH: giống ứng dụng nghe nhạc — ảnh lớn, tên truyện, thanh tiến độ,
-        // các nút điều khiển, và hàng tiện ích (tốc độ/hẹn giờ ngủ/chuyển Âm thanh-Video). ---
+        // --- TOÀN MÀN HÌNH: giống ứng dụng nghe nhạc — ảnh lớn (2 nút Thu nhỏ/Đóng nổi ngay
+        // trên ảnh đó, xem khối .mobile-player-media phía trên), rồi tới tên truyện (KHÔNG in
+        // đậm nữa, chỉ cỡ chữ vừa — tránh "nổi bật" quá mức theo yêu cầu), 2 nút chuyển Âm
+        // thanh/Video (LUÔN hiện cả 2, nút đang KHÔNG dùng bị làm mờ đi thay vì ẩn hẳn), thanh
+        // tiến độ mảnh, rồi các nút điều khiển và hàng tiện ích (tốc độ/hẹn giờ ngủ). ---
         <div className="mobile-player-full">
-          <div className="mobile-player-full-header">
-            <button className="mobile-player-icon-btn" onClick={minimize} aria-label="Thu nhỏ">
-              <ChevronDown size={22} />
-            </button>
-            <div className="mobile-player-full-header-title">Đang phát</div>
-            <button className="mobile-player-icon-btn" onClick={handleClose} aria-label="Đóng">
-              <X size={22} />
-            </button>
+          <div className="mobile-player-full-title">
+            <div className="mobile-player-full-title-name">{title}</div>
+            <div className="mobile-player-full-title-sub">{paused ? 'Đã tạm dừng' : 'Đang phát'}</div>
           </div>
 
-          <div className="mobile-player-full-title">{title}</div>
+          <div className="mobile-player-mode-toggle">
+            <button
+              className={`mobile-player-mode-btn ${audioMode ? 'mobile-player-mode-btn--active' : ''}`}
+              onClick={() => setAudioMode(true)}
+              aria-pressed={audioMode}
+            >
+              <Music size={16} /> Âm thanh
+            </button>
+            <button
+              className={`mobile-player-mode-btn ${!audioMode ? 'mobile-player-mode-btn--active' : ''}`}
+              onClick={() => setAudioMode(false)}
+              aria-pressed={!audioMode}
+            >
+              <VideoIcon size={16} /> Video
+            </button>
+          </div>
 
           <div className="mobile-player-progress">
             <input
@@ -397,9 +473,6 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
                 </div>
               )}
             </div>
-            <button className="mobile-player-utility-btn" onClick={() => setAudioMode((a) => !a)}>
-              {audioMode ? <Music size={16} /> : <VideoIcon size={16} />} {audioMode ? 'Âm thanh' : 'Video'}
-            </button>
           </div>
 
           {sleepExpiresAt && sleepOption !== 'off' && sleepOption !== 'end_of_video' && (
