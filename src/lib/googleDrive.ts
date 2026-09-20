@@ -145,21 +145,33 @@ export interface DriveSubfolderScanItem {
   result: DriveFolderResolveResult | null;
 }
 
+/** Kết quả quét 1 "thư mục tổng" — dùng khi phụ huynh chọn nhập cả loạt thư mục con cùng lúc,
+    và (tuỳ chọn) gộp chúng lại thành 1 Danh sách phát duy nhất (xem AddSourceForm.tsx). */
+export interface DriveParentFolderScan {
+  /** Tên thư mục tổng — dùng làm tiêu đề mặc định nếu gộp thành 1 Danh sách phát. */
+  parentFolderName: string;
+  /** Ảnh bìa nằm TRỰC TIẾP trong thư mục tổng (không phải trong thư mục con nào) — null nếu
+      thư mục tổng không có sẵn ảnh nào; nơi gọi tự rơi về ảnh của thư mục con đầu tiên. */
+  parentCoverThumbnail: string | null;
+  items: DriveSubfolderScanItem[];
+}
+
 /**
  * resolveDriveParentFolder — quét 1 "THƯ MỤC TỔNG" (chứa nhiều thư mục con, MỖI thư mục con
  * là 1 nội dung riêng theo đúng quy ước ở resolveDriveFolder) để dò ra hàng loạt nội dung cùng
  * lúc, đỡ phải dán link từng thư mục con 1. CHỈ liệt kê các thư mục con NẰM TRỰC TIẾP trong
- * thư mục tổng (không đệ quy sâu hơn nữa) — đúng 1 cấp là đủ cho quy ước đang dùng.
+ * thư mục tổng (không đệ quy sâu hơn nữa) — đúng 1 cấp là đủ cho quy ước đang dùng. Nhân tiện
+ * cùng 1 lượt gọi liệt kê này, cũng tìm luôn xem thư mục tổng có sẵn 1 ảnh nào KHÔNG NẰM TRONG
+ * thư mục con nào không — dùng làm ảnh bìa chung nếu phụ huynh chọn gộp thành 1 Danh sách phát.
  *
  * Trả về:
  *  - null: thiếu API key, link không nhận diện được, hoặc lỗi gọi API (thư mục tổng không tồn
  *    tại/không chia sẻ công khai).
- *  - []: thư mục tổng hợp lệ nhưng KHÔNG có thư mục con nào bên trong.
- *  - mảng DriveSubfolderScanItem: mỗi phần tử ứng với 1 thư mục con tìm thấy (kể cả những thư
- *    mục con KHÔNG có file media — result = null — để phụ huynh biết mà tự sửa, không âm thầm
- *    bỏ qua).
+ *  - { items: [] }: thư mục tổng hợp lệ nhưng KHÔNG có thư mục con nào bên trong.
+ *  - { items: [...] }: mỗi phần tử ứng với 1 thư mục con tìm thấy (kể cả những thư mục con
+ *    KHÔNG có file media — result = null — để phụ huynh biết mà tự sửa, không âm thầm bỏ qua).
  */
-export async function resolveDriveParentFolder(parentFolderUrl: string): Promise<DriveSubfolderScanItem[] | null> {
+export async function resolveDriveParentFolder(parentFolderUrl: string): Promise<DriveParentFolderScan | null> {
   const key = getApiKey();
   const parentId = extractDriveFolderId(parentFolderUrl);
   if (!key) {
@@ -169,14 +181,30 @@ export async function resolveDriveParentFolder(parentFolderUrl: string): Promise
   if (!parentId) return null;
 
   try {
-    const query = `'${parentId}' in parents and trashed = false and mimeType = 'application/vnd.google-apps.folder'`;
+    const folderRes = await fetch(`${DRIVE_API_BASE}/files/${parentId}?fields=name&key=${key}`);
+    if (!folderRes.ok) return null;
+    const folderData = (await folderRes.json()) as { name?: string };
+    const parentFolderName = folderData.name?.trim() || 'Danh sách phát Google Drive';
+
+    // Liệt kê TOÀN BỘ (không lọc mimeType) những gì nằm trực tiếp trong thư mục tổng — vừa để
+    // tìm thư mục con, vừa để tìm 1 ảnh bìa chung (nếu có) đặt ngay trong thư mục tổng.
+    const query = `'${parentId}' in parents and trashed = false`;
     const listRes = await fetch(
-      `${DRIVE_API_BASE}/files?q=${encodeURIComponent(query)}&fields=${encodeURIComponent('files(id,name)')}&pageSize=200&key=${key}`
+      `${DRIVE_API_BASE}/files?q=${encodeURIComponent(query)}&fields=${encodeURIComponent('files(id,name,mimeType)')}&pageSize=200&key=${key}`
     );
     if (!listRes.ok) return null;
-    const listData = (await listRes.json()) as { files?: { id: string; name: string }[] };
-    const subfolders = listData.files ?? [];
-    if (subfolders.length === 0) return [];
+    const listData = (await listRes.json()) as { files?: { id: string; name: string; mimeType: string }[] };
+    const children = listData.files ?? [];
+
+    const subfolders = children.filter((f) => f.mimeType === 'application/vnd.google-apps.folder');
+    const parentCoverFile = children.find((f) => f.mimeType.startsWith('image/'));
+    const parentCoverThumbnail = parentCoverFile
+      ? `${DRIVE_API_BASE}/files/${parentCoverFile.id}?alt=media&key=${key}`
+      : null;
+
+    if (subfolders.length === 0) {
+      return { parentFolderName, parentCoverThumbnail, items: [] };
+    }
 
     const items = await Promise.all(
       subfolders.map(async (f): Promise<DriveSubfolderScanItem> => ({
@@ -186,7 +214,9 @@ export async function resolveDriveParentFolder(parentFolderUrl: string): Promise
       }))
     );
     // Drive API không đảm bảo trả đúng thứ tự — sắp lại theo tên cho dễ dò trong danh sách xem trước.
-    return items.sort((a, b) => a.folderName.localeCompare(b.folderName, 'vi'));
+    items.sort((a, b) => a.folderName.localeCompare(b.folderName, 'vi'));
+
+    return { parentFolderName, parentCoverThumbnail, items };
   } catch (err) {
     console.error('[Ytube] Lỗi khi quét thư mục tổng Google Drive:', err);
     return null;

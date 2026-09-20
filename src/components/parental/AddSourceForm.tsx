@@ -131,6 +131,13 @@ export function AddSourceForm() {
   const [bulkUrl, setBulkUrl] = useState('');
   const [bulkScanning, setBulkScanning] = useState(false);
   const [bulkItems, setBulkItems] = useState<(DriveSubfolderScanItem & { selected: boolean })[]>([]);
+  // Tên + ảnh bìa của chính thư mục TỔNG vừa quét — dùng làm tiêu đề/ảnh mặc định nếu chọn
+  // gộp thành 1 Danh sách phát (xem addSelectedBulkItems bên dưới).
+  const [bulkParentFolderName, setBulkParentFolderName] = useState('');
+  const [bulkParentCoverThumbnail, setBulkParentCoverThumbnail] = useState<string | null>(null);
+  /** true = gộp mọi thư mục con đã chọn thành 1 Danh sách phát (custom_playlist) duy nhất,
+      thay vì thêm từng thư mục con thành 1 dòng riêng biệt như trước. */
+  const [bulkAsPlaylist, setBulkAsPlaylist] = useState(false);
   const [bulkSelectedKids, setBulkSelectedKids] = useState<string[]>(profiles[0] ? [profiles[0].id] : []);
   const [bulkSelectedLabelIds, setBulkSelectedLabelIds] = useState<string[]>([]);
   const [bulkSaving, setBulkSaving] = useState(false);
@@ -170,35 +177,44 @@ export function AddSourceForm() {
     }
     setBulkScanning(true);
     try {
-      const items = await resolveDriveParentFolder(bulkUrl);
-      if (items === null) {
+      const scan = await resolveDriveParentFolder(bulkUrl);
+      if (scan === null) {
         showToast(
           'Không quét được — kiểm tra lại: link có đúng là link thư mục tổng không, thư mục đã để "Bất kỳ ai có đường liên kết" chưa, và đã khai VITE_GOOGLE_DRIVE_API_KEY trong .env chưa.'
         );
         setBulkItems([]);
         return;
       }
-      if (items.length === 0) {
+      setBulkParentFolderName(scan.parentFolderName);
+      setBulkParentCoverThumbnail(scan.parentCoverThumbnail);
+      if (scan.items.length === 0) {
         showToast('Thư mục này không có thư mục con nào bên trong.');
         setBulkItems([]);
         return;
       }
-      setBulkItems(items.map((it) => ({ ...it, selected: it.result !== null })));
-      const missing = items.filter((it) => it.result === null).length;
+      setBulkItems(scan.items.map((it) => ({ ...it, selected: it.result !== null })));
+      const missing = scan.items.filter((it) => it.result === null).length;
       showToast(
         missing > 0
-          ? `✓ Quét được ${items.length} thư mục con (${missing} thư mục không tìm thấy file media, đã tự bỏ chọn).`
-          : `✓ Quét được ${items.length} thư mục con, đều tìm thấy file media.`
+          ? `✓ Quét được ${scan.items.length} thư mục con (${missing} thư mục không tìm thấy file media, đã tự bỏ chọn).`
+          : `✓ Quét được ${scan.items.length} thư mục con, đều tìm thấy file media.`
       );
     } finally {
       setBulkScanning(false);
     }
   };
 
-  /** Lưu hàng loạt các thư mục con đã tick chọn trong bảng xem trước — LẦN LƯỢT từng cái 1
-      (không Promise.all) để tránh nhiều lệnh insert/refresh Supabase chồng lên nhau. */
+  /**
+   * Lưu các thư mục con đã tick chọn — theo 1 trong 2 cách tuỳ bulkAsPlaylist:
+   *  - Bật "Gộp thành 1 Danh sách phát": tạo ĐÚNG 1 dòng custom_playlist, tiêu đề lấy theo tên
+   *    thư mục tổng, ảnh bìa ưu tiên ảnh đặt sẵn trong chính thư mục tổng — không có thì lấy
+   *    ảnh của thư mục con ĐẦU TIÊN trong danh sách đã chọn.
+   *  - Tắt (mặc định, giữ nguyên hành vi cũ): thêm từng thư mục con thành 1 dòng "Thư mục
+   *    Google Drive" riêng biệt, LẦN LƯỢT từng cái 1 (không Promise.all) để tránh nhiều lệnh
+   *    insert/refresh Supabase chồng lên nhau.
+   */
   const addSelectedBulkItems = async () => {
-    const selectedItems = bulkItems.filter((it) => it.selected);
+    const selectedItems = bulkItems.filter((it) => it.selected && it.result);
     if (selectedItems.length === 0) {
       showToast('Chưa chọn nội dung nào để thêm.');
       return;
@@ -210,25 +226,54 @@ export function AddSourceForm() {
     const profileId = bulkSelectedKids.length >= profiles.length ? null : bulkSelectedKids[0];
     setBulkSaving(true);
     try {
-      let okCount = 0;
-      for (const it of selectedItems) {
-        if (!it.result) continue;
+      if (bulkAsPlaylist) {
+        const items: CustomPlaylistItem[] = selectedItems.map((it) => ({
+          videoId: it.result!.url,
+          title: it.result!.title,
+          thumbnail: it.result!.thumbnail,
+          kind: 'direct',
+        }));
+        const playlistTitle = sanitizeTitle(bulkParentFolderName) || bulkParentFolderName || 'Danh sách phát Google Drive';
+        const playlistThumbnail = bulkParentCoverThumbnail ?? items[0]?.thumbnail ?? null;
         const ok = await addSource({
           profileId,
-          type: 'gdrive_folder',
-          title: sanitizeTitle(it.result.title) || it.result.title,
-          url: it.result.url,
-          thumbnail: it.result.thumbnail,
-          items: [],
+          type: 'custom_playlist',
+          title: playlistTitle,
+          url: CUSTOM_PLAYLIST_URL,
+          thumbnail: playlistThumbnail,
+          items,
           labelIds: bulkSelectedLabelIds,
         });
-        if (ok) okCount++;
-      }
-      showToast(`📌 Đã thêm ${okCount}/${selectedItems.length} nội dung từ thư mục tổng.`);
-      if (okCount > 0) {
-        setBulkItems([]);
-        setBulkUrl('');
-        setBulkOpen(false);
+        showToast(
+          ok
+            ? `📌 Đã tạo danh sách phát "${playlistTitle}" với ${items.length} nội dung.`
+            : 'Có lỗi khi tạo danh sách phát — thử lại nhé.'
+        );
+        if (ok) {
+          setBulkItems([]);
+          setBulkUrl('');
+          setBulkOpen(false);
+        }
+      } else {
+        let okCount = 0;
+        for (const it of selectedItems) {
+          const ok = await addSource({
+            profileId,
+            type: 'gdrive_folder',
+            title: sanitizeTitle(it.result!.title) || it.result!.title,
+            url: it.result!.url,
+            thumbnail: it.result!.thumbnail,
+            items: [],
+            labelIds: bulkSelectedLabelIds,
+          });
+          if (ok) okCount++;
+        }
+        showToast(`📌 Đã thêm ${okCount}/${selectedItems.length} nội dung từ thư mục tổng.`);
+        if (okCount > 0) {
+          setBulkItems([]);
+          setBulkUrl('');
+          setBulkOpen(false);
+        }
       }
     } finally {
       setBulkSaving(false);
@@ -686,6 +731,19 @@ export function AddSourceForm() {
                     </div>
 
                     <div className="form-row" style={{ marginTop: 12 }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          data-region="pbulk"
+                          tabIndex={0}
+                          checked={bulkAsPlaylist}
+                          onChange={() => setBulkAsPlaylist((v) => !v)}
+                        />
+                        Gộp thành 1 Danh sách phát (tên + ảnh bìa lấy theo thư mục tổng)
+                      </label>
+                    </div>
+
+                    <div className="form-row" style={{ marginTop: 12 }}>
                       <label>Dành cho bé (áp dụng cho cả loạt đã chọn)</label>
                       <div className="day-pills">
                         {profiles.map((k) => (
@@ -734,7 +792,16 @@ export function AddSourceForm() {
                       onClick={addSelectedBulkItems}
                     >
                       {bulkSaving ? (
-                        'Đang thêm...'
+                        bulkAsPlaylist ? (
+                          'Đang tạo danh sách phát...'
+                        ) : (
+                          'Đang thêm...'
+                        )
+                      ) : bulkAsPlaylist ? (
+                        <>
+                          <Plus className="icon icon-lead" aria-hidden="true" /> Tạo danh sách phát (
+                          {bulkItems.filter((it) => it.selected && it.result).length} nội dung)
+                        </>
                       ) : (
                         <>
                           <Plus className="icon icon-lead" aria-hidden="true" /> Thêm{' '}

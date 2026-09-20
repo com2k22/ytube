@@ -23,9 +23,15 @@ export type SourceType =
 
 /** 1 video trong playlist tự tạo (custom_playlist) — lưu trực tiếp trong cột items, không gọi API. */
 export interface CustomPlaylistItem {
+  /** Với kind = 'youtube' (mặc định, kể cả dữ liệu cũ chưa có trường "kind"): videoId YouTube
+      thật. Với kind = 'direct': link phát trực tiếp (Google Drive/mp4/m3u8...) — vẫn dùng
+      chung tên trường "videoId" để mọi chỗ đang đọc trường này khỏi phải đổi tên, chỉ cần biết
+      thêm "kind" để hiểu đúng nội dung bên trong là gì. */
   videoId: string;
   title: string;
   thumbnail: string | null;
+  /** 'youtube' | 'direct' — thiếu trường này (dữ liệu cũ) = coi như 'youtube'. */
+  kind?: 'youtube' | 'direct';
 }
 
 export interface AllowedSource {

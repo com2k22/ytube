@@ -131,7 +131,10 @@ export function usePlayerEngine({ params, onNavigateToVideo, onExit }: UsePlayer
           videoId: it.videoId,
           title: it.title,
           thumbnail: it.thumbnail,
-          sourceType: 'custom_playlist' as const,
+          // it.kind === 'direct' (VD: ghép từ "Nhập cả thư mục tổng" Google Drive) → đánh dấu
+          // sourceType 'direct_url' để goToVideo() bên dưới biết đường phát qua directUrl thay
+          // vì videoId — video YouTube thường (kind mặc định/thiếu) giữ nguyên như cũ.
+          sourceType: (it.kind === 'direct' ? 'direct_url' : 'custom_playlist') as const,
         }))
       );
       return;
@@ -152,12 +155,17 @@ export function usePlayerEngine({ params, onNavigateToVideo, onExit }: UsePlayer
     );
   }, [playlistId, source?.type, source?.items]);
 
-  // Vị trí video đang phát trong danh sách, và video đứng ngay sau/trước nó.
-  const currentIndex = playlistVideos.findIndex((v) => v.videoId === ytVideoId);
+  // Vị trí video đang phát trong danh sách, và video đứng ngay sau/trước nó. Video đang phát
+  // có thể là 1 video YouTube (nhận diện qua ytVideoId) HOẶC 1 link trực tiếp/Google Drive
+  // (nhận diện qua directUrl, lưu trong đúng trường "videoId" của playlist item — xem
+  // CustomPlaylistItem trong types/index.ts) — dùng "currentMediaId" gộp cả 2 trường hợp để
+  // playlist trộn cả video YouTube lẫn nội dung Drive vẫn tìm đúng video đang phát.
+  const currentMediaId = ytVideoId ?? directUrl;
+  const currentIndex = playlistVideos.findIndex((v) => v.videoId === currentMediaId);
   const nextVideo = currentIndex >= 0 ? playlistVideos[currentIndex + 1] ?? null : null;
   const prevVideo = currentIndex > 0 ? playlistVideos[currentIndex - 1] : null;
   /** Danh sách hiện ở dưới trang — bỏ video đang phát ra cho gọn. */
-  const nextVideos = playlistVideos.filter((v) => v.videoId !== ytVideoId);
+  const nextVideos = playlistVideos.filter((v) => v.videoId !== currentMediaId);
 
   /**
    * "Video lẻ khác" — dùng khi đang xem 1 video KHÔNG nằm trong playlist nào (playlistVideos

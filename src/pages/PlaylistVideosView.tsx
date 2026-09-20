@@ -6,7 +6,7 @@ import { VideoCard } from '@/components/common/VideoCard';
 import { useIsPhoneScreen } from '@/lib/screenSize';
 import { useMobilePlayback } from '@/context/MobilePlaybackContext';
 import { MobileStoryDetailShell } from '@/pages/mobile/MobileStoryDetailShell';
-import type { PlayerEngineParams } from '@/hooks/usePlayerEngine';
+import { playerParamsToSearch, type PlayerEngineParams } from '@/hooks/usePlayerEngine';
 import type { ResolvedVideo } from '@/types';
 
 interface Props {
@@ -52,14 +52,15 @@ export function PlaylistVideosView({ title, thumbnail, videos, loading, error, p
       })
     : visible;
 
-  /** Mọi video trong 1 playlist (thật hoặc tự tạo) luôn có videoId YouTube thật — playlist
-      không chứa được link trực tiếp (xem CustomPlaylistItem trong types/index.ts) — nên
-      dựng tham số phát luôn đi theo videoId, không cần nhánh directUrl. */
+  /** Đa số video trong 1 playlist có videoId YouTube thật, nhưng playlist tự tạo ghép từ
+      "Nhập cả thư mục tổng" Google Drive lại có item kiểu link trực tiếp (sourceType
+      'direct_url', xem usePlaylistVideos.ts) — với kiểu đó, v.videoId CHÍNH LÀ url (xem
+      CustomPlaylistItem trong types/index.ts), nên phải đi theo directUrl chứ không phải videoId. */
   const buildVideoParams = (v: ResolvedVideo): PlayerEngineParams => ({
     sourceId: progressSourceId,
     title: v.title,
-    videoId: v.videoId,
-    directUrl: null,
+    videoId: v.sourceType === 'direct_url' ? null : v.videoId,
+    directUrl: v.sourceType === 'direct_url' ? v.videoId : null,
     playlistId: playlistId ?? null,
     thumbnail: v.thumbnail,
   });
@@ -111,9 +112,7 @@ export function PlaylistVideosView({ title, thumbnail, videos, loading, error, p
         {sorted.map((v) => {
           const percent = progressSourceId ? progressFor(progressSourceId, v.videoId) : 0;
           const watching = percent > 0 && percent < 100;
-          const params = new URLSearchParams({ videoId: v.videoId, title: v.title });
-          if (playlistId) params.set('playlistId', playlistId);
-          if (progressSourceId) params.set('sourceId', progressSourceId);
+          const search = playerParamsToSearch(buildVideoParams(v));
           return (
             <VideoCard
               key={v.videoId}
@@ -121,7 +120,7 @@ export function PlaylistVideosView({ title, thumbnail, videos, loading, error, p
               thumbnail={v.thumbnail}
               watching={watching}
               progressPercent={percent}
-              onClick={() => navigate(`/player?${params.toString()}`)}
+              onClick={() => navigate(`/player?${search}`)}
             />
           );
         })}
