@@ -570,9 +570,7 @@ export function AddSourceForm() {
             {urlHint && <div className={`hint ${urlHint.ok ? 'ok-text' : 'bad-text'}`}>{urlHint.text}</div>}
             {form.type === 'gdrive_folder' && (
               <p style={{ fontSize: 12, opacity: 0.6, margin: '6px 0 0' }}>
-                Dán link CHIA SẺ CỦA THƯ MỤC (không phải link 1 file) — thư mục này chỉ nên chứa đúng 1 file
-                video/audio, có thể thêm 1 ảnh làm bìa (không bắt buộc). Nhớ để chế độ chia sẻ "Bất kỳ ai có
-                đường liên kết".
+                Link thư mục (không phải link file), chia sẻ "Bất kỳ ai có đường liên kết".
               </p>
             )}
             {(form.type === 'youtube_playlist' ||
@@ -609,12 +607,13 @@ export function AddSourceForm() {
             <button
               type="button"
               className="add-window-btn"
+              style={{ whiteSpace: 'normal', textAlign: 'left', width: '100%', lineHeight: 1.3 }}
               data-region="pbulk"
               tabIndex={0}
               onClick={() => setBulkOpen((v) => !v)}
             >
               <Folder className="icon icon-lead" aria-hidden="true" />
-              {bulkOpen ? 'Ẩn nhập hàng loạt' : 'Hoặc nhập cả thư mục tổng (nhiều nội dung cùng lúc)'}
+              {bulkOpen ? 'Ẩn nhập hàng loạt' : 'Hoặc nhập cả thư mục tổng'}
             </button>
 
             {bulkOpen && (
@@ -627,10 +626,8 @@ export function AddSourceForm() {
                 }}
               >
                 <p style={{ fontSize: 12, opacity: 0.65, margin: '0 0 10px' }}>
-                  Dán link thư mục TỔNG (thư mục lớn chứa nhiều thư mục con, mỗi thư mục con là 1 nội dung
-                  riêng — y hệt quy ước 1 thư mục = 1 nội dung ở trên). App sẽ liệt kê từng thư mục con tìm
-                  được để chọn thêm cùng lúc. Nhớ thư mục tổng (và các thư mục con) cũng phải để chế độ chia
-                  sẻ "Bất kỳ ai có đường liên kết".
+                  Thư mục lớn chứa nhiều thư mục con, mỗi thư mục con là 1 nội dung. Cũng cần chia sẻ
+                  "Bất kỳ ai có đường liên kết".
                 </p>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <input
