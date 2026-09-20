@@ -1219,7 +1219,13 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
   border: 6px solid rgba(255, 255, 255, 0.22); border-top-color: #fff;
   animation: player-loading-spin 0.85s linear infinite;
 }
-.player-loading-text { color: rgba(255, 255, 255, 0.85); font-size: 16px; font-weight: 700; }
+.player-loading-text {
+  color: rgba(255, 255, 255, 0.85); font-size: 16px; font-weight: 700;
+  /* max-width + text-align: center — trước đây chỉ có chữ ngắn "Đang tải video..." nên không
+     cần, nhưng thông báo LỖI (xem DirectVideoPlayer.tsx) dài hơn nhiều — không giới hạn chiều
+     rộng thì chữ dễ sát mép màn hình trên điện thoại nhỏ. */
+  max-width: min(92%, 480px); text-align: center; line-height: 1.4;
+}
 @keyframes player-loading-spin {
   to { transform: rotate(360deg); }
 }

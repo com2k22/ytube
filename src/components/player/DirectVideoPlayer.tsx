@@ -76,6 +76,11 @@ export function DirectVideoPlayer({
       có khung hình đầu tiên (sự kiện 'loadeddata'), dù video tự phát được hay bị chặn phải
       bấm nút play bằng tay — cả 2 trường hợp đều không còn là "màn hình đen bí ẩn" nữa. */
   const [loading, setLoading] = useState(true);
+  /** Thông báo lỗi khi video/âm thanh KHÔNG phát được (link hỏng, thư mục Google Drive bị tắt
+      chia sẻ/tắt quyền tải xuống, mất mạng...) — khác != null thì hiện thông báo này THAY cho
+      vòng tròn tải vô tận. Trước đây không bắt sự kiện 'error' của thẻ <video> nên mọi lỗi loại
+      này đều hiện y hệt "đang tải" mãi mãi, không biết là đang tải chậm hay đã lỗi hẳn. */
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Bấm vào 1 video trong playlist → vào toàn màn hình ngay (càng gần cử chỉ bấm của
   // người dùng càng ít khả năng bị trình duyệt chặn quyền toàn màn hình).
@@ -93,6 +98,7 @@ export function DirectVideoPlayer({
     if (!video) return;
 
     setLoading(true);
+    setLoadError(null);
 
     const isHls = url.toLowerCase().includes('.m3u8');
     if (isHls && !video.canPlayType('application/vnd.apple.mpegurl') && Hls.isSupported()) {
@@ -129,6 +135,26 @@ export function DirectVideoPlayer({
     // không còn là màn hình đen "không biết đang tải hay lỗi" nữa nên tắt đồ hoạ tải ở đây.
     const onLoadedData = () => setLoading(false);
 
+    // Bắt lỗi thật sự (link hỏng/hết quyền chia sẻ/mất mạng...) — KHÔNG để rơi vào im lặng
+    // rồi đứng mãi ở màn hình "Đang tải video..." như trước, khiến phụ huynh không biết là
+    // đang chậm hay đã lỗi hẳn. `video.error` cho biết chính xác loại lỗi (theo chuẩn HTML).
+    const onVideoError = () => {
+      setLoading(false);
+      const mediaError = video.error;
+      let msg = 'Không phát được nội dung này.';
+      if (mediaError) {
+        if (mediaError.code === mediaError.MEDIA_ERR_NETWORK) {
+          msg = 'Lỗi mạng khi tải — kiểm tra lại kết nối Internet rồi thử lại.';
+        } else if (mediaError.code === mediaError.MEDIA_ERR_DECODE) {
+          msg = 'Định dạng này không phát được trên thiết bị.';
+        } else if (mediaError.code === mediaError.MEDIA_ERR_SRC_NOT_SUPPORTED) {
+          msg =
+            'Không tải được nội dung — link có thể đã hỏng, hoặc thư mục/file Google Drive không còn ở chế độ "Bất kỳ ai có đường liên kết", hoặc đang bị tắt quyền tải xuống.';
+        }
+      }
+      setLoadError(msg);
+    };
+
     const onTimeUpdate = () => {
       if (video.duration > 0) onProgress?.((video.currentTime / video.duration) * 100, video.currentTime);
     };
@@ -138,12 +164,14 @@ export function DirectVideoPlayer({
     };
     video.addEventListener('playing', onPlaying);
     video.addEventListener('loadeddata', onLoadedData);
+    video.addEventListener('error', onVideoError);
     video.addEventListener('timeupdate', onTimeUpdate);
     video.addEventListener('ended', onEndedHandler);
 
     return () => {
       video.removeEventListener('playing', onPlaying);
       video.removeEventListener('loadeddata', onLoadedData);
+      video.removeEventListener('error', onVideoError);
       video.removeEventListener('timeupdate', onTimeUpdate);
       video.removeEventListener('ended', onEndedHandler);
       hlsRef.current?.destroy();
@@ -297,10 +325,10 @@ export function DirectVideoPlayer({
   return (
     <div className="player-wrap" ref={wrapRef} data-region="player" tabIndex={0} onClick={togglePlay}>
       <video ref={videoRef} title={title} controls playsInline />
-      {loading && (
+      {(loading || loadError) && (
         <div className="player-loading" aria-hidden="true">
-          <div className="player-loading-spinner" />
-          <div className="player-loading-text">Đang tải video...</div>
+          {loading && !loadError && <div className="player-loading-spinner" />}
+          <div className="player-loading-text">{loadError ? `⚠️ ${loadError}` : 'Đang tải video...'}</div>
         </div>
       )}
       <WatchCountdownBadge />
