@@ -134,7 +134,7 @@ export function usePlayerEngine({ params, onNavigateToVideo, onExit }: UsePlayer
           // it.kind === 'direct' (VD: ghép từ "Nhập cả thư mục tổng" Google Drive) → đánh dấu
           // sourceType 'direct_url' để goToVideo() bên dưới biết đường phát qua directUrl thay
           // vì videoId — video YouTube thường (kind mặc định/thiếu) giữ nguyên như cũ.
-          sourceType: (it.kind === 'direct' ? 'direct_url' : 'custom_playlist') as const,
+          sourceType: it.kind === 'direct' ? ('direct_url' as const) : ('custom_playlist' as const),
         }))
       );
       return;

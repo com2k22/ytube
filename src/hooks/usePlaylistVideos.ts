@@ -29,7 +29,7 @@ export function usePlaylistVideos(source: AllowedSource | null) {
           // it.kind === 'direct' (VD: ghép từ "Nhập cả thư mục tổng" Google Drive) → đánh dấu
           // sourceType 'direct_url' để PlaylistVideosView biết đường phát qua directUrl thay vì
           // videoId — video YouTube thường (kind mặc định/thiếu) giữ nguyên như cũ.
-          sourceType: (it.kind === 'direct' ? 'direct_url' : 'custom_playlist') as const,
+          sourceType: it.kind === 'direct' ? ('direct_url' as const) : ('custom_playlist' as const),
         }))
       );
       setLoading(false);
