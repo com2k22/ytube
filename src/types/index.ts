@@ -13,7 +13,13 @@ export interface Profile {
   created_at: string;
 }
 
-export type SourceType = 'youtube_playlist' | 'youtube_video' | 'youtube_channel' | 'direct_url' | 'custom_playlist';
+export type SourceType =
+  | 'youtube_playlist'
+  | 'youtube_video'
+  | 'youtube_channel'
+  | 'direct_url'
+  | 'custom_playlist'
+  | 'gdrive_folder';
 
 /** 1 video trong playlist tự tạo (custom_playlist) — lưu trực tiếp trong cột items, không gọi API. */
 export interface CustomPlaylistItem {

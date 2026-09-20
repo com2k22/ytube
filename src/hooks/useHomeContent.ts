@@ -74,7 +74,11 @@ export function useHomeContent() {
   const playable = sources
     .filter(
       (s) =>
-        s.type === 'youtube_playlist' || s.type === 'youtube_video' || s.type === 'direct_url' || s.type === 'custom_playlist'
+        s.type === 'youtube_playlist' ||
+        s.type === 'youtube_video' ||
+        s.type === 'direct_url' ||
+        s.type === 'custom_playlist' ||
+        s.type === 'gdrive_folder'
     )
     .filter((s) => !isHidden(s) && !isHiddenOnThisDevice(s));
   const channels = sources
@@ -145,7 +149,7 @@ export function useHomeContent() {
           title = info.title;
           thumbnail = info.thumbnail;
         }
-      } else if (source.type === 'direct_url') {
+      } else if (source.type === 'direct_url' || source.type === 'gdrive_folder') {
         directUrlParam = source.url;
       }
 
@@ -163,7 +167,7 @@ export function useHomeContent() {
   );
   const recommendedVideos = sortPriorityFirst(
     playable.filter((s) => {
-      if (s.type === 'direct_url') return true;
+      if (s.type === 'direct_url' || s.type === 'gdrive_folder') return true;
       if (s.type === 'youtube_video') {
         const vid = extractVideoId(s.url);
         return !vid || !videoIdsInCustomPlaylists.has(vid);
@@ -187,7 +191,7 @@ export function useHomeContent() {
       if (!vid) return null;
       return { sourceId: source.id, title: source.title, videoId: vid, directUrl: null, playlistId: null, thumbnail: source.thumbnail };
     }
-    if (source.type === 'direct_url') {
+    if (source.type === 'direct_url' || source.type === 'gdrive_folder') {
       return { sourceId: source.id, title: source.title, videoId: null, directUrl: source.url, playlistId: null, thumbnail: source.thumbnail };
     }
     return null;

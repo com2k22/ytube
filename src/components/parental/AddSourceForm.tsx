@@ -17,6 +17,8 @@ import {
   Film,
   Smartphone,
   Tv,
+  Folder,
+  Cloud,
 } from 'lucide-react';
 import { useAllowedSources } from '@/hooks/useAllowedSources';
 import { useContentLabels } from '@/hooks/useContentLabels';
@@ -26,6 +28,8 @@ import { useToast } from '@/components/common/Toast';
 import { isSafeHttpsUrl, sanitizeTitle } from '@/utils/urlValidator';
 import { extractPlaylistId, extractVideoId, extractChannelRef } from '@/utils/youtubeParser';
 import { fetchPlaylistInfo, fetchVideoInfo, fetchChannelInfo, resolveChannelHandle } from '@/lib/youtube';
+import { resolveDriveFolder, resolveDriveParentFolder } from '@/lib/googleDrive';
+import type { DriveSubfolderScanItem } from '@/lib/googleDrive';
 import { profileEmoji, SOURCE_TYPE_ICON_SVG } from '@/constants';
 import type { AllowedSource, BlockedItem, CustomPlaylistItem, SourceType } from '@/types';
 
@@ -35,6 +39,7 @@ const TYPE_OPTIONS: { value: SourceType; label: string }[] = [
   { value: 'youtube_playlist', label: 'Danh sách video youtube' },
   { value: 'youtube_video', label: 'Link YouTube (video đơn lẻ)' },
   { value: 'direct_url', label: 'Link trực tiếp (mp4/m3u8)' },
+  { value: 'gdrive_folder', label: 'Thư mục Google Drive (video/audio)' },
 ];
 
 const TYPE_LABEL: Record<SourceType, string> = {
@@ -43,6 +48,7 @@ const TYPE_LABEL: Record<SourceType, string> = {
   youtube_channel: 'Kênh',
   direct_url: 'Link trực tiếp',
   custom_playlist: 'Danh sách video tùy chỉnh',
+  gdrive_folder: 'Thư mục Google Drive',
 };
 
 /** Tên từng mục trong danh sách "Nội dung đã thêm" (dạng số nhiều, đọc cho tự nhiên). */
@@ -52,6 +58,7 @@ const GROUP_LABEL: Record<SourceType, string> = {
   youtube_channel: 'Kênh YouTube',
   youtube_video: 'Video riêng lẻ',
   direct_url: 'Link trực tiếp',
+  gdrive_folder: 'Google Drive',
 };
 
 /** Thứ tự các mục hiện ra — để loại hay dùng nhất nằm trên cùng. */
@@ -61,6 +68,7 @@ const GROUP_ORDER: SourceType[] = [
   'youtube_channel',
   'youtube_video',
   'direct_url',
+  'gdrive_folder',
 ];
 
 /** Icon phong cách mới cho từng loại nguồn ở khu "Nội dung đã thêm" — dùng chung
@@ -115,6 +123,18 @@ export function AddSourceForm() {
   const [urlHint, setUrlHint] = useState<{ text: string; ok: boolean } | null>(null);
   const [resolving, setResolving] = useState(false);
 
+  // Riêng cho khối "Nhập cả thư mục tổng" (quét hàng loạt nhiều thư mục con Google Drive
+  // cùng lúc, xem resolveDriveParentFolder trong lib/googleDrive.ts) — tách hẳn state khỏi
+  // form thêm-1-nội-dung ở trên vì đây là 1 luồng riêng, ra kết quả nhiều dòng chứ không phải
+  // điền vào đúng 3 ô title/url/thumbnail như form thường.
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkUrl, setBulkUrl] = useState('');
+  const [bulkScanning, setBulkScanning] = useState(false);
+  const [bulkItems, setBulkItems] = useState<(DriveSubfolderScanItem & { selected: boolean })[]>([]);
+  const [bulkSelectedKids, setBulkSelectedKids] = useState<string[]>(profiles[0] ? [profiles[0].id] : []);
+  const [bulkSelectedLabelIds, setBulkSelectedLabelIds] = useState<string[]>([]);
+  const [bulkSaving, setBulkSaving] = useState(false);
+
   // Riêng cho khối "Quản lý nhãn": tên nhãn mới đang gõ dở, và nhãn đang sửa tên (nếu có).
   const [newLabelName, setNewLabelName] = useState('');
   const [renamingLabelId, setRenamingLabelId] = useState<string | null>(null);
@@ -126,6 +146,93 @@ export function AddSourceForm() {
 
   const toggleLabel = (id: string) => {
     setSelectedLabelIds((prev) => (prev.includes(id) ? prev.filter((l) => l !== id) : [...prev, id]));
+  };
+
+  const toggleBulkKid = (id: string) => {
+    setBulkSelectedKids((prev) => (prev.includes(id) ? prev.filter((k) => k !== id) : [...prev, id]));
+  };
+
+  const toggleBulkLabel = (id: string) => {
+    setBulkSelectedLabelIds((prev) => (prev.includes(id) ? prev.filter((l) => l !== id) : [...prev, id]));
+  };
+
+  const toggleBulkItemSelected = (folderId: string) => {
+    setBulkItems((prev) => prev.map((it) => (it.folderId === folderId ? { ...it, selected: !it.selected } : it)));
+  };
+
+  /** Quét 1 "thư mục tổng" ra danh sách thư mục con xem trước (chưa lưu gì cả) — xem
+      resolveDriveParentFolder trong lib/googleDrive.ts. Thư mục con nào không có file media
+      thì vẫn hiện tên trong danh sách nhưng tự bỏ chọn sẵn, phụ huynh biết mà vào sửa lại. */
+  const scanBulkFolder = async () => {
+    if (!isSafeHttpsUrl(bulkUrl)) {
+      showToast('Dán link https hợp lệ của thư mục tổng trước đã nhé.');
+      return;
+    }
+    setBulkScanning(true);
+    try {
+      const items = await resolveDriveParentFolder(bulkUrl);
+      if (items === null) {
+        showToast(
+          'Không quét được — kiểm tra lại: link có đúng là link thư mục tổng không, thư mục đã để "Bất kỳ ai có đường liên kết" chưa, và đã khai VITE_GOOGLE_DRIVE_API_KEY trong .env chưa.'
+        );
+        setBulkItems([]);
+        return;
+      }
+      if (items.length === 0) {
+        showToast('Thư mục này không có thư mục con nào bên trong.');
+        setBulkItems([]);
+        return;
+      }
+      setBulkItems(items.map((it) => ({ ...it, selected: it.result !== null })));
+      const missing = items.filter((it) => it.result === null).length;
+      showToast(
+        missing > 0
+          ? `✓ Quét được ${items.length} thư mục con (${missing} thư mục không tìm thấy file media, đã tự bỏ chọn).`
+          : `✓ Quét được ${items.length} thư mục con, đều tìm thấy file media.`
+      );
+    } finally {
+      setBulkScanning(false);
+    }
+  };
+
+  /** Lưu hàng loạt các thư mục con đã tick chọn trong bảng xem trước — LẦN LƯỢT từng cái 1
+      (không Promise.all) để tránh nhiều lệnh insert/refresh Supabase chồng lên nhau. */
+  const addSelectedBulkItems = async () => {
+    const selectedItems = bulkItems.filter((it) => it.selected);
+    if (selectedItems.length === 0) {
+      showToast('Chưa chọn nội dung nào để thêm.');
+      return;
+    }
+    if (bulkSelectedKids.length === 0) {
+      showToast('Chọn ít nhất 1 bé (hoặc cả nhà) cho các nội dung này.');
+      return;
+    }
+    const profileId = bulkSelectedKids.length >= profiles.length ? null : bulkSelectedKids[0];
+    setBulkSaving(true);
+    try {
+      let okCount = 0;
+      for (const it of selectedItems) {
+        if (!it.result) continue;
+        const ok = await addSource({
+          profileId,
+          type: 'gdrive_folder',
+          title: sanitizeTitle(it.result.title) || it.result.title,
+          url: it.result.url,
+          thumbnail: it.result.thumbnail,
+          items: [],
+          labelIds: bulkSelectedLabelIds,
+        });
+        if (ok) okCount++;
+      }
+      showToast(`📌 Đã thêm ${okCount}/${selectedItems.length} nội dung từ thư mục tổng.`);
+      if (okCount > 0) {
+        setBulkItems([]);
+        setBulkUrl('');
+        setBulkOpen(false);
+      }
+    } finally {
+      setBulkSaving(false);
+    }
   };
 
   // Riêng cho loại "Playlist tự tạo": ghép nhiều video đơn lẻ lại thành 1 danh sách.
@@ -193,6 +300,16 @@ export function AddSourceForm() {
           else showToast('Không dò được thông tin kênh — kiểm tra lại link hoặc API key YouTube.');
         } else {
           showToast('Không nhận diện được link kênh.');
+        }
+      } else if (form.type === 'gdrive_folder') {
+        const result = await resolveDriveFolder(form.url);
+        if (result) {
+          setForm((f) => ({ ...f, title: result.title, thumbnail: result.thumbnail, url: result.url }));
+          showToast('✓ Đã lấy tên + link phát từ thư mục Google Drive.');
+        } else {
+          showToast(
+            'Không dò được — kiểm tra lại: link có đúng là link CHIA SẺ THƯ MỤC không, thư mục đã để "Bất kỳ ai có đường liên kết" chưa, có file video/audio nào bên trong không, và đã khai VITE_GOOGLE_DRIVE_API_KEY trong .env chưa.'
+          );
         }
       }
     } finally {
@@ -451,7 +568,17 @@ export function AddSourceForm() {
               placeholder="https://..."
             />
             {urlHint && <div className={`hint ${urlHint.ok ? 'ok-text' : 'bad-text'}`}>{urlHint.text}</div>}
-            {(form.type === 'youtube_playlist' || form.type === 'youtube_video' || form.type === 'youtube_channel') && (
+            {form.type === 'gdrive_folder' && (
+              <p style={{ fontSize: 12, opacity: 0.6, margin: '6px 0 0' }}>
+                Dán link CHIA SẺ CỦA THƯ MỤC (không phải link 1 file) — thư mục này chỉ nên chứa đúng 1 file
+                video/audio, có thể thêm 1 ảnh làm bìa (không bắt buộc). Nhớ để chế độ chia sẻ "Bất kỳ ai có
+                đường liên kết".
+              </p>
+            )}
+            {(form.type === 'youtube_playlist' ||
+              form.type === 'youtube_video' ||
+              form.type === 'youtube_channel' ||
+              form.type === 'gdrive_folder') && (
               <button
                 type="button"
                 className="add-window-btn"
@@ -463,12 +590,164 @@ export function AddSourceForm() {
               >
                 {resolving ? (
                   'Đang dò...'
+                ) : form.type === 'gdrive_folder' ? (
+                  <>
+                    <Search className="icon icon-lead" aria-hidden="true" /> Dò thông tin từ Google Drive
+                  </>
                 ) : (
                   <>
                     <Search className="icon icon-lead" aria-hidden="true" /> Dò tiêu đề từ YouTube
                   </>
                 )}
               </button>
+            )}
+          </div>
+        )}
+
+        {form.type === 'gdrive_folder' && !isEditing && (
+          <div className="form-row">
+            <button
+              type="button"
+              className="add-window-btn"
+              data-region="pbulk"
+              tabIndex={0}
+              onClick={() => setBulkOpen((v) => !v)}
+            >
+              <Folder className="icon icon-lead" aria-hidden="true" />
+              {bulkOpen ? 'Ẩn nhập hàng loạt' : 'Hoặc nhập cả thư mục tổng (nhiều nội dung cùng lúc)'}
+            </button>
+
+            {bulkOpen && (
+              <div
+                style={{
+                  marginTop: 12,
+                  padding: 12,
+                  border: '1px dashed rgba(128,128,128,0.35)',
+                  borderRadius: 10,
+                }}
+              >
+                <p style={{ fontSize: 12, opacity: 0.65, margin: '0 0 10px' }}>
+                  Dán link thư mục TỔNG (thư mục lớn chứa nhiều thư mục con, mỗi thư mục con là 1 nội dung
+                  riêng — y hệt quy ước 1 thư mục = 1 nội dung ở trên). App sẽ liệt kê từng thư mục con tìm
+                  được để chọn thêm cùng lúc. Nhớ thư mục tổng (và các thư mục con) cũng phải để chế độ chia
+                  sẻ "Bất kỳ ai có đường liên kết".
+                </p>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input
+                    data-region="pbulk"
+                    tabIndex={0}
+                    value={bulkUrl}
+                    onChange={(e) => setBulkUrl(e.target.value)}
+                    placeholder="https://drive.google.com/drive/folders/..."
+                    style={{ flex: 1 }}
+                  />
+                  <button
+                    type="button"
+                    className="add-window-btn"
+                    style={{ flexShrink: 0 }}
+                    data-region="pbulk"
+                    tabIndex={0}
+                    disabled={bulkScanning || !isSafeHttpsUrl(bulkUrl)}
+                    onClick={scanBulkFolder}
+                  >
+                    {bulkScanning ? (
+                      'Đang quét...'
+                    ) : (
+                      <>
+                        <Search className="icon icon-lead" aria-hidden="true" /> Quét thư mục
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {bulkItems.length > 0 && (
+                  <>
+                    <div className="added-list" style={{ marginTop: 12 }}>
+                      {bulkItems.map((it) => (
+                        <div
+                          className="added-item"
+                          key={it.folderId}
+                          style={{ justifyContent: 'space-between', opacity: it.result ? 1 : 0.5 }}
+                        >
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'center', minWidth: 0 }}>
+                            <input
+                              type="checkbox"
+                              data-region="pbulkitem"
+                              tabIndex={0}
+                              checked={it.selected}
+                              disabled={!it.result}
+                              onChange={() => toggleBulkItemSelected(it.folderId)}
+                            />
+                            <Cloud className="icon" aria-hidden="true" />
+                            <span className="ellip">{it.folderName}</span>
+                          </div>
+                          <span style={{ fontSize: 11, flexShrink: 0 }}>
+                            {it.result ? '✓ Có media' : '✕ Không tìm thấy media'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="form-row" style={{ marginTop: 12 }}>
+                      <label>Dành cho bé (áp dụng cho cả loạt đã chọn)</label>
+                      <div className="day-pills">
+                        {profiles.map((k) => (
+                          <div
+                            key={k.id}
+                            className={`day-pill ${bulkSelectedKids.includes(k.id) ? 'on' : ''}`}
+                            data-region="pbulkkid"
+                            tabIndex={0}
+                            onClick={() => toggleBulkKid(k.id)}
+                          >
+                            {profileEmoji(k)} {k.name}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {labels.length > 0 && (
+                      <div className="form-row">
+                        <label>Nhãn (áp dụng cho cả loạt đã chọn, không bắt buộc)</label>
+                        <div className="day-pills">
+                          {labels.map((l) => {
+                            const LabelIcon = labelIcon(l);
+                            return (
+                              <div
+                                key={l.id}
+                                className={`day-pill ${bulkSelectedLabelIds.includes(l.id) ? 'on' : ''}`}
+                                data-region="pbulklabel"
+                                tabIndex={0}
+                                onClick={() => toggleBulkLabel(l.id)}
+                              >
+                                <LabelIcon className="icon" aria-hidden="true" /> {l.name}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    <button
+                      type="button"
+                      className="submit-btn"
+                      style={{ marginTop: 8 }}
+                      data-region="pbulk"
+                      tabIndex={0}
+                      disabled={bulkSaving || bulkItems.filter((it) => it.selected && it.result).length === 0}
+                      onClick={addSelectedBulkItems}
+                    >
+                      {bulkSaving ? (
+                        'Đang thêm...'
+                      ) : (
+                        <>
+                          <Plus className="icon icon-lead" aria-hidden="true" /> Thêm{' '}
+                          {bulkItems.filter((it) => it.selected && it.result).length} nội dung đã chọn
+                        </>
+                      )}
+                    </button>
+                  </>
+                )}
+              </div>
             )}
           </div>
         )}

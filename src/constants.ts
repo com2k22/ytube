@@ -1,4 +1,4 @@
-import { Youtube, ListPlus, ListVideo, Film, Link2 } from 'lucide-react';
+import { Youtube, ListPlus, ListVideo, Film, Link2, Cloud } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 // ID gốc của Mina & Cốm — 2 hồ sơ có sẵn từ đầu (khởi tạo trong supabase/001_schema.sql).
@@ -59,6 +59,7 @@ export const SOURCE_TYPE_ICON: Record<string, string> = {
   youtube_channel: '📺',
   direct_url: '🔗',
   custom_playlist: '🧩',
+  gdrive_folder: '☁️',
 };
 
 // Bản icon SVG (lucide-react) phong cách mới của bảng trên — dùng ở các màn hình MỚI trong
@@ -71,4 +72,5 @@ export const SOURCE_TYPE_ICON_SVG: Record<string, LucideIcon> = {
   youtube_playlist: ListVideo,
   youtube_video: Film,
   direct_url: Link2,
+  gdrive_folder: Cloud,
 };

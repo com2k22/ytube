@@ -82,7 +82,7 @@ export function MobileDiscoverPage() {
     if (filter === 'all') return true;
     if (filter === 'youtube_channel') return s.type === 'youtube_channel';
     if (filter === 'youtube_playlist') return s.type === 'youtube_playlist' || s.type === 'custom_playlist';
-    return s.type === 'youtube_video' || s.type === 'direct_url';
+    return s.type === 'youtube_video' || s.type === 'direct_url' || s.type === 'gdrive_folder';
   };
 
   const results = useMemo(() => {
