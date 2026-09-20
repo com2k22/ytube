@@ -12,6 +12,7 @@ import {
   ChevronDown,
   Gauge,
   Moon,
+  MoonStar,
   Music,
   Video as VideoIcon,
 } from 'lucide-react';
@@ -81,6 +82,34 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
       chính của khu Truyện trên điện thoại là NGHE, không phải xem màn hình. */
   const [audioMode, setAudioMode] = useState(true);
   const [sleepMenuOpen, setSleepMenuOpen] = useState(false);
+
+  /**
+   * "Chế độ ban đêm" — CHỈ áp dụng ở toàn màn hình (xem cách gắn class ở div ngoài cùng bên
+   * dưới): ẩn hẳn ảnh bìa, nền đổi hẳn sang đen tuyệt đối (#000, khác với màu nền tối
+   * "#0e0f13" bình thường của app) + toàn bộ chữ/nút chuyển sang viền mảnh/màu mờ. Mục đích
+   * là tiết kiệm pin trên các máy màn OLED (điểm ảnh đen gần như không tốn điện) khi bé nghe
+   * truyện vào buổi tối — không có tác dụng tiết kiệm đáng kể trên máy màn LCD cũ vì đèn nền
+   * LCD sáng đều bất kể màu gì, nhưng bật lên cũng không có gì hại nên cứ để tuỳ ý bật/tắt.
+   *
+   * Bật/tắt bằng tay qua 1 nút trong hàng tiện ích (không tự động theo giờ) và NHỚ lựa chọn
+   * theo từng thiết bị (localStorage) — đây là sở thích hiển thị cá nhân, không phải quy tắc
+   * kiểm soát nội dung của bố mẹ nên không cần đồng bộ lên Supabase.
+   */
+  const [nightMode, setNightMode] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('ytube_mobile_night_mode') === '1';
+    } catch {
+      return false;
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem('ytube_mobile_night_mode', nightMode ? '1' : '0');
+    } catch {
+      // Trình duyệt chặn localStorage (vd chế độ ẩn danh) — chỉ mất khả năng nhớ lựa chọn
+      // cho lần mở app sau, không ảnh hưởng gì tới việc bật/tắt trong phiên hiện tại.
+    }
+  }, [nightMode]);
 
   const { option: sleepOption, expiresAt: sleepExpiresAt, setSleepOption } = useSleepTimer({
     onExpire: () => adapter?.pause(),
@@ -261,7 +290,9 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
 
   return (
     <div
-      className={`mobile-player-host ${isFull ? 'mobile-player-host--full' : 'mobile-player-host--mini'}`}
+      className={`mobile-player-host ${isFull ? 'mobile-player-host--full' : 'mobile-player-host--mini'} ${
+        isFull && nightMode ? 'mobile-player-host--night' : ''
+      }`}
       // Cử chỉ vuốt-để-tắt CHỈ có ý nghĩa ở chế độ thu nhỏ, nhưng vẫn gắn handler ở đây bất
       // kể (mỗi hàm tự kiểm tra `isFull` bên trong) — đơn giản hơn là tạo hẳn 1 wrapper
       // riêng chỉ cho mini, mà không tốn gì thêm vì toàn màn hình luôn thoát sớm ngay dòng
@@ -473,6 +504,13 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
                 </div>
               )}
             </div>
+            <button
+              className={`mobile-player-utility-btn ${nightMode ? 'mobile-player-utility-btn--active' : ''}`}
+              onClick={() => setNightMode((n) => !n)}
+              aria-pressed={nightMode}
+            >
+              <MoonStar size={16} /> {nightMode ? 'Đang tối' : 'Chế độ tối'}
+            </button>
           </div>
 
           {sleepExpiresAt && sleepOption !== 'off' && sleepOption !== 'end_of_video' && (

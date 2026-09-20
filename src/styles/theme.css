@@ -2200,6 +2200,69 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
   :root:not([data-theme]) .mobile-player-autonext button { background: #7c9cff; color: #0e0f13; }
   [data-theme='chibi'] .mobile-player-autonext button { background: #ff5c9e; color: #fff; }
 
+  /* --- CHẾ ĐỘ BAN ĐÊM (toàn màn hình) ---
+     CHỈ gắn ở toàn màn hình (class "mobile-player-host--night" chỉ được thêm khi isFull &&
+     nightMode — xem MobilePlayerHost.tsx), không đụng gì tới thanh mini. Nền đen TUYỆT ĐỐI
+     (#000, khác hẳn màu nền tối "#0e0f13" bình thường của app) để tiết kiệm pin trên màn
+     OLED — điểm ảnh đen thật gần như không tốn điện, khác với chỉ "tối màu" thông thường.
+     Dùng !important ở 1-2 chỗ vì cần thắng cả màu nền theo theme (dark/chibi, đã khai báo
+     kèm [data-theme=...] nên độ ưu tiên cao) LẪN backgroundImage gắn qua inline style của
+     ảnh bìa (MobilePlayerHost.tsx) — CSS thường không thắng nổi inline style nếu thiếu
+     !important. Toàn bộ chữ/nút đổi sang viền mảnh + màu mờ thay vì khối màu tô đặc, đúng
+     tinh thần "tối giản, đỡ chói" khi dùng vào ban đêm. */
+  .mobile-player-host--night { background: #000 !important; }
+  .mobile-player-host--night .mobile-player-media { background: #000; }
+  .mobile-player-host--night .mobile-player-artwork {
+    background-image: none !important;
+    background-color: #000;
+  }
+  .mobile-player-host--night .mobile-player-media-header .mobile-player-icon-btn {
+    background: rgba(255, 255, 255, 0.06); color: rgba(255, 255, 255, 0.5);
+  }
+  .mobile-player-host--night .mobile-player-full-title-name { color: rgba(255, 255, 255, 0.45); }
+  .mobile-player-host--night .mobile-player-full-title-sub { color: rgba(255, 255, 255, 0.28); }
+  .mobile-player-host--night .mobile-player-mode-btn {
+    background: transparent; border: 1px solid rgba(255, 255, 255, 0.16);
+    color: rgba(255, 255, 255, 0.35); opacity: 1;
+  }
+  .mobile-player-host--night .mobile-player-mode-btn--active {
+    background: transparent; border-color: rgba(255, 255, 255, 0.4); color: rgba(255, 255, 255, 0.75);
+  }
+  .mobile-player-host--night .mobile-player-progress input[type='range'] {
+    accent-color: rgba(255, 255, 255, 0.4);
+  }
+  .mobile-player-host--night .mobile-player-progress input[type='range']::-webkit-slider-runnable-track {
+    background: rgba(255, 255, 255, 0.12);
+  }
+  .mobile-player-host--night .mobile-player-progress input[type='range']::-webkit-slider-thumb {
+    background: transparent; border: 1.5px solid rgba(255, 255, 255, 0.55); box-shadow: none;
+  }
+  .mobile-player-host--night .mobile-player-progress input[type='range']::-moz-range-track {
+    background: rgba(255, 255, 255, 0.12);
+  }
+  .mobile-player-host--night .mobile-player-progress input[type='range']::-moz-range-thumb {
+    background: transparent; border: 1.5px solid rgba(255, 255, 255, 0.55);
+  }
+  .mobile-player-host--night .mobile-player-progress-labels { color: rgba(255, 255, 255, 0.3); }
+  .mobile-player-host--night .mobile-player-icon-btn {
+    background: transparent; border: 1px solid rgba(255, 255, 255, 0.16); color: rgba(255, 255, 255, 0.5);
+  }
+  .mobile-player-host--night .mobile-player-play-btn {
+    background: transparent; border: 1.5px solid rgba(255, 255, 255, 0.4); color: rgba(255, 255, 255, 0.7);
+  }
+  .mobile-player-host--night .mobile-player-utility-btn {
+    background: transparent; border: 1px solid rgba(255, 255, 255, 0.16); color: rgba(255, 255, 255, 0.4);
+  }
+  .mobile-player-host--night .mobile-player-utility-btn--active {
+    border-color: rgba(255, 255, 255, 0.55); color: rgba(255, 255, 255, 0.85);
+  }
+  .mobile-player-host--night .mobile-player-sleep-menu { background: #000; border: 1px solid rgba(255, 255, 255, 0.14); }
+  .mobile-player-host--night .mobile-player-sleep-item { color: rgba(255, 255, 255, 0.4); }
+  .mobile-player-host--night .mobile-player-sleep-item.active {
+    color: rgba(255, 255, 255, 0.85); background: rgba(255, 255, 255, 0.08);
+  }
+  .mobile-player-host--night .mobile-player-sleep-note { color: rgba(255, 255, 255, 0.3); }
+
   /* --- Trạng thái rỗng dùng chung (tab Khám phá/Đã tải) --- */
   .mobile-empty-page { display: flex; align-items: center; justify-content: center; min-height: 60vh; }
   .mobile-empty-state { text-align: center; max-width: 320px; margin: 0 auto; }
