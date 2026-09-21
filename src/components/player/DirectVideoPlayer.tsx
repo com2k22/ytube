@@ -148,8 +148,12 @@ export function DirectVideoPlayer({
         } else if (mediaError.code === mediaError.MEDIA_ERR_DECODE) {
           msg = 'Định dạng này không phát được trên thiết bị.';
         } else if (mediaError.code === mediaError.MEDIA_ERR_SRC_NOT_SUPPORTED) {
+          // Cùng 1 mã lỗi này còn hiện ra khi Google Drive tạm thời CHẶN do phát hiện quá
+          // nhiều lượt tải liên tiếp trong thời gian ngắn (dùng API key không đăng nhập dễ bị
+          // Google nghi ngờ là "truy vấn tự động" hơn tài khoản đăng nhập thật) — trình duyệt
+          // không phân biệt được đây với link hỏng/mất quyền, nên liệt kê đủ cả 3 khả năng.
           msg =
-            'Không tải được nội dung — link có thể đã hỏng, hoặc thư mục/file Google Drive không còn ở chế độ "Bất kỳ ai có đường liên kết", hoặc đang bị tắt quyền tải xuống.';
+            'Không tải được nội dung — có thể link đã hỏng, thư mục/file Google Drive không còn ở chế độ "Bất kỳ ai có đường liên kết", hoặc Google đang tạm chặn do có quá nhiều lượt tải liên tiếp (thử lại sau vài phút hoặc vài giờ).';
         }
       }
       setLoadError(msg);
