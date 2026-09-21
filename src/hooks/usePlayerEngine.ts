@@ -57,6 +57,18 @@ interface UsePlayerEngineOptions {
       xong video này rồi tắt" và video vừa xem xong. PlayerPage điều hướng về Trang chủ;
       trình phát nổi trên điện thoại đóng lại (ẩn mini-bar/màn hình toàn màn hình). */
   onExit: () => void;
+  /** 'off' (mặc định) = giữ NGUYÊN hành vi cũ — hết playlist thì dừng lại, không có "video
+      tiếp theo" nữa. 'playlist' = hết playlist thì coi video ĐẦU TIÊN là "tiếp theo" (và
+      video CUỐI CÙNG là "trước đó" khi đang ở video đầu) — vòng lặp lại từ đầu. CHỈ trình
+      phát điện thoại (MobilePlayerHost, nút Lặp lại) truyền 'playlist'; PlayerPage (TV/iPad/
+      máy tính) không truyền gì, luôn giữ hành vi cũ. */
+  repeatMode?: 'off' | 'playlist';
+  /** true = "video/track tiếp theo" (cả nút Next lẫn tự chuyển khi video hiện tại kết thúc)
+      chọn NGẪU NHIÊN 1 video KHÁC trong playlist, thay vì đúng thứ tự — CHỈ trình phát điện
+      thoại bật được (nút Trộn bài), mặc định false giữ nguyên hành vi cũ. Không đụng tới
+      "video trước" (prevVideo) — bấm Trước vẫn đi đúng thứ tự, giống hầu hết app nghe nhạc
+      (trộn bài chỉ áp dụng hướng TỚI). */
+  shuffle?: boolean;
 }
 
 /**
@@ -71,7 +83,13 @@ interface UsePlayerEngineOptions {
  * (MobilePlayerHost), thay vì viết 2 lần và có nguy cơ lệch nhau (tiến độ xem, phiên xem,
  * đếm giờ nghỉ giải lao... đều là những phần TUYỆT ĐỐI không được có 2 hệ thống riêng).
  */
-export function usePlayerEngine({ params, onNavigateToVideo, onExit }: UsePlayerEngineOptions) {
+export function usePlayerEngine({
+  params,
+  onNavigateToVideo,
+  onExit,
+  repeatMode = 'off',
+  shuffle = false,
+}: UsePlayerEngineOptions) {
   const { sourceId, videoId: videoIdParam, directUrl: directUrlParam, title: titleParam, playlistId } = params;
 
   const { activeProfile } = useProfileContext();
@@ -153,11 +171,45 @@ export function usePlayerEngine({ params, onNavigateToVideo, onExit }: UsePlayer
   }, [playlistId, source?.type, source?.items]);
 
   // Vị trí video đang phát trong danh sách, và video đứng ngay sau/trước nó.
-  const currentIndex = playlistVideos.findIndex((v) => v.videoId === ytVideoId);
-  const nextVideo = currentIndex >= 0 ? playlistVideos[currentIndex + 1] ?? null : null;
-  const prevVideo = currentIndex > 0 ? playlistVideos[currentIndex - 1] : null;
+  //
+  // "currentKey" — SỬA LỖI: trước đây so khớp bằng đúng `ytVideoId`, mà `ytVideoId` CHỈ có
+  // giá trị khi kind === 'youtube'. Với video/audio kind 'direct' (link trực tiếp — Google
+  // Drive/Dropbox...), `ytVideoId` luôn là null, nên currentIndex luôn ra -1 (không bao giờ
+  // khớp được), khiến nextVideo/prevVideo LUÔN là null dù đang ở giữa playlist — đúng lỗi
+  // "nút Bài tiếp không hiện" ở 1 số vị trí (chính xác là MỌI vị trí đang phát 1 tập kind
+  // 'direct'). `v.videoId` của 1 mục 'direct' CHÍNH LÀ url (xem chú thích goToVideo bên
+  // dưới) nên phải so khớp với `directUrl`, không phải `ytVideoId`, trong trường hợp đó.
+  const currentKey = kind === 'direct' ? directUrl : ytVideoId;
+  const currentIndex = playlistVideos.findIndex((v) => v.videoId === currentKey);
+  let nextVideo = currentIndex >= 0 ? playlistVideos[currentIndex + 1] ?? null : null;
+  let prevVideo = currentIndex > 0 ? playlistVideos[currentIndex - 1] : null;
+
+  // Trộn bài (shuffle) — chọn ngẫu nhiên 1 video KHÁC video đang phát làm "video tiếp theo".
+  // Tính bằng useMemo (không phải biến thường) để KHÔNG bốc số ngẫu nhiên MỚI mỗi lần
+  // component vẽ lại (MobilePlayerHost thăm dò vị trí phát mỗi 500ms) — chỉ bốc lại đúng 1
+  // lần mỗi khi ĐỔI bài hoặc bật/tắt trộn bài, nhờ vậy trong lúc đang nghe, "bài tiếp theo"
+  // đứng yên 1 chỗ chứ không nhảy số liên tục.
+  const shuffledNextVideo = useMemo(() => {
+    if (!shuffle || playlistVideos.length < 2) return null;
+    const others = playlistVideos.filter((v) => v.videoId !== currentKey);
+    if (others.length === 0) return null;
+    return others[Math.floor(Math.random() * others.length)];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shuffle, playlistVideos, currentKey]);
+
+  if (shuffle) {
+    nextVideo = shuffledNextVideo;
+  } else if (!nextVideo && repeatMode === 'playlist' && playlistVideos.length > 0) {
+    // Hết playlist mà đang bật "Lặp lại danh sách" → video ĐẦU TIÊN coi như "tiếp theo".
+    nextVideo = playlistVideos[0];
+  }
+  if (!prevVideo && !shuffle && repeatMode === 'playlist' && playlistVideos.length > 0) {
+    // Đang ở video ĐẦU mà bật "Lặp lại danh sách" → video CUỐI coi như "trước đó".
+    prevVideo = playlistVideos[playlistVideos.length - 1];
+  }
+
   /** Danh sách hiện ở dưới trang — bỏ video đang phát ra cho gọn. */
-  const nextVideos = playlistVideos.filter((v) => v.videoId !== ytVideoId);
+  const nextVideos = playlistVideos.filter((v) => v.videoId !== currentKey);
 
   /**
    * "Video lẻ khác" — dùng khi đang xem 1 video KHÔNG nằm trong playlist nào (playlistVideos

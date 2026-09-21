@@ -1948,7 +1948,15 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
     column-gap: 10px;
     padding: 8px 10px;
     box-sizing: border-box;
-    position: relative;
+    /* QUAN TRỌNG: KHÔNG khai báo lại "position" ở đây — .mobile-player-host (áp dụng cho cả
+       2 chế độ mini/toàn màn hình, khai ở trên) đã có sẵn position:fixed rồi, đã đủ để làm
+       "khung neo" cho .mobile-player-mini-progress (position:absolute) bên dưới, KHÔNG cần
+       "position: relative" riêng ở đây. Từng lỡ thêm "position: relative" vào chính khối
+       này — vì 2 rule ".mobile-player-host" và ".mobile-player-host--mini" cùng áp dụng lên
+       ĐÚNG 1 phần tử (2 class ghép chung, xem className trong MobilePlayerHost.tsx) và cùng
+       độ ưu tiên (cùng 1 class), rule đứng SAU (--mini) thắng, "relative" đã ĐÈ MẤT hẳn
+       "fixed" — khiến cả thanh mini rơi vào luồng tài liệu bình thường thay vì neo cố định
+       trên màn hình, đúng y hệt lỗi "phải vuốt xuống cuối trang mới thấy" đã báo. */
     /* Cộng thêm 14px vào khoảng cách đáy — trước đây thanh mini dính sát ngay lên trên
        thanh menu dưới đáy (chỉ cách đúng bằng chiều cao thanh đó), nhìn dính cục, không có
        khoảng thở. */
@@ -2103,6 +2111,12 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
   [data-theme='dark'] .mobile-player-icon-btn,
   :root:not([data-theme]) .mobile-player-icon-btn { background: #23242c; color: #f2f3f5; }
   [data-theme='chibi'] .mobile-player-icon-btn { background: #ffe0ee; color: #ff5c9e; }
+  /* Trạng thái "đang bật" cho 2 nút Lặp lại/Trộn bài trong .mobile-player-transport (dùng
+     chung class .mobile-player-icon-btn với các nút tua/chuyển bài khác — chỉ tô màu nổi lên
+     khi ĐANG bật, giữ nguyên hình tròn/cỡ như các nút kia). */
+  [data-theme='dark'] .mobile-player-icon-btn--active,
+  :root:not([data-theme]) .mobile-player-icon-btn--active { background: #7c9cff; color: #0e0f13; }
+  [data-theme='chibi'] .mobile-player-icon-btn--active { background: #ff5c9e; color: #fff; }
 
   /* Tên bài giờ đứng NGAY DƯỚI khung video/ảnh (không còn hàng Thu nhỏ/Đóng phía trên nó
      nữa — 2 nút đó đã dời lên nổi trên chính vùng video/ảnh). KHÔNG in đậm nữa (font-weight
@@ -2129,6 +2143,10 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
   [data-theme='dark'] .mobile-player-mode-btn,
   :root:not([data-theme]) .mobile-player-mode-btn { background: #23242c; color: #c7c9d1; }
   [data-theme='chibi'] .mobile-player-mode-btn { background: #fff0f6; color: #c2447a; }
+  /* Nút "Video" bị khoá khi nội dung chỉ có tiếng (hasVideo=false, xem MobilePlayerHost.tsx)
+     — mờ hẳn đi + con trỏ "không bấm được", phân biệt rõ với trạng thái "chỉ đang KHÔNG được
+     chọn" (opacity 0.45 mặc định) ở trên. */
+  .mobile-player-mode-btn:disabled { opacity: 0.25; cursor: not-allowed; }
   .mobile-player-mode-btn--active { opacity: 1; }
   [data-theme='dark'] .mobile-player-mode-btn--active,
   :root:not([data-theme]) .mobile-player-mode-btn--active { background: #7c9cff; color: #0e0f13; }
@@ -2169,10 +2187,12 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
   [data-theme='chibi'] .mobile-player-progress input[type='range']::-moz-range-thumb { background: #ff5c9e; }
   .mobile-player-progress-labels { display: flex; justify-content: space-between; font-size: 11.5px; opacity: 0.65; margin-top: 4px; }
 
-  /* Dãy nút điều khiển: tăng cỡ nút Phát/Tạm dừng (62px → 72px) + tăng khoảng cách giữa các
-     nút (18px → 24px) theo yêu cầu. margin-top giảm còn 2px (khớp với margin-bottom 6px của
-     thanh tiến độ phía trên) — tổng khoảng cách giữa 2 khối chỉ còn ~8px thay vì ~22px cũ. */
-  .mobile-player-transport { display: flex; align-items: center; justify-content: center; gap: 24px; margin: 2px 0 18px; }
+  /* Dãy nút điều khiển: nút Phát/Tạm dừng 72px + khoảng cách giữa các nút 24px. margin-top
+     giữ 2px (khớp với margin-bottom 6px của thanh tiến độ phía trên, gần nhau vì cùng 1 khối
+     "đang tua/điều khiển"). margin-bottom TĂNG lên 34px (trước 18px) — giãn cách rõ với hàng
+     tiện ích (tốc độ/hẹn giờ ngủ...) phía dưới, 2 hàng nút liền sát nhau trước đây nhìn hơi
+     dính, giờ có khoảng thở cân đối hơn giữa 2 NHÓM chức năng khác nhau. */
+  .mobile-player-transport { display: flex; align-items: center; justify-content: center; gap: 24px; margin: 2px 0 34px; }
   .mobile-player-play-btn {
     display: flex; align-items: center; justify-content: center;
     width: 72px; height: 72px; border-radius: 50%; border: none; flex-shrink: 0;
@@ -2493,42 +2513,60 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
     width: 100%; justify-content: center; margin: 8px 0 32px;
   }
 
-  /* --- Trang chủ điện thoại — banner chào (bám theo bố cục tài liệu thiết kế, xem chú
-     thích ở MobileHomePage.tsx). Thanh trên cùng riêng (nút Tìm kiếm/"Khu vực Bố mẹ") đã bỏ
-     hẳn — xem MobileHomePage.tsx. --- */
-  .mobile-home-banner {
-    display: flex; align-items: center; gap: 14px;
-    margin: 12px 0 18px; padding: 18px; border-radius: 22px;
-  }
-  [data-theme='dark'] .mobile-home-banner,
-  :root:not([data-theme]) .mobile-home-banner {
-    background: linear-gradient(135deg, rgba(124, 156, 255, 0.18), rgba(124, 156, 255, 0.04));
-    border: 1px solid rgba(124, 156, 255, 0.25);
-  }
-  [data-theme='chibi'] .mobile-home-banner {
-    background: linear-gradient(135deg, #ffe0ee, #fff0f6);
-    border: 1px solid #ffd6ea;
-  }
-  .mobile-home-banner-icon {
-    flex: 0 0 auto; width: 48px; height: 48px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-  }
-  [data-theme='dark'] .mobile-home-banner-icon,
-  :root:not([data-theme]) .mobile-home-banner-icon { background: rgba(124, 156, 255, 0.22); color: #7c9cff; }
-  [data-theme='chibi'] .mobile-home-banner-icon { background: #ffd6ea; color: #ff5c9e; }
-  .mobile-home-banner-text { min-width: 0; }
+  /* --- Trang chủ điện thoại: nền "hero" mờ ảo phía trên (xem .mobile-home-hero-bg bên
+     dưới), thanh trên cùng (logo+avatar), dải danh mục, rồi lời chào TĨNH gọn — bám theo bố
+     cục ảnh chụp màn hình tham khảo (YouTube Music). Thanh trên cùng riêng kiểu cũ (nút Tìm
+     kiếm/"Khu vực Bố mẹ") đã bỏ hẳn từ trước — xem MobileHomePage.tsx. --- */
+  .mobile-home { position: relative; }
 
-  /* --- Dòng "Chào <tên bé>" — giờ chỉ còn chữ TĨNH (không bấm được nữa), nút đổi hồ sơ đã
-     dời hẳn lên thanh trên cùng (.mobile-home-topbar-avatar bên dưới, xem
-     MobileHomePage.tsx). font-size/weight giữ NGUYÊN như trước (18px/800). --- */
-  .mobile-home-banner-greet {
-    display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
-    font-size: 18px; font-weight: 800;
+  /* Nền "hero" nhiều màu mờ ảo phía trên Trang chủ — tái hiện hiệu ứng nền của ảnh chụp màn
+     hình tham khảo (YouTube Music): 3 quầng màu mềm (trái/giữa/phải) TRỘN VÀO NHAU bằng
+     background-blend-mode: screen (không phải xếp chồng cứng nhắc — screen giúp vùng giao
+     nhau SÁNG/HOÀ lên nhau mềm mại, không có "đường ranh giới" giữa các vùng màu), rồi cả
+     khối mờ dần xuống gần đen ở nửa dưới (lớp linear-gradient cuối). Vị trí lấy đúng theo mô
+     tả: trái = olive/xanh rêu ánh vàng, giữa = hổ phách/nâu sẫm, phải = nâu đỏ/burgundy.
+     Đây là màu TĨNH cố định (không dò màu từ ảnh bìa nội dung thật đang phát — việc đó cần
+     xử lý ảnh riêng, phức tạp hơn nhiều, xem chú thích trong MobileHomePage.tsx).
+     `position:absolute` + `left:50%; margin-left:-50vw; width:100vw` = mẹo "tràn hẳn ra mép
+     màn hình" dù `.main` đang có padding ngang (xem .main trong file này) — nếu không, nền
+     sẽ bị hụt vào trong đúng bằng khoảng padding đó, không tràn sát mép như ảnh tham khảo.
+     `z-index:-1` (dựa vào .mobile-home vừa đổi position:relative ở trên) để nằm HẲN phía sau
+     toàn bộ nội dung (logo/avatar/chip/chữ...), không che mất gì. */
+  .mobile-home-hero-bg {
+    position: absolute; top: 0; left: 50%; width: 100vw; margin-left: -50vw;
+    height: 440px; z-index: -1; pointer-events: none;
+    background:
+      radial-gradient(ellipse 75% 55% at 8% -8%, #4a421a 0%, rgba(74, 66, 26, 0) 72%),
+      radial-gradient(ellipse 85% 60% at 50% -6%, #65400f 0%, rgba(101, 64, 15, 0) 72%),
+      radial-gradient(ellipse 75% 55% at 94% -8%, #4a160f 0%, rgba(74, 22, 15, 0) 72%),
+      linear-gradient(180deg, #35270f 0%, #080808 88%);
+    background-blend-mode: screen, screen, screen, normal;
   }
-  [data-theme='dark'] .mobile-home-banner-greet,
-  :root:not([data-theme]) .mobile-home-banner-greet { color: #f2f3f5; }
-  [data-theme='chibi'] .mobile-home-banner-greet { color: #c2447a; }
-  .mobile-home-banner-sub { font-size: 12.5px; opacity: 0.7; line-height: 1.4; margin-top: 2px; }
+  /* Chibi (giao diện sáng, tông hồng) không hợp với nền tối gần đen ở trên — đổi thành 1
+     bản dịu hơn nhiều, cùng ý tưởng 3 quầng màu mềm nhưng tông sáng/hồng phấn, mờ dần về
+     đúng màu nền hồng nhạt của theme này (#fff0f6) thay vì gần đen. */
+  [data-theme='chibi'] .mobile-home-hero-bg {
+    background:
+      radial-gradient(ellipse 75% 55% at 8% -8%, #ffe3c2 0%, rgba(255, 227, 194, 0) 72%),
+      radial-gradient(ellipse 85% 60% at 50% -6%, #ffd1e6 0%, rgba(255, 209, 230, 0) 72%),
+      radial-gradient(ellipse 75% 55% at 94% -8%, #ffc7d9 0%, rgba(255, 199, 217, 0) 72%),
+      linear-gradient(180deg, #fff0f6 0%, #fff0f6 100%);
+    background-blend-mode: multiply, multiply, multiply, normal;
+  }
+
+  /* --- Dòng "Chào <tên bé>" — CHỈ còn icon mặt trăng + đúng 1 dòng chữ, KHÔNG còn khung/nền
+     thẻ (banner) hay dòng phụ đề như trước, và dời xuống DƯỚI dải danh mục — xem
+     MobileHomePage.tsx. Chữ đứng trên nền hero mờ phía trên nên giữ màu sáng cố định (không
+     theo theme) để luôn đọc rõ, GIỐNG ngay cả ở theme chibi (nền hero riêng của chibi vẫn đủ
+     tối ở đúng vùng chữ này vì đặt gần cuối chiều cao 440px của hero). */
+  .mobile-home-greet-line {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 16px; font-weight: 800;
+    margin: 2px 0 20px;
+  }
+  [data-theme='dark'] .mobile-home-greet-line,
+  :root:not([data-theme]) .mobile-home-greet-line { color: #f2f3f5; }
+  [data-theme='chibi'] .mobile-home-greet-line { color: #c2447a; }
 
   /* --- Thanh trên cùng Trang chủ điện thoại: logo+tên "Ytube" góc trái, avatar hồ sơ (chỉ
      icon, ẩn tên) góc phải — theo đúng bố cục app tham khảo (YouTube Music). --- */
@@ -2537,18 +2575,14 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
     margin: 4px 0 10px;
   }
   .mobile-home-logo { display: flex; align-items: center; gap: 8px; }
+  /* Logo tô ĐỎ-TRẮNG cố định (không đổi theo theme sáng/tối/chibi nữa) theo đúng yêu cầu —
+     giống màu biểu tượng nút Play đỏ quen thuộc của YouTube. */
   .mobile-home-logo-mark {
     width: 26px; height: 26px; border-radius: 8px; flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;
-    color: #fff;
+    background: #e02020; color: #fff;
   }
-  [data-theme='dark'] .mobile-home-logo-mark,
-  :root:not([data-theme]) .mobile-home-logo-mark { background: #7c9cff; }
-  [data-theme='chibi'] .mobile-home-logo-mark { background: #ff5c9e; }
-  .mobile-home-logo-text { font-size: 18px; font-weight: 900; letter-spacing: 0.2px; }
-  [data-theme='dark'] .mobile-home-logo-text,
-  :root:not([data-theme]) .mobile-home-logo-text { color: #f2f3f5; }
-  [data-theme='chibi'] .mobile-home-logo-text { color: #c2447a; }
+  .mobile-home-logo-text { font-size: 18px; font-weight: 900; letter-spacing: 0.2px; color: #fff; }
 
   /* Avatar hồ sơ ở thanh trên cùng: bỏ hẳn khung/nền/chữ tên/mũi tên của .profile-btn mặc
      định (dùng chung component ProfileSwitcher với Sidebar/TopBar — xem

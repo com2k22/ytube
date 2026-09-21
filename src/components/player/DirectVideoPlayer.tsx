@@ -52,6 +52,15 @@ interface Props {
       Session API bên dưới), không ảnh hưởng gì tới hình trong app. null/không truyền =
       màn hình khoá không có ảnh, vẫn hiện được tên video bình thường. */
   artworkUrl?: string | null;
+  /** Báo cho nơi gọi biết link vừa tải có THẬT SỰ có hình (video) hay chỉ có tiếng (audio
+      thuần — mp3, hoặc file Drive không có khung hình) — dùng để trình phát điện thoại tự
+      disable nút chuyển sang chế độ "Video" khi nội dung không có gì để xem (xem
+      MobilePlayerHost.tsx). Link mp4/m3u8 luôn phát được qua thẻ <video>, kể cả khi thật ra
+      chỉ có tiếng — trình duyệt vẫn nhận, chỉ là khung hình rộng 0 (videoWidth === 0), nên
+      đây là cách đáng tin cậy duy nhất để biết có hình hay không (không thể đoán qua đuôi
+      file: .mp4 vẫn có thể chỉ chứa track âm thanh). Gọi lại mỗi khi biết chắc (sau khi tải
+      xong metadata) — KHÔNG gọi trước đó để tránh báo sai lúc chưa kịp tải. */
+  onHasVideoChange?: (hasVideo: boolean) => void;
 }
 
 /** DirectVideoPlayer — phát link mp4 trực tiếp, hoặc m3u8 (HLS) qua thư viện hls.js khi trình duyệt chưa hỗ trợ sẵn. */
@@ -70,14 +79,15 @@ export function DirectVideoPlayer({
   onSelectVideo,
   onAdapterReady,
   artworkUrl,
+  onHasVideoChange,
 }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const [captionsOn, setCaptionsOn] = useState(false);
   const [paused, setPaused] = useState(false);
-  /** true = còn đang tải/chưa có khung hình nào để xem — hiện đồ hoạ "Đang tải video..."
-      thay cho màn hình đen (xem giải thích đầy đủ ở SafeYouTubePlayer.tsx). Tắt ngay khi
+  /** true = còn đang tải/chưa có khung hình nào để xem — hiện đồ hoạ "Đang tải..." thay cho
+      màn hình đen (xem giải thích đầy đủ ở SafeYouTubePlayer.tsx). Tắt ngay khi
       có khung hình đầu tiên (sự kiện 'loadeddata'), dù video tự phát được hay bị chặn phải
       bấm nút play bằng tay — cả 2 trường hợp đều không còn là "màn hình đen bí ẩn" nữa. */
   const [loading, setLoading] = useState(true);
@@ -191,8 +201,16 @@ export function DirectVideoPlayer({
       onProgress?.(100, 0);
       onEnded?.();
     };
+    // Biết có hình hay chỉ có tiếng: chờ tới khi trình duyệt đọc xong metadata (kích thước
+    // khung hình thật — 0x0 nghĩa là không có track hình nào cả) rồi mới báo ra ngoài, xem
+    // chú thích đầy đủ ở khai báo prop onHasVideoChange phía trên. 'loadedmetadata' luôn xảy
+    // ra TRƯỚC 'loadeddata' nên kịp báo trước khi màn hình hiện nội dung.
+    const onLoadedMetadata = () => {
+      onHasVideoChange?.(video.videoWidth > 0 && video.videoHeight > 0);
+    };
     video.addEventListener('playing', onPlaying);
     video.addEventListener('loadeddata', onLoadedData);
+    video.addEventListener('loadedmetadata', onLoadedMetadata);
     video.addEventListener('error', onVideoError);
     video.addEventListener('timeupdate', onTimeUpdate);
     video.addEventListener('ended', onEndedHandler);
@@ -200,6 +218,7 @@ export function DirectVideoPlayer({
     return () => {
       video.removeEventListener('playing', onPlaying);
       video.removeEventListener('loadeddata', onLoadedData);
+      video.removeEventListener('loadedmetadata', onLoadedMetadata);
       video.removeEventListener('error', onVideoError);
       video.removeEventListener('timeupdate', onTimeUpdate);
       video.removeEventListener('ended', onEndedHandler);
@@ -357,7 +376,7 @@ export function DirectVideoPlayer({
       {(loading || loadError) && (
         <div className="player-loading" aria-hidden="true">
           {loading && !loadError && <div className="player-loading-spinner" />}
-          <div className="player-loading-text">{loadError ? `⚠️ ${loadError}` : 'Đang tải video...'}</div>
+          <div className="player-loading-text">{loadError ? `⚠️ ${loadError}` : 'Đang tải...'}</div>
         </div>
       )}
       <WatchCountdownBadge />

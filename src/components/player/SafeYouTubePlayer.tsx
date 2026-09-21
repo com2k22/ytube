@@ -116,8 +116,8 @@ export function SafeYouTubePlayer({
   const unmutedRef = useRef(false);
   const [captionsOn, setCaptionsOn] = useState(false);
   const [paused, setPaused] = useState(false);
-  /** true = còn đang tải/chưa phát được khung hình nào — hiện đồ hoạ "Đang tải video..."
-      thay cho màn hình đen, để bé/bố mẹ biết đây là đang chờ chứ không phải lỗi (xem
+  /** true = còn đang tải/chưa phát được khung hình nào — hiện đồ hoạ "Đang tải..." thay cho
+      màn hình đen, để bé/bố mẹ biết đây là đang chờ chứ không phải lỗi (xem
       .player-loading trong theme.css). Tắt ngay khi video thật sự bắt đầu chạy khung hình
       đầu tiên (state PLAYING) — sớm hơn thời điểm "đã tải xong 100%" nhiều. */
   const [loading, setLoading] = useState(true);
@@ -248,7 +248,7 @@ export function SafeYouTubePlayer({
             // Vừa có state đầu tiên (BUFFERING/PLAYING/PAUSED/CUED...) — trình phát YouTube
             // đã thật sự cầm lái, không còn là màn hình đen vô danh nữa (kể cả lúc nó còn
             // đang tự tải/đệm thì cũng đã có hình ảnh/vòng xoay riêng của YouTube). Tắt đồ
-            // hoạ "Đang tải video..." của app từ đây — khắc phục lỗi "mất ~4s đen thui
+            // hoạ "Đang tải..." của app từ đây — khắc phục lỗi "mất ~4s đen thui
             // không biết đang tải hay đang lỗi" ở khoảng thời gian TRƯỚC lúc này.
             setLoading(false);
             // Gỡ phụ đề lần nữa ngay khi video BẮT ĐẦU CHẠY: lúc onReady, bộ phụ đề nhiều
@@ -354,7 +354,7 @@ export function SafeYouTubePlayer({
       {loading && (
         <div className="player-loading" aria-hidden="true">
           <div className="player-loading-spinner" />
-          <div className="player-loading-text">Đang tải video...</div>
+          <div className="player-loading-text">Đang tải...</div>
         </div>
       )}
       <WatchCountdownBadge />

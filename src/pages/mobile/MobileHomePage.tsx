@@ -114,11 +114,18 @@ export function MobileHomePage() {
 
   return (
     <main className="main mobile-home">
+      {/* Lớp nền ánh sáng mờ (hero) sau lưng thanh trên cùng/dải danh mục/lời chào — thuần CSS
+          (xem .mobile-home-hero-bg trong theme.css), KHÔNG lấy màu từ ảnh bìa nội dung thật
+          (việc "dò màu chủ đạo từ ảnh" cần xử lý ảnh riêng, phức tạp hơn nhiều — nếu sau này
+          muốn làm đúng kiểu "đổi màu theo bài đang nghe" thì đây sẽ là việc làm thêm). */}
+      <div className="mobile-home-hero-bg" aria-hidden="true" />
+
       {/* --- Thanh trên cùng: góc trái là logo + tên "Ytube" (thương hiệu app — dùng icon
-          Play có sẵn làm dấu hiệu thay vì ảnh logo thật, chưa có sẵn file ảnh nào), góc phải
-          là avatar emoji hồ sơ đang xem BO TRÒN, ẨN HẲN TÊN chữ (chỉ còn icon) — bấm vào để
-          đổi hồ sơ (dùng lại ProfileSwitcher, region="homebanner", chỉ đổi className để CSS
-          ẩn phần tên/mũi tên xổ đi, xem .mobile-home-topbar-avatar trong theme.css). --- */}
+          Play có sẵn làm dấu hiệu thay vì ảnh logo thật, chưa có sẵn file ảnh nào; tô màu ĐỎ-
+          TRẮNG theo đúng yêu cầu, không đổi theo theme sáng/tối nữa), góc phải là avatar emoji
+          hồ sơ đang xem BO TRÒN, ẨN HẲN TÊN chữ (chỉ còn icon) — bấm vào để đổi hồ sơ (dùng
+          lại ProfileSwitcher, region="homebanner", chỉ đổi className để CSS ẩn phần tên/mũi
+          tên xổ đi, xem .mobile-home-topbar-avatar trong theme.css). --- */}
       <div className="mobile-home-topbar">
         <div className="mobile-home-logo">
           <span className="mobile-home-logo-mark" aria-hidden="true">
@@ -127,22 +134,6 @@ export function MobileHomePage() {
           <span className="mobile-home-logo-text">Ytube</span>
         </div>
         <ProfileSwitcher region="homebanner" className="mobile-home-topbar-avatar" />
-      </div>
-
-      {/* --- Banner chào — icon trăng/sao thay cho tranh minh hoạ (xem chú thích đầu file).
-          Nút đổi hồ sơ đã dời hẳn lên thanh trên cùng phía trên (avatar góc phải) — ở đây chỉ
-          còn lời chào TĨNH (không bấm được nữa), tránh trùng 2 nút đổi hồ sơ trên cùng 1
-          trang. --- */}
-      <div className="mobile-home-banner">
-        <div className="mobile-home-banner-icon">
-          <Moon size={26} aria-hidden="true" />
-        </div>
-        <div className="mobile-home-banner-text">
-          <div className="mobile-home-banner-greet">
-            <span>Chào {activeProfile.name}!</span>
-          </div>
-          <div className="mobile-home-banner-sub">Cùng nghe truyện hay và có một ngày thật vui nhé 💛</div>
-        </div>
       </div>
 
       {orderedCategories.length > 0 && (
@@ -158,6 +149,14 @@ export function MobileHomePage() {
           ))}
         </div>
       )}
+
+      {/* --- Lời chào: bỏ hẳn khung/nền thẻ cũ (banner), giờ CHỈ còn icon mặt trăng + đúng 1
+          dòng "Chào <tên bé>!" — dời xuống DƯỚI dải danh mục theo đúng yêu cầu. Không bấm
+          được nữa (nút đổi hồ sơ đã dời hẳn lên thanh trên cùng, avatar góc phải). --- */}
+      <div className="mobile-home-greet-line">
+        <Moon size={20} aria-hidden="true" />
+        <span>Chào {activeProfile.name}!</span>
+      </div>
 
       {loading && <p style={{ opacity: 0.6 }}>Đang tải nội dung...</p>}
 

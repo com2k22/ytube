@@ -6,8 +6,9 @@ import {
   Pause,
   SkipBack,
   SkipForward,
-  RotateCcw,
-  RotateCw,
+  Repeat,
+  Repeat1,
+  Shuffle,
   X,
   ChevronDown,
   Gauge,
@@ -63,6 +64,16 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
   const location = useLocation();
   const isFull = location.pathname === '/player';
 
+  /** 'off' → 'all' (lặp lại cả danh sách, hết bài cuối quay lại bài đầu) → 'one' (lặp lại
+      ĐÚNG 1 bài đang phát, không tự chuyển bài) → về lại 'off', bấm nút Lặp lại (icon
+      Repeat/Repeat1) sẽ xoay vòng qua 3 trạng thái này (xem cycleRepeat bên dưới). Khai báo
+      ở ĐÂY (trước usePlayerEngine) vì 'all' cần truyền thẳng vào hook để tính lại
+      nextVideo/prevVideo có vòng lặp hay không — xem repeatMode trong usePlayerEngine.ts. */
+  const [repeatMode, setRepeatMode] = useState<'off' | 'all' | 'one'>('off');
+  /** Trộn bài — "video/track tiếp theo" chọn ngẫu nhiên thay vì đúng thứ tự (xem shuffle
+      trong usePlayerEngine.ts). */
+  const [shuffleOn, setShuffleOn] = useState(false);
+
   const engine = usePlayerEngine({
     params: nowPlaying,
     onNavigateToVideo: updateNowPlaying,
@@ -70,6 +81,8 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
       closePlayer();
       navigate('/');
     },
+    repeatMode: repeatMode === 'all' ? 'playlist' : 'off',
+    shuffle: shuffleOn,
   });
   const {
     kind,
@@ -97,6 +110,14 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
       chính của khu Truyện trên điện thoại là NGHE, không phải xem màn hình. */
   const [audioMode, setAudioMode] = useState(true);
   const [sleepMenuOpen, setSleepMenuOpen] = useState(false);
+  const cycleRepeat = () => setRepeatMode((m) => (m === 'off' ? 'all' : m === 'all' ? 'one' : 'off'));
+  /** true = bài đang phát THẬT SỰ có hình để xem — dùng để disable nút "Video" khi nội dung
+      chỉ có tiếng (audio thuần, vd 1 file mp3/Drive không có khung hình), tránh bé bấm vào
+      rồi thấy màn hình đen thui không hiểu vì sao. Mặc định true (lạc quan): video YouTube
+      LUÔN có hình nên không cần báo gì; với nội dung 'direct' (link trực tiếp), giá trị THẬT
+      do DirectVideoPlayer tự báo lại qua onHasVideoChange ngay sau khi tải xong metadata (xem
+      prop đó) — trước lúc đó cứ tạm coi là true, không disable nhầm. */
+  const [hasVideo, setHasVideo] = useState(true);
   /** Danh sách bài trong playlist hiện tại (bấm biểu tượng dưới trình phát để mở) — xem khối
       .mobile-player-queue-sheet phía dưới. */
   const [queueOpen, setQueueOpen] = useState(false);
@@ -177,13 +198,23 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
   }, []);
 
   // Đổi sang video khác → chưa biết trạng thái play/pause/tốc độ của video mới, đặt lại cho
-  // chắc (video mới luôn tự phát, xem autoFullscreen truyền cho player bên dưới).
+  // chắc (video mới luôn tự phát, xem autoFullscreen truyền cho player bên dưới). Đặt lại cả
+  // hasVideo về true (lạc quan) — chờ DirectVideoPlayer báo lại giá trị THẬT của bài MỚI, chứ
+  // không giữ kết quả của bài TRƯỚC (nếu không, có 1 khoảnh khắc disable nhầm nút Video của
+  // bài mới bằng kết quả bài cũ trước khi metadata bài mới tải xong).
   useEffect(() => {
     setPaused(false);
     setCurrent(0);
     setDuration(0);
     setSpeedIndex(0);
+    setHasVideo(true);
   }, [ytVideoId, directUrl]);
+
+  // Bài hiện tại hoá ra không có hình (hasVideo tự chuyển false) mà đang ở chế độ "Video" →
+  // tự chuyển về "Âm thanh" cho khỏi đứng nhìn màn hình đen — không chờ bé tự bấm lại.
+  useEffect(() => {
+    if (!hasVideo && !audioMode) setAudioMode(true);
+  }, [hasVideo, audioMode]);
 
   // Thăm dò định kỳ vị trí/thời lượng/trạng thái tạm dừng — cả 2 trình phát chỉ lộ ra được
   // qua các hàm "hỏi trực tiếp" (getCurrentTime/getDuration/isPaused), không có sự kiện
@@ -202,11 +233,6 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
     if (!adapter) return;
     if (adapter.isPaused()) adapter.play();
     else adapter.pause();
-  };
-  const seekBy = (deltaSeconds: number) => {
-    if (!adapter) return;
-    const target = Math.max(0, Math.min(duration || Infinity, adapter.getCurrentTime() + deltaSeconds));
-    adapter.seekTo(target, true);
   };
   const cycleSpeed = () => {
     const next = (speedIndex + 1) % SPEEDS.length;
@@ -329,9 +355,19 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
 
   // "Hết video" chỉ có ý nghĩa ở đây: KHÔNG tự phát video kế tiếp khi video hiện tại kết
   // thúc, dù còn video sau trong playlist (nghịch với hành vi mặc định của usePlayerEngine).
+  //
+  // "Lặp lại 1 bài" (repeatMode === 'one') cũng chặn ở ĐÂY, chứ không đưa vào usePlayerEngine
+  // như 'all' — vì đây không phải "chuyển sang video khác" (nextVideo/goToVideo) mà là PHÁT
+  // LẠI ĐÚNG bài đang mở từ đầu, việc chỉ cần tua adapter về 0 rồi play() lại, không đụng gì
+  // tới playlist/điều hướng — làm ngay trong app là đủ, không cần sửa hook dùng chung với TV.
   const handleEndedWithSleep = () => {
     if (sleepOption === 'end_of_video') {
       setSleepOption('off');
+      return;
+    }
+    if (repeatMode === 'one') {
+      adapter?.seekTo(0, true);
+      adapter?.play();
       return;
     }
     handleEnded();
@@ -433,6 +469,7 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
             hasNext={!!nextVideo}
             onAdapterReady={setAdapter}
             artworkUrl={artUrl}
+            onHasVideoChange={setHasVideo}
           />
         )}
         {audioMode && (
@@ -526,6 +563,8 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
               className={`mobile-player-mode-btn ${!audioMode ? 'mobile-player-mode-btn--active' : ''}`}
               onClick={() => setAudioMode(false)}
               aria-pressed={!audioMode}
+              disabled={!hasVideo}
+              aria-label={hasVideo ? undefined : 'Nội dung này chỉ có âm thanh, không có hình'}
             >
               <VideoIcon size={16} /> Video
             </button>
@@ -548,20 +587,38 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
           </div>
 
           <div className="mobile-player-transport">
+            {/* Bỏ 2 nút tua nhanh/tua chậm 15 giây — thay bằng Lặp lại/Trộn bài (đúng bộ nút
+                quen thuộc của app nghe nhạc). Bài trước/Bài tiếp dời vào sát 2 bên nút Phát/
+                Tạm dừng; Lặp lại/Trộn bài ra 2 đầu ngoài cùng. */}
+            <button
+              className={`mobile-player-icon-btn ${repeatMode !== 'off' ? 'mobile-player-icon-btn--active' : ''}`}
+              onClick={cycleRepeat}
+              aria-label={
+                repeatMode === 'off'
+                  ? 'Bật lặp lại danh sách'
+                  : repeatMode === 'all'
+                    ? 'Đang lặp lại danh sách — bấm để chỉ lặp 1 bài'
+                    : 'Đang lặp lại 1 bài — bấm để tắt lặp lại'
+              }
+            >
+              {repeatMode === 'one' ? <Repeat1 size={20} /> : <Repeat size={20} />}
+            </button>
             <button className="mobile-player-icon-btn" onClick={() => prevVideo && goToVideo(prevVideo)} disabled={!prevVideo} aria-label="Bài trước">
               <SkipBack size={22} />
-            </button>
-            <button className="mobile-player-icon-btn" onClick={() => seekBy(-15)} aria-label="Lùi 15 giây">
-              <RotateCcw size={20} />
             </button>
             <button className="mobile-player-play-btn" onClick={togglePlayPause} aria-label={paused ? 'Phát' : 'Tạm dừng'}>
               {paused ? <Play size={28} /> : <Pause size={28} />}
             </button>
-            <button className="mobile-player-icon-btn" onClick={() => seekBy(15)} aria-label="Tới 15 giây">
-              <RotateCw size={20} />
-            </button>
             <button className="mobile-player-icon-btn" onClick={() => nextVideo && goToVideo(nextVideo)} disabled={!nextVideo} aria-label="Bài tiếp">
               <SkipForward size={22} />
+            </button>
+            <button
+              className={`mobile-player-icon-btn ${shuffleOn ? 'mobile-player-icon-btn--active' : ''}`}
+              onClick={() => setShuffleOn((s) => !s)}
+              aria-pressed={shuffleOn}
+              aria-label={shuffleOn ? 'Tắt trộn bài' : 'Bật trộn bài'}
+            >
+              <Shuffle size={20} />
             </button>
           </div>
 
