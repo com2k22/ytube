@@ -7,6 +7,25 @@ import { PlayerPlaylistDrawer } from './PlayerPlaylistDrawer';
 import { WatchCountdownBadge } from './WatchCountdownBadge';
 import type { ResolvedVideo } from '@/types';
 
+/** Nhận diện link Google Drive gọi THẲNG bằng API key ẩn danh (dạng cũ, do googleDrive.ts
+    dựng ra: ".../drive/v3/files/<mã file>?alt=media&key=..."), kể cả những link kiểu này đã
+    lưu sẵn trong cơ sở dữ liệu TỪ TRƯỚC — không phân biệt link cũ/mới. */
+const GDRIVE_FILE_ID_RE = /drive\/v3\/files\/([\w-]+)\?alt=media/;
+
+/**
+ * toPlayableUrl — link Google Drive thì đổi sang gọi qua "/api/gdrive-file" (trạm trung
+ * chuyển chạy trên máy chủ, xác thực bằng tài khoản dịch vụ thay vì API key ẩn danh — xem
+ * chú thích đầy đủ trong api/gdrive-file.js) NGAY LÚC PHÁT, thay vì gọi thẳng Google từ trình
+ * duyệt của bé như trước — đây chính là nguyên nhân bị Google tạm chặn "automated queries"
+ * khi nghe nhiều audio liên tiếp. Làm ở ĐÚNG 1 CHỖ NÀY (lúc phát, không phải lúc lưu) nên
+ * không cần sửa cơ sở dữ liệu hay xoá/thêm lại nội dung Google Drive nào đã có sẵn — nội
+ * dung cũ và mới đều tự động được đổi cách gọi như nhau. Không phải link Google Drive
+ * (YouTube/Dropbox/link trực tiếp khác) thì trả về NGUYÊN VĂN, không đụng vào. */
+function toPlayableUrl(rawUrl: string): string {
+  const m = rawUrl.match(GDRIVE_FILE_ID_RE);
+  return m ? `/api/gdrive-file?id=${m[1]}` : rawUrl;
+}
+
 interface Props {
   url: string;
   title: string;
@@ -100,14 +119,15 @@ export function DirectVideoPlayer({
     setLoading(true);
     setLoadError(null);
 
-    const isHls = url.toLowerCase().includes('.m3u8');
+    const playableUrl = toPlayableUrl(url);
+    const isHls = playableUrl.toLowerCase().includes('.m3u8');
     if (isHls && !video.canPlayType('application/vnd.apple.mpegurl') && Hls.isSupported()) {
       const hls = new Hls();
-      hls.loadSource(url);
+      hls.loadSource(playableUrl);
       hls.attachMedia(video);
       hlsRef.current = hls;
     } else {
-      video.src = url;
+      video.src = playableUrl;
     }
 
     // Trình duyệt luôn cho phép tự phát nếu video đang TẮT TIẾNG — nên chủ động tắt tiếng

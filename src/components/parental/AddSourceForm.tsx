@@ -30,6 +30,7 @@ import { extractPlaylistId, extractVideoId, extractChannelRef } from '@/utils/yo
 import { fetchPlaylistInfo, fetchVideoInfo, fetchChannelInfo, resolveChannelHandle } from '@/lib/youtube';
 import { resolveDriveFolder, resolveDriveParentFolder } from '@/lib/googleDrive';
 import type { DriveSubfolderScanItem } from '@/lib/googleDrive';
+import { normalizeDropboxLink } from '@/utils/dropboxLink';
 import { profileEmoji, SOURCE_TYPE_ICON_SVG } from '@/constants';
 import type { AllowedSource, BlockedItem, CustomPlaylistItem, SourceType } from '@/types';
 
@@ -38,7 +39,7 @@ const TYPE_OPTIONS: { value: SourceType; label: string }[] = [
   { value: 'custom_playlist', label: 'Danh sách video tùy chỉnh (ghép từ video đơn lẻ)' },
   { value: 'youtube_playlist', label: 'Danh sách video youtube' },
   { value: 'youtube_video', label: 'Link YouTube (video đơn lẻ)' },
-  { value: 'direct_url', label: 'Link trực tiếp (mp4/m3u8)' },
+  { value: 'direct_url', label: 'Link trực tiếp (mp4/m3u8, Dropbox...)' },
   { value: 'gdrive_folder', label: 'Thư mục Google Drive (video/audio)' },
 ];
 
@@ -551,7 +552,9 @@ export function AddSourceForm() {
       profileId,
       type: form.type,
       title: cleanTitle,
-      url: isCustom ? CUSTOM_PLAYLIST_URL : form.url,
+      // normalizeDropboxLink: link Dropbox dán vào (dạng xem trước, "dl=0") tự đổi sang "dl=1"
+      // (tải thẳng) lúc LƯU — không phải link Dropbox thì giữ nguyên, không ảnh hưởng gì.
+      url: isCustom ? CUSTOM_PLAYLIST_URL : normalizeDropboxLink(form.url),
       thumbnail: isCustom ? form.thumbnail ?? draftItems[0]?.thumbnail ?? null : form.thumbnail,
       items: isCustom ? draftItems : [],
       labelIds: selectedLabelIds,
@@ -616,6 +619,11 @@ export function AddSourceForm() {
             {form.type === 'gdrive_folder' && (
               <p style={{ fontSize: 12, opacity: 0.6, margin: '6px 0 0' }}>
                 Link thư mục (không phải link file), chia sẻ "Bất kỳ ai có đường liên kết".
+              </p>
+            )}
+            {form.type === 'direct_url' && (
+              <p style={{ fontSize: 12, opacity: 0.6, margin: '6px 0 0' }}>
+                Nhận link .mp4/.m3u8 bất kỳ, hoặc link chia sẻ Dropbox (tự chuyển sang tải thẳng, không cần chỉnh gì thêm).
               </p>
             )}
             {(form.type === 'youtube_playlist' ||
