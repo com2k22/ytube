@@ -1,3 +1,5 @@
+import type { AllowedSource } from '@/types';
+
 // Phát nội dung (video/audio) lưu trên Google Drive — quy ước: MỖI nội dung nằm trong 1
 // THƯ MỤC Drive RIÊNG, gồm đúng 1 file media (video hoặc audio) + có thể thêm 1 file ảnh
 // làm ảnh bìa (không bắt buộc). Phụ huynh dán link chia sẻ CỦA THƯ MỤC ĐÓ vào form Thêm nội
@@ -26,6 +28,43 @@ const DRIVE_API_BASE = 'https://www.googleapis.com/drive/v3';
 function getApiKey(): string | null {
   const key = import.meta.env.VITE_GOOGLE_DRIVE_API_KEY as string | undefined;
   return key && key.length > 0 ? key : null;
+}
+
+// ====================================================================================
+// TRẠM TRUNG CHUYỂN (xem api/gdrive-file.js) — đổi link Google Drive gọi THẲNG bằng API
+// key ẩn danh sang gọi qua máy chủ (xác thực bằng tài khoản dịch vụ), để tránh bị Google
+// tạm chặn "automated queries" khi gọi dồn dập (nghe nhiều audio liên tiếp, hoặc nhiều bé
+// cùng xem ảnh bìa 1 lúc). Đặt DÙNG CHUNG ở đây (thay vì viết riêng ở từng nơi cần) để
+// DirectVideoPlayer.tsx (phát file) VÀ useAllowedSources.ts/useSourceById.ts (ảnh bìa) đều
+// gọi lại đúng 1 chỗ này — tránh lặp lại cùng 1 logic ở nhiều nơi rồi lệch nhau về sau
+// (bài học từ chính đợt sửa custom_playlist trước đó trong dự án này).
+// ====================================================================================
+
+const GDRIVE_FILE_ID_RE = /drive\/v3\/files\/([\w-]+)\?alt=media/;
+
+/** Đổi 1 link Google Drive gọi thẳng (".../files/<mã file>?alt=media&key=...") sang gọi qua
+    "/api/gdrive-file?id=<mã file>" — nhận ra được cả link đã lưu sẵn TỪ TRƯỚC trong cơ sở dữ
+    liệu (không cần sửa dữ liệu cũ). Không phải link Google Drive thì trả về NGUYÊN VĂN. */
+export function toGdriveProxyUrl(rawUrl: string): string {
+  const m = rawUrl.match(GDRIVE_FILE_ID_RE);
+  return m ? `/api/gdrive-file?id=${m[1]}` : rawUrl;
+}
+
+/** Áp dụng toGdriveProxyUrl cho MỌI ảnh bìa của 1 nguồn — ảnh bìa chính, và ảnh bìa từng
+    video bên trong (danh sách phát tự ghép, custom_playlist) — ngay khi vừa đọc dữ liệu từ
+    Supabase, để MỌI nơi trong app hiển thị ảnh (VideoCard, thẻ ở Trang chủ/Khám phá, trình
+    phát nổi trên điện thoại...) tự động được lợi mà không cần sửa từng chỗ vẽ ảnh 1. Video/
+    audio thật (source.url, item.videoId) KHÔNG đụng tới ở đây — đã tự đổi lúc PHÁT trong
+    DirectVideoPlayer.tsx, không cần đổi sớm hơn. */
+export function withProxiedThumbnails(source: AllowedSource): AllowedSource {
+  return {
+    ...source,
+    thumbnail: source.thumbnail ? toGdriveProxyUrl(source.thumbnail) : source.thumbnail,
+    items: source.items.map((it) => ({
+      ...it,
+      thumbnail: it.thumbnail ? toGdriveProxyUrl(it.thumbnail) : it.thumbnail,
+    })),
+  };
 }
 
 /**

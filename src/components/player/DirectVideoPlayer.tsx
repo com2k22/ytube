@@ -6,25 +6,11 @@ import { PlayerControlBar } from './PlayerControlBar';
 import { PlayerPlaylistDrawer } from './PlayerPlaylistDrawer';
 import { WatchCountdownBadge } from './WatchCountdownBadge';
 import type { ResolvedVideo } from '@/types';
-
-/** Nhận diện link Google Drive gọi THẲNG bằng API key ẩn danh (dạng cũ, do googleDrive.ts
-    dựng ra: ".../drive/v3/files/<mã file>?alt=media&key=..."), kể cả những link kiểu này đã
-    lưu sẵn trong cơ sở dữ liệu TỪ TRƯỚC — không phân biệt link cũ/mới. */
-const GDRIVE_FILE_ID_RE = /drive\/v3\/files\/([\w-]+)\?alt=media/;
-
-/**
- * toPlayableUrl — link Google Drive thì đổi sang gọi qua "/api/gdrive-file" (trạm trung
- * chuyển chạy trên máy chủ, xác thực bằng tài khoản dịch vụ thay vì API key ẩn danh — xem
- * chú thích đầy đủ trong api/gdrive-file.js) NGAY LÚC PHÁT, thay vì gọi thẳng Google từ trình
- * duyệt của bé như trước — đây chính là nguyên nhân bị Google tạm chặn "automated queries"
- * khi nghe nhiều audio liên tiếp. Làm ở ĐÚNG 1 CHỖ NÀY (lúc phát, không phải lúc lưu) nên
- * không cần sửa cơ sở dữ liệu hay xoá/thêm lại nội dung Google Drive nào đã có sẵn — nội
- * dung cũ và mới đều tự động được đổi cách gọi như nhau. Không phải link Google Drive
- * (YouTube/Dropbox/link trực tiếp khác) thì trả về NGUYÊN VĂN, không đụng vào. */
-function toPlayableUrl(rawUrl: string): string {
-  const m = rawUrl.match(GDRIVE_FILE_ID_RE);
-  return m ? `/api/gdrive-file?id=${m[1]}` : rawUrl;
-}
+// toPlayableUrl (bí danh của toGdriveProxyUrl) — link Google Drive thì đổi sang gọi qua
+// "/api/gdrive-file" (trạm trung chuyển máy chủ, xem googleDrive.ts + api/gdrive-file.js)
+// NGAY LÚC PHÁT, không phải link Google Drive thì giữ nguyên. Dùng CHUNG đúng 1 hàm này với
+// useAllowedSources.ts/useSourceById.ts (áp cho ảnh bìa) — tránh viết trùng 2 nơi rồi lệch.
+import { toGdriveProxyUrl as toPlayableUrl } from '@/lib/googleDrive';
 
 interface Props {
   url: string;
@@ -118,17 +104,29 @@ export function DirectVideoPlayer({
 
     setLoading(true);
     setLoadError(null);
+    // true = ĐÃ thử quay lại gọi thẳng Google (bỏ qua trạm trung chuyển) cho đúng url hiện
+    // tại — chỉ thử lại ĐÚNG 1 LẦN, tránh lặp mãi nếu cả 2 cách đều lỗi thật (link hỏng...).
+    let usedFallback = false;
 
-    const playableUrl = toPlayableUrl(url);
-    const isHls = playableUrl.toLowerCase().includes('.m3u8');
-    if (isHls && !video.canPlayType('application/vnd.apple.mpegurl') && Hls.isSupported()) {
-      const hls = new Hls();
-      hls.loadSource(playableUrl);
-      hls.attachMedia(video);
-      hlsRef.current = hls;
-    } else {
-      video.src = playableUrl;
-    }
+    /** Gán nguồn phát cho thẻ <video> — tách riêng thành hàm vì cần gọi lại LẦN 2 nếu trạm
+        trung chuyển Google Drive lỗi (xem onVideoError bên dưới): lỡ trạm trung chuyển CHƯA
+        cấu hình xong (thiếu GDRIVE_SERVICE_ACCOUNT_JSON trên Vercel) hoặc đang lỗi tạm thời,
+        thì tự động quay về gọi thẳng bằng API key như cách cũ — không để nội dung Google
+        Drive đứng hẳn chỉ vì bước nâng cấp trạm trung chuyển chưa hoàn tất phía anh. */
+    const applySrc = (src: string) => {
+      const isHls = src.toLowerCase().includes('.m3u8');
+      if (isHls && !video.canPlayType('application/vnd.apple.mpegurl') && Hls.isSupported()) {
+        hlsRef.current?.destroy();
+        const hls = new Hls();
+        hls.loadSource(src);
+        hls.attachMedia(video);
+        hlsRef.current = hls;
+      } else {
+        video.src = src;
+      }
+    };
+
+    applySrc(toPlayableUrl(url));
 
     // Trình duyệt luôn cho phép tự phát nếu video đang TẮT TIẾNG — nên chủ động tắt tiếng
     // rồi tự gọi play() (đáng tin cậy hơn nhiều so với chỉ dựa vào thuộc tính autoPlay, vốn
@@ -159,6 +157,13 @@ export function DirectVideoPlayer({
     // rồi đứng mãi ở màn hình "Đang tải video..." như trước, khiến phụ huynh không biết là
     // đang chậm hay đã lỗi hẳn. `video.error` cho biết chính xác loại lỗi (theo chuẩn HTML).
     const onVideoError = () => {
+      const rewritten = toPlayableUrl(url);
+      if (!usedFallback && rewritten !== url) {
+        usedFallback = true;
+        setLoading(true);
+        applySrc(url);
+        return;
+      }
       setLoading(false);
       const mediaError = video.error;
       let msg = 'Không phát được nội dung này.';

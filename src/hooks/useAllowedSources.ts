@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { getFamilyId } from '@/lib/familyId';
+import { withProxiedThumbnails } from '@/lib/googleDrive';
 import type { AllowedSource, CustomPlaylistItem, SourceType } from '@/types';
 
 /**
@@ -46,7 +47,10 @@ export function useAllowedSources(scope: string | 'all' | null) {
       setLoading(false);
       return;
     }
-    setSources(data ?? []);
+    // withProxiedThumbnails: ảnh bìa Google Drive (nếu có) đi qua trạm trung chuyển giống hệt
+    // file media lúc phát — không thì ảnh vẫn gọi thẳng bằng API key ẩn danh từ máy bé, dễ bị
+    // Google tạm chặn dù audio/video đã phát ổn qua trạm trung chuyển (xem googleDrive.ts).
+    setSources((data ?? []).map(withProxiedThumbnails));
     setLoading(false);
   }, [scope]);
 
