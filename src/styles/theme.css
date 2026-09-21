@@ -1897,10 +1897,14 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
    ==================================================================================== */
 @media (max-width: 700px) {
   /* --- Thanh menu chính dưới đáy (Trang chủ/Khám phá/Đã tải/Khu vực Bố mẹ) — tỷ lệ chiều
-     cao/icon/chữ chỉnh lại theo đúng thanh menu dưới của YouTube Music: icon 24px (thay vì
-     21px), chữ nhãn 10px đậm, tổng chiều cao thanh gọn lại (~54-56px, chưa tính safe-area) —
-     không còn "phồng" hơn hẳn so với app tham khảo. Bỏ luôn nền/viền bo tròn (pill) phía sau
-     icon đang chọn — YouTube Music CHỈ đổi màu icon+chữ khi đang chọn, không tô nền pill. */
+     cao/icon/chữ theo đúng thanh menu dưới của YouTube Music: icon 24px, chữ nhãn 10px đậm,
+     TỔNG chiều cao đúng 56px (chưa tính safe-area đáy) — khớp chuẩn chiều cao thanh menu dưới
+     phổ biến của app di động thật (Material Design/YouTube Music dùng đúng mức 56px này),
+     không "phồng" hơn hẳn app tham khảo nữa. Cách tính ra đúng 56px: .mobile-tabbar đệm 4px
+     trên + 4px dưới (8px) + mỗi mục (.mobile-tabbar-item) đệm 4px trên + 4px dưới (8px) +
+     icon 24px + khoảng cách icon/chữ 4px + chữ ~12px (cỡ chữ 10px) = 8+8+24+4+12 = 56px.
+     Bỏ luôn nền/viền bo tròn (pill) phía sau icon đang chọn — YouTube Music CHỈ đổi màu
+     icon+chữ khi đang chọn, không tô nền pill. */
   .mobile-tabbar {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
     display: flex; flex-direction: row; justify-content: space-around; align-items: stretch;
@@ -1914,7 +1918,7 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
   .mobile-tabbar-item {
     flex: 1; min-width: 0;
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
-    padding: 6px 2px; border-radius: 14px; text-decoration: none;
+    padding: 4px 2px; border-radius: 14px; text-decoration: none;
     font-size: 10px; font-weight: 700;
   }
   .mobile-tabbar-icon { width: 24px; height: 24px; }
@@ -2531,10 +2535,20 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
      màn hình" dù `.main` đang có padding ngang (xem .main trong file này) — nếu không, nền
      sẽ bị hụt vào trong đúng bằng khoảng padding đó, không tràn sát mép như ảnh tham khảo.
      `z-index:-1` (dựa vào .mobile-home vừa đổi position:relative ở trên) để nằm HẲN phía sau
-     toàn bộ nội dung (logo/avatar/chip/chữ...), không che mất gì. */
+     toàn bộ nội dung (logo/avatar/chip/chữ...), không che mất gì.
+     `top: calc(-1 * env(safe-area-inset-top))` — TRÀN LUÔN LÊN TRÊN cả vùng thanh trạng thái
+     (giờ/sóng/pin) của điện thoại, không còn 1 vạch đen ngăn cách như trước. Lý do có vạch
+     đen đó: .topbar phía trên .mobile-home trong Layout.tsx chỉ cao đúng bằng
+     env(safe-area-inset-top) (để chừa chỗ cho tai thỏ/status bar — xem ".topbar {" phần
+     "≤700px" trong file này) và trong suốt — nền ĐEN của <body> (xem "body {" đầu file) lộ
+     ra qua khoảng đó. `top:0` (kiểu cũ) khiến hero-bg chỉ bắt đầu NGAY SAU khoảng .topbar đó,
+     để lộ hẳn vạch đen kia. Đẩy top lên ÂM đúng bằng chiều cao khoảng đó thì hero-bg tự trùm
+     luôn lên nó, kín màu tới sát mép trên cùng thật sự của màn hình, giống ảnh tham khảo.
+     Cộng cùng số đó vào height để đáy hero-bg không bị đẩy lên theo (giữ nguyên 440px phần
+     nhìn thấy được BÊN DƯỚI thanh trạng thái). */
   .mobile-home-hero-bg {
-    position: absolute; top: 0; left: 50%; width: 100vw; margin-left: -50vw;
-    height: 440px; z-index: -1; pointer-events: none;
+    position: absolute; top: calc(-1 * env(safe-area-inset-top, 0px)); left: 50%; width: 100vw; margin-left: -50vw;
+    height: calc(440px + env(safe-area-inset-top, 0px)); z-index: -1; pointer-events: none;
     background:
       radial-gradient(ellipse 75% 55% at 8% -8%, #4a421a 0%, rgba(74, 66, 26, 0) 72%),
       radial-gradient(ellipse 85% 60% at 50% -6%, #65400f 0%, rgba(101, 64, 15, 0) 72%),
