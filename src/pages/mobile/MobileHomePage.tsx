@@ -114,20 +114,32 @@ export function MobileHomePage() {
 
   return (
     <main className="main mobile-home">
+      {/* --- Thanh trên cùng: góc trái là logo + tên "Ytube" (thương hiệu app — dùng icon
+          Play có sẵn làm dấu hiệu thay vì ảnh logo thật, chưa có sẵn file ảnh nào), góc phải
+          là avatar emoji hồ sơ đang xem BO TRÒN, ẨN HẲN TÊN chữ (chỉ còn icon) — bấm vào để
+          đổi hồ sơ (dùng lại ProfileSwitcher, region="homebanner", chỉ đổi className để CSS
+          ẩn phần tên/mũi tên xổ đi, xem .mobile-home-topbar-avatar trong theme.css). --- */}
+      <div className="mobile-home-topbar">
+        <div className="mobile-home-logo">
+          <span className="mobile-home-logo-mark" aria-hidden="true">
+            <Play size={13} fill="currentColor" />
+          </span>
+          <span className="mobile-home-logo-text">Ytube</span>
+        </div>
+        <ProfileSwitcher region="homebanner" className="mobile-home-topbar-avatar" />
+      </div>
+
       {/* --- Banner chào — icon trăng/sao thay cho tranh minh hoạ (xem chú thích đầu file).
-          Thanh trên cùng riêng (nút Tìm kiếm + lối tắt "Khu vực Bố mẹ") đã bỏ hẳn: tìm kiếm
-          đã có sẵn ở tab "Khám phá" dưới đáy, "Khu vực Bố mẹ" cũng đã có tab riêng — 2 lối
-          tắt trùng nhau ở đầu Trang chủ chỉ gây rối mắt. Avatar/tên hồ sơ (nút đổi giữa
-          Cốm/Mina) cũng dời hẳn xuống đây, ghép ngay vào dòng chào — vừa gọn (không cần 1
-          khu riêng ở đầu trang) vừa dễ thấy hơn (đúng chỗ đang đọc). --- */}
+          Nút đổi hồ sơ đã dời hẳn lên thanh trên cùng phía trên (avatar góc phải) — ở đây chỉ
+          còn lời chào TĨNH (không bấm được nữa), tránh trùng 2 nút đổi hồ sơ trên cùng 1
+          trang. --- */}
       <div className="mobile-home-banner">
         <div className="mobile-home-banner-icon">
           <Moon size={26} aria-hidden="true" />
         </div>
         <div className="mobile-home-banner-text">
           <div className="mobile-home-banner-greet">
-            <span>Chào</span>
-            <ProfileSwitcher region="homebanner" className="mobile-home-banner-profile" />
+            <span>Chào {activeProfile.name}!</span>
           </div>
           <div className="mobile-home-banner-sub">Cùng nghe truyện hay và có một ngày thật vui nhé 💛</div>
         </div>

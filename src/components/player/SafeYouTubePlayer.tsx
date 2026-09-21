@@ -206,6 +206,17 @@ export function SafeYouTubePlayer({
           iv_load_policy: 3,
           playsinline: 1,
           autoplay: autoplay ? 1 : 0,
+          // mute: 1 ngay từ đầu (không chỉ gọi mute() sau ở onReady) — đây mới là chỗ sửa
+          // lỗi "phải bấm Play bằng tay" trên điện thoại. Lý do: khung nhúng YouTube nằm ở
+          // 1 "trang" khác (iframe riêng, khác domain) — lệnh mute()/playVideo() app gọi ở
+          // onReady bên dưới phải đi qua 1 tin nhắn (postMessage) gửi SANG trang đó, đến
+          // chậm hơn 1 nhịp so với lúc iframe tự tải xong và lập tức thử tự phát CÓ TIẾNG
+          // theo tham số autoplay=1 — nhiều trình duyệt trên điện thoại chặn ngay lần thử
+          // có tiếng đầu tiên này, và sau khi đã bị chặn 1 lần thì lệnh playVideo() gửi tới
+          // sau đó (dù đã tắt tiếng) cũng không tự chạy lại được nữa, phải bé/bố mẹ tự bấm
+          // Play mới chạy. Đặt mute=1 thẳng vào đây khiến lần thử tự phát ĐẦU TIÊN đã tắt
+          // tiếng sẵn — trình duyệt luôn cho phép việc này, không còn bị chặn nữa.
+          mute: autoplay ? 1 : 0,
           // cc_load_policy: 0 = KHÔNG chủ động bật phụ đề. Lưu ý: YouTube không có tham số
           // nào ép TẮT hẳn phụ đề — chỉ có tham số ép BẬT (đặt 1). Khi để 0, YouTube vẫn có
           // thể tự bật lại theo thói quen xem trước đó của thiết bị. Vì vậy còn phải gỡ hẳn

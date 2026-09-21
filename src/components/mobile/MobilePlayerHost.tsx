@@ -11,10 +11,11 @@ import {
   X,
   ChevronDown,
   Gauge,
-  Moon,
+  AlarmClock,
   MoonStar,
   Music,
   Video as VideoIcon,
+  ListMusic,
 } from 'lucide-react';
 import { useMobilePlayback } from '@/context/MobilePlaybackContext';
 import { usePlayerEngine, type PlayerEngineParams } from '@/hooks/usePlayerEngine';
@@ -70,7 +71,21 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
       navigate('/');
     },
   });
-  const { kind, ytVideoId, directUrl, title, handleProgress, handleEnded, goToVideo, prevVideo, nextVideo, autoNextIn, setAutoNextIn } = engine;
+  const {
+    kind,
+    ytVideoId,
+    directUrl,
+    title,
+    listTitle,
+    handleProgress,
+    handleEnded,
+    goToVideo,
+    prevVideo,
+    nextVideo,
+    drawerVideos,
+    autoNextIn,
+    setAutoNextIn,
+  } = engine;
 
   const [adapter, setAdapter] = useState<MobilePlayerAdapter | null>(null);
   const [paused, setPaused] = useState(false);
@@ -82,6 +97,42 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
       chính của khu Truyện trên điện thoại là NGHE, không phải xem màn hình. */
   const [audioMode, setAudioMode] = useState(true);
   const [sleepMenuOpen, setSleepMenuOpen] = useState(false);
+  /** Danh sách bài trong playlist hiện tại (bấm biểu tượng dưới trình phát để mở) — xem khối
+      .mobile-player-queue-sheet phía dưới. */
+  const [queueOpen, setQueueOpen] = useState(false);
+
+  /**
+   * Nút Đóng/Thu nhỏ ở toàn màn hình CHỈ hiện khi bé vừa bấm vào vùng video/ảnh — ẩn lại sau
+   * vài giây không đụng tới, giống ứng dụng YouTube/YouTube Music (yêu cầu: "Các biểu tượng
+   * đóng và thu nhỏ chỉ hiện lên khi bấm chọn vào vùng video"). Không đụng gì đến việc
+   * play/pause khi bấm vào vùng video — SafeYouTubePlayer/DirectVideoPlayer đã tự xử lý việc
+   * đó ở đúng khung `<video>`/YouTube của chúng (sự kiện click vẫn nổi bọt lên tới đây bình
+   * thường, nên 1 lần bấm vừa play/pause vừa hiện/ẩn 2 nút này — đúng như nhiều app vẫn làm).
+   */
+  const [mediaControlsVisible, setMediaControlsVisible] = useState(true);
+  const hideControlsTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const scheduleHideMediaControls = () => {
+    if (hideControlsTimerRef.current) clearTimeout(hideControlsTimerRef.current);
+    hideControlsTimerRef.current = setTimeout(() => setMediaControlsVisible(false), 3000);
+  };
+  useEffect(() => {
+    if (!isFull) return;
+    setMediaControlsVisible(true);
+    scheduleHideMediaControls();
+    return () => {
+      if (hideControlsTimerRef.current) clearTimeout(hideControlsTimerRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFull]);
+  const onMediaTap = () => {
+    if (!isFull) return;
+    setMediaControlsVisible((visible) => {
+      const next = !visible;
+      if (next) scheduleHideMediaControls();
+      else if (hideControlsTimerRef.current) clearTimeout(hideControlsTimerRef.current);
+      return next;
+    });
+  };
 
   /**
    * "Chế độ ban đêm" — CHỈ áp dụng ở toàn màn hình (xem cách gắn class ở div ngoài cùng bên
@@ -319,17 +370,36 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
           2 nút này nổi ngay trên vùng video/ảnh, chừa hẳn phần dưới media cho tên bài. */}
       <div
         className="mobile-player-media"
+        onClick={onMediaTap}
         onTouchStart={onFullMediaTouchStart}
         onTouchMove={onFullMediaTouchMove}
         onTouchEnd={onFullMediaTouchEnd}
         onTouchCancel={onFullMediaTouchCancel}
       >
         {isFull && (
-          <div className="mobile-player-media-header">
-            <button className="mobile-player-icon-btn" onClick={minimize} aria-label="Thu nhỏ">
+          <div
+            className={`mobile-player-media-header ${
+              mediaControlsVisible ? '' : 'mobile-player-media-header--hidden'
+            }`}
+          >
+            <button
+              className="mobile-player-icon-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                minimize();
+              }}
+              aria-label="Thu nhỏ"
+            >
               <ChevronDown size={22} />
             </button>
-            <button className="mobile-player-icon-btn" onClick={handleClose} aria-label="Đóng">
+            <button
+              className="mobile-player-icon-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleClose();
+              }}
+              aria-label="Đóng"
+            >
               <X size={22} />
             </button>
           </div>
@@ -375,18 +445,21 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
       </div>
 
       {!isFull && (
-        // --- THANH MINI: xếp theo dạng LƯỚI (CSS grid, xem .mobile-player-host--mini trong
-        // theme.css) với 3 ô: "title" (hàng trên, chạy suốt chiều ngang), "media" và
-        // "controls" (hàng dưới, ảnh nhỏ bên trái + nút giữa). Nhờ dùng grid-area, thứ tự
-        // trong DOM ở đây KHÔNG quyết định vị trí hiển thị — nên .mobile-player-media (ảnh
-        // nhỏ, PHẢI luôn nằm y nguyên 1 chỗ trong cây DOM để video/âm thanh không bị dựng lại
-        // mỗi lần thu nhỏ/phóng to) vẫn đứng nguyên vị trí cũ trong JSX, chỉ đổi chỗ hiển thị
-        // bằng CSS. Tên bài không còn chung 1 hàng chật hẹp với ảnh/nút nữa mà được đẩy hẳn
-        // lên hàng riêng trên cùng, chạy hết chiều ngang — dễ đọc hơn hẳn khi tên dài. Tên bài
-        // vẫn bấm được để mở toàn màn hình (giữ hành vi cũ). BỎ nút Đóng riêng ở đây — đã có
-        // cử chỉ vuốt trái-để-tắt (xem onMiniTouchStart/Move/End phía trên), thêm nút Đóng
-        // nữa là thừa, chỉ còn lại đúng 1 nút Phát/Tạm dừng. ---
+        // --- THANH MINI kiểu YouTube Music: 1 HÀNG DUY NHẤT (flex, xem .mobile-player-host--
+        // mini trong theme.css) — ảnh nhỏ bên trái (chính .mobile-player-media ở trên, đứng
+        // ĐẦU TIÊN trong DOM nên tự nhiên rơi vào vị trí đầu hàng flex, không cần đổi gì ở
+        // JSX), tên bài + tên playlist/trạng thái xếp 2 dòng ở giữa (co giãn lấp đầy khoảng
+        // trống), rồi nút Phát/Tạm dừng + Bài tiếp bên phải — đúng bố cục quen thuộc của app
+        // nghe nhạc. Thêm 1 vạch tiến độ MẢNH ngay mép trên cùng của cả thanh — chi tiết đặc
+        // trưng của thanh mini YouTube Music. BỎ nút Đóng riêng — đã có cử chỉ vuốt trái-để-
+        // tắt (xem onMiniTouchStart/Move/End phía trên), thêm nút Đóng nữa là thừa. ---
         <>
+          <div className="mobile-player-mini-progress" aria-hidden="true">
+            <div
+              className="mobile-player-mini-progress-fill"
+              style={{ width: duration > 0 ? `${Math.min(100, (current / duration) * 100)}%` : '0%' }}
+            />
+          </div>
           <div
             className="mobile-player-mini-titlebar"
             role="button"
@@ -401,7 +474,7 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
             aria-label={`Mở trình phát: ${title}`}
           >
             <span className="mobile-player-mini-name">{title}</span>
-            <span className="mobile-player-mini-sub"> · {paused ? 'Đã tạm dừng' : 'Đang phát'}</span>
+            <span className="mobile-player-mini-sub">{listTitle || (paused ? 'Đã tạm dừng' : 'Đang phát')}</span>
           </div>
           <div className="mobile-player-mini-controls">
             <span
@@ -410,8 +483,21 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
               aria-label={paused ? 'Phát tiếp' : 'Tạm dừng'}
               onClick={togglePlayPause}
             >
-              {paused ? <Play size={24} /> : <Pause size={24} />}
+              {paused ? <Play size={22} /> : <Pause size={22} />}
             </span>
+            {nextVideo && (
+              <span
+                className="mobile-player-mini-btn"
+                role="button"
+                aria-label="Bài tiếp"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  goToVideo(nextVideo);
+                }}
+              >
+                <SkipForward size={20} />
+              </span>
+            )}
           </div>
         </>
       )}
@@ -425,7 +511,7 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
         <div className="mobile-player-full">
           <div className="mobile-player-full-title">
             <div className="mobile-player-full-title-name">{title}</div>
-            <div className="mobile-player-full-title-sub">{paused ? 'Đã tạm dừng' : 'Đang phát'}</div>
+            <div className="mobile-player-full-title-sub">{listTitle || (paused ? 'Đã tạm dừng' : 'Đang phát')}</div>
           </div>
 
           <div className="mobile-player-mode-toggle">
@@ -480,12 +566,22 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
           </div>
 
           <div className="mobile-player-utility-row">
-            <button className="mobile-player-utility-btn" onClick={cycleSpeed}>
+            <button className="mobile-player-utility-btn" onClick={cycleSpeed} aria-label="Tốc độ phát">
               <Gauge size={16} /> {SPEEDS[speedIndex]}x
             </button>
             <div className="mobile-player-sleep-wrap">
-              <button className="mobile-player-utility-btn" onClick={() => setSleepMenuOpen((o) => !o)}>
-                <Moon size={16} /> {sleepLabel[sleepOption]}
+              {/* Chỉ giữ icon — bỏ chữ "Hẹn giờ ngủ" theo yêu cầu. Đổi từ icon Moon (dễ lẫn
+                  với icon MoonStar của nút Chế độ tối ngay bên cạnh) sang AlarmClock cho rõ
+                  đây là hẹn giờ, không phải ban đêm. Khi đang đặt hẹn giờ (khác "off"), viền
+                  nút sáng lên (class --active) để vẫn biết đang bật mà không cần chữ. */}
+              <button
+                className={`mobile-player-utility-btn ${
+                  sleepOption !== 'off' ? 'mobile-player-utility-btn--active' : ''
+                }`}
+                onClick={() => setSleepMenuOpen((o) => !o)}
+                aria-label={`Hẹn giờ ngủ: ${sleepLabel[sleepOption]}`}
+              >
+                <AlarmClock size={18} />
               </button>
               {sleepMenuOpen && (
                 <div className="mobile-player-sleep-menu">
@@ -508,9 +604,19 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
               className={`mobile-player-utility-btn ${nightMode ? 'mobile-player-utility-btn--active' : ''}`}
               onClick={() => setNightMode((n) => !n)}
               aria-pressed={nightMode}
+              aria-label={nightMode ? 'Tắt chế độ tối' : 'Bật chế độ tối'}
             >
-              <MoonStar size={16} /> {nightMode ? 'Đang tối' : 'Chế độ tối'}
+              <MoonStar size={18} />
             </button>
+            {drawerVideos.length > 0 && (
+              <button
+                className={`mobile-player-utility-btn ${queueOpen ? 'mobile-player-utility-btn--active' : ''}`}
+                onClick={() => setQueueOpen((o) => !o)}
+                aria-label="Danh sách phát"
+              >
+                <ListMusic size={18} />
+              </button>
+            )}
           </div>
 
           {sleepExpiresAt && sleepOption !== 'off' && sleepOption !== 'end_of_video' && (
@@ -523,6 +629,48 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
               <button onClick={() => setAutoNextIn(null)}>Dừng lại</button>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Danh sách bài trong playlist hiện tại — mở bằng biểu tượng ListMusic ở hàng tiện
+          ích phía trên. Chạm ra ngoài (lớp nền mờ) để đóng lại, giống bottom sheet thường
+          thấy ở các app nghe nhạc. `currentKey` so khớp đúng bài đang phát để tô sáng — với
+          video YouTube là videoId, với link trực tiếp thì ResolvedVideo.videoId CHÍNH LÀ url
+          (xem chú thích trong usePlayerEngine.ts/types/index.ts). */}
+      {isFull && queueOpen && (
+        <div className="mobile-player-queue-backdrop" onClick={() => setQueueOpen(false)}>
+          <div className="mobile-player-queue-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="mobile-player-queue-header">
+              <span>{listTitle || 'Danh sách phát'}</span>
+              <button className="mobile-player-icon-btn" onClick={() => setQueueOpen(false)} aria-label="Đóng danh sách">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="mobile-player-queue-list">
+              {drawerVideos.map((v) => {
+                const currentKey = kind === 'direct' ? directUrl : ytVideoId;
+                const isCurrent = v.videoId === currentKey;
+                return (
+                  <button
+                    key={v.videoId}
+                    className={`mobile-player-queue-item ${isCurrent ? 'mobile-player-queue-item--active' : ''}`}
+                    onClick={() => {
+                      if (!isCurrent) goToVideo(v);
+                      setQueueOpen(false);
+                    }}
+                  >
+                    {v.thumbnail ? (
+                      <img className="mobile-player-queue-thumb" src={v.thumbnail} alt="" aria-hidden="true" />
+                    ) : (
+                      <div className="mobile-player-queue-thumb mobile-player-queue-thumb--empty" aria-hidden="true" />
+                    )}
+                    <span className="mobile-player-queue-item-title">{v.title}</span>
+                    {isCurrent && (paused ? <Pause size={16} /> : <Play size={16} />)}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
     </div>

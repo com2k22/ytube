@@ -131,10 +131,7 @@ export function usePlayerEngine({ params, onNavigateToVideo, onExit }: UsePlayer
           videoId: it.videoId,
           title: it.title,
           thumbnail: it.thumbnail,
-          // it.kind === 'direct' (VD: ghép từ "Nhập cả thư mục tổng" Google Drive) → đánh dấu
-          // sourceType 'direct_url' để goToVideo() bên dưới biết đường phát qua directUrl thay
-          // vì videoId — video YouTube thường (kind mặc định/thiếu) giữ nguyên như cũ.
-          sourceType: it.kind === 'direct' ? ('direct_url' as const) : ('custom_playlist' as const),
+          sourceType: 'custom_playlist' as const,
         }))
       );
       return;
@@ -155,17 +152,12 @@ export function usePlayerEngine({ params, onNavigateToVideo, onExit }: UsePlayer
     );
   }, [playlistId, source?.type, source?.items]);
 
-  // Vị trí video đang phát trong danh sách, và video đứng ngay sau/trước nó. Video đang phát
-  // có thể là 1 video YouTube (nhận diện qua ytVideoId) HOẶC 1 link trực tiếp/Google Drive
-  // (nhận diện qua directUrl, lưu trong đúng trường "videoId" của playlist item — xem
-  // CustomPlaylistItem trong types/index.ts) — dùng "currentMediaId" gộp cả 2 trường hợp để
-  // playlist trộn cả video YouTube lẫn nội dung Drive vẫn tìm đúng video đang phát.
-  const currentMediaId = ytVideoId ?? directUrl;
-  const currentIndex = playlistVideos.findIndex((v) => v.videoId === currentMediaId);
+  // Vị trí video đang phát trong danh sách, và video đứng ngay sau/trước nó.
+  const currentIndex = playlistVideos.findIndex((v) => v.videoId === ytVideoId);
   const nextVideo = currentIndex >= 0 ? playlistVideos[currentIndex + 1] ?? null : null;
   const prevVideo = currentIndex > 0 ? playlistVideos[currentIndex - 1] : null;
   /** Danh sách hiện ở dưới trang — bỏ video đang phát ra cho gọn. */
-  const nextVideos = playlistVideos.filter((v) => v.videoId !== currentMediaId);
+  const nextVideos = playlistVideos.filter((v) => v.videoId !== ytVideoId);
 
   /**
    * "Video lẻ khác" — dùng khi đang xem 1 video KHÔNG nằm trong playlist nào (playlistVideos
@@ -276,11 +268,20 @@ export function usePlayerEngine({ params, onNavigateToVideo, onExit }: UsePlayer
     setAutoNextIn(null);
   }, [ytVideoId, directUrl]);
 
+  // Tên playlist hiện tại (để trình phát điện thoại hiện thay cho chữ "Đang phát" — xem
+  // MobilePlayerHost.tsx). CHỈ có ý nghĩa khi thật sự đang ở trong 1 playlist (còn video
+  // khác cùng danh sách) — video lẻ (playlistVideos rỗng) thì không có "tên playlist" nào cả,
+  // trả về null để nơi gọi tự dùng lại chữ "Đang phát/Đã tạm dừng" như cũ. `source?.title` là
+  // tên của CHÍNH DÒNG WHITELIST playlist đó (đặt lúc bố mẹ thêm playlist), luôn đúng dù đang
+  // xem tập nào bên trong — vì goToVideo() giữ nguyên sourceId là playlist cha khi chuyển tập.
+  const listTitle = playlistVideos.length > 0 ? source?.title ?? null : null;
+
   return {
     kind,
     ytVideoId,
     directUrl,
     title,
+    listTitle,
     handleProgress,
     handleEnded,
     goToVideo,
