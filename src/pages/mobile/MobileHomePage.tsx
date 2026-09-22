@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, Clock, Tv, ChevronRight, Moon, Play } from 'lucide-react';
 import { useHomeContent } from '@/hooks/useHomeContent';
@@ -109,6 +109,22 @@ export function MobileHomePage() {
     }
     openVideoSource(source);
   };
+
+  /** Vuốt xuống rồi GIỮ ở đầu trang (overscroll/"rubber-band" của Safari iOS, hoặc kéo để làm
+      mới của Chrome Android) kéo lộ ra khoảng trống NGOÀI nội dung trang — khoảng đó luôn hiện
+      màu nền THẬT của <body> (xem "body {" trong theme.css, bình thường là #0e0f13 xám-đen),
+      KHÔNG phải khoảng có thể vẽ gradient nhiều màu vào được (đây là vùng trình duyệt tự vẽ
+      ngoài nội dung trang, không phải 1 phần tử HTML để đặt nền riêng lên nó) — nên KHÔNG thể
+      làm y hệt lớp nền hero nhiều-màu-mềm-mại tiếp tục tràn vào đó được. Cách thực tế: đổi hẳn
+      màu NỀN THẬT của body sang đúng 1 màu ấm gần với tông màu ở mép trên của hero (thay vì
+      màu xám-đen mặc định) trong lúc đang đứng ở Trang chủ — kéo giữ vẫn lộ ra đúng 1 màu THẬT
+      (không phải gradient) nhưng đỡ chỏi hẳn so với trước, không còn là khoảng đen tách bạch
+      nữa. Bật/tắt bằng class riêng trên <body> (không phải style trực tiếp) để chỉ ảnh hưởng
+      lúc đang ở đúng trang này — rời trang là tự trả lại màu nền thường (xem cleanup). */
+  useEffect(() => {
+    document.body.classList.add('mobile-home-page-active');
+    return () => document.body.classList.remove('mobile-home-page-active');
+  }, []);
 
   if (!activeProfile) return null;
 

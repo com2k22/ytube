@@ -1940,7 +1940,21 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
   body.has-mobile-mini-player .main { padding-bottom: 160px; }
 
   /* --- Trình phát nổi: khung ngoài cùng, giữ chỗ cho khung phát ẩn (chế độ mini) --- */
-  .mobile-player-host { position: fixed; left: 0; right: 0; z-index: 45; }
+  /* `transition` khai ở ĐÂY (áp dụng chung cho cả 2 chế độ) để có hiệu ứng "phóng to/thu nhỏ"
+     mượt khi chuyển qua lại giữa .mobile-player-host--mini và .mobile-player-host--full (xem
+     2 rule đó bên dưới — CỐ TÌNH đổi cả 2 sang khai báo bằng "top" + "height" CỤ THỂ (số px),
+     KHÔNG dùng "bottom" (mini, trước đây) hay chiều cao TỰ CO GIÃN theo nội dung nữa — CSS
+     chỉ animate mượt được giữa 2 giá trị SỐ CỤ THỂ, không animate được nếu 1 đầu là "auto"
+     (trình duyệt chỉ nhảy tức thì, không mượt). Khi đang ở mini mà kéo tay vuốt-để-tắt
+     (miniSwiping true) thì KHÔNG dùng transition này — bản trong JSX inline style của
+     MobilePlayerHost.tsx tự đặt "transition: none" lúc đó, xem thêm chú thích ở đó. */
+  .mobile-player-host {
+    position: fixed; left: 0; right: 0; z-index: 45;
+    transition:
+      top 0.32s cubic-bezier(0.4, 0, 0.2, 1), height 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+      left 0.32s cubic-bezier(0.4, 0, 0.2, 1), right 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+      border-radius 0.32s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.32s ease;
+  }
   /* Bố cục kiểu YouTube Music: 1 HÀNG DUY NHẤT (flex) — ảnh nhỏ bên trái (chính
      .mobile-player-media, đứng đầu tiên trong DOM nên tự rơi vào đầu hàng, không cần đổi gì
      ở JSX khi chuyển mini/toàn màn hình — video/âm thanh không bị dựng lại), tên bài + tên
@@ -1961,10 +1975,13 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
        độ ưu tiên (cùng 1 class), rule đứng SAU (--mini) thắng, "relative" đã ĐÈ MẤT hẳn
        "fixed" — khiến cả thanh mini rơi vào luồng tài liệu bình thường thay vì neo cố định
        trên màn hình, đúng y hệt lỗi "phải vuốt xuống cuối trang mới thấy" đã báo. */
-    /* Cộng thêm 14px vào khoảng cách đáy — trước đây thanh mini dính sát ngay lên trên
-       thanh menu dưới đáy (chỉ cách đúng bằng chiều cao thanh đó), nhìn dính cục, không có
-       khoảng thở. */
-    bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 14px);
+    /* Vị trí: 56px (cao thanh menu dưới) + safe-area đáy + 14px khoảng thở — GIỮ NGUYÊN vị
+       trí y hệt bản trước (trước đây khai bằng "bottom", giờ đổi sang "top" + "height" cụ
+       thể để animate mượt được lúc phóng to/thu nhỏ, xem chú thích ở ".mobile-player-host" —
+       60px = chiều cao thật của thanh mini (ảnh 44px + đệm 8px trên/dưới), viết cứng thành số
+       thay vì để tự co giãn theo nội dung, cũng vì lý do animate mượt y hệt). */
+    top: calc(100% - 130px - env(safe-area-inset-bottom, 0px));
+    height: 60px;
     left: 10px; right: 10px;
     /* Giảm bo góc lại (trước 22px, hơi quá tròn so với các khối khác của trang — thẻ nội
        dung/khối rỗng quanh đó đều bo 16-18px) — 18px vừa mềm mại vừa hài hoà với phần còn
@@ -1978,7 +1995,10 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
     backdrop-filter: blur(18px) saturate(1.4);
     -webkit-backdrop-filter: blur(18px) saturate(1.4);
   }
-  .mobile-player-host--full { top: 0; bottom: 0; z-index: 60; display: flex; flex-direction: column; }
+  /* "height: 100%" thay vì "bottom: 0" — cùng lý do animate mượt đã giải thích ở
+     ".mobile-player-host" phía trên (2 đầu transition đều phải là số cụ thể). position:fixed
+     nên 100% ở đây tính theo khung nhìn (viewport), ra đúng y hệt hiệu quả "bottom:0" cũ. */
+  .mobile-player-host--full { top: 0; height: 100%; z-index: 60; display: flex; flex-direction: column; }
 
   /* Nền kính mờ MÀU RIÊNG (ánh xanh accent ở giao diện tối, ánh hồng ở Chibi) — cố ý KHÔNG
      dùng lại đúng màu nền thẻ/thanh menu (#1b1c22) hay nền app (#0e0f13) nữa, để thanh mini
@@ -2239,6 +2259,47 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
   [data-theme='chibi'] .mobile-player-sleep-item.active { color: #ff5c9e; background: #ffe0ee; }
 
   .mobile-player-sleep-note { text-align: center; font-size: 11.5px; opacity: 0.6; margin-top: 10px; }
+
+  /* "Chế độ ban đêm" (nightMode, nút icon MoonStar ở hàng tiện ích — CHỈ hiện/áp dụng khi
+     đang toàn màn hình, xem class "mobile-player-host--night" gắn trong MobilePlayerHost.tsx
+     phần useState nightMode + comment giải thích ngay tại đó). LỖI "bấm không thấy tác dụng
+     gì": component đã gắn class này lên từ trước, nhưng theme.css chưa từng có LẤY MỘT LUẬT
+     NÀO cho nó cả — class rỗng không CSS thì tất nhiên bấm nút chẳng đổi gì trên màn hình dù
+     biến nightMode/localStorage vẫn lưu đúng phía trong. Bổ sung đúng như mô tả: nền tuyệt
+     đối #000 (đen hơn hẳn màu nền tối bình thường #0e0f13 — mục đích tiết kiệm pin màn OLED),
+     ẩn hẳn ảnh bìa, mọi nút/chữ hạ xuống viền mảnh + màu mờ thay vì nền đặc sáng như bình
+     thường. Dùng !important vì phải thắng cả các luật tô màu riêng theo `[data-theme]` của
+     từng nút (cùng độ ưu tiên CSS, nếu không có !important thì phần thắng chỉ phụ thuộc thứ
+     tự khai báo trong file — không chắc chắn bằng). */
+  .mobile-player-host--night { background: #000 !important; }
+  .mobile-player-host--night .mobile-player-media,
+  .mobile-player-host--night .mobile-player-media-header { background: #000 !important; }
+  .mobile-player-host--night .mobile-player-artwork { display: none !important; }
+  .mobile-player-host--night .mobile-player-full-title-name,
+  .mobile-player-host--night .mobile-player-full-title-sub { color: #5a5c66 !important; }
+  .mobile-player-host--night .mobile-player-icon-btn,
+  .mobile-player-host--night .mobile-player-mode-btn,
+  .mobile-player-host--night .mobile-player-utility-btn {
+    background: transparent !important; color: #6b6d76 !important;
+    border: 1.5px solid #34353d !important;
+  }
+  .mobile-player-host--night .mobile-player-icon-btn--active,
+  .mobile-player-host--night .mobile-player-mode-btn--active,
+  .mobile-player-host--night .mobile-player-utility-btn--active {
+    background: transparent !important; color: #7c9cff !important;
+    border-color: #7c9cff !important;
+  }
+  .mobile-player-host--night .mobile-player-play-btn {
+    background: transparent !important; color: #7c9cff !important;
+    border: 2px solid #7c9cff !important;
+  }
+  .mobile-player-host--night .mobile-player-progress input[type='range'] { opacity: 0.55; }
+  .mobile-player-host--night .mobile-player-progress-labels,
+  .mobile-player-host--night .mobile-player-sleep-note { opacity: 0.4 !important; }
+  .mobile-player-host--night .mobile-player-sleep-menu,
+  .mobile-player-host--night .mobile-player-queue-sheet {
+    background: #000 !important; border: 1.5px solid #34353d !important;
+  }
 
   /* Bottom sheet "Danh sách phát" — mở bằng icon ListMusic ở hàng tiện ích. Lớp nền mờ phủ
      kín màn hình, bấm ra ngoài để đóng lại (xem onClick 2 tầng trong MobilePlayerHost.tsx:
@@ -2520,8 +2581,22 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
   /* --- Trang chủ điện thoại: nền "hero" mờ ảo phía trên (xem .mobile-home-hero-bg bên
      dưới), thanh trên cùng (logo+avatar), dải danh mục, rồi lời chào TĨNH gọn — bám theo bố
      cục ảnh chụp màn hình tham khảo (YouTube Music). Thanh trên cùng riêng kiểu cũ (nút Tìm
-     kiếm/"Khu vực Bố mẹ") đã bỏ hẳn từ trước — xem MobileHomePage.tsx. --- */
-  .mobile-home { position: relative; }
+     kiếm/"Khu vực Bố mẹ") đã bỏ hẳn từ trước — xem MobileHomePage.tsx.
+     `padding-top: 6px` — ĐÈ lại khoảng đệm trên chung 14px của `.main` (xem "@media
+     (max-width: 760px) { .main {...} }" ở trên trong file này, áp dụng cho MỌI trang điện
+     thoại) — RIÊNG Trang chủ rút ngắn lại còn 6px để khối logo+avatar nằm SÁT gần mép trên
+     màn hình hơn, đúng chiều cao thanh trên cùng của app tham khảo (YouTube Music), thay vì
+     "trôi" xuống thấp hơn hẳn như trước. */
+  .mobile-home { position: relative; padding-top: 6px; }
+
+  /* Vuốt xuống-giữ ở đầu Trang chủ (overscroll/rubber-band iOS, kéo-làm-mới Android) lộ ra
+     màu nền THẬT của <body> phía sau — xem class "mobile-home-page-active" gắn/gỡ trong
+     MobileHomePage.tsx (chú thích đầy đủ tại đó) — CHỈ đổi được sang 1 màu THẬT (không phải
+     gradient, khoảng này không phải 1 phần tử để vẽ nền nhiều lớp lên được), chọn màu ấm gần
+     đúng tông ở góc trên của hero cho đỡ chỏi, thay vì màu xám-đen #0e0f13 mặc định. */
+  [data-theme='dark'] body.mobile-home-page-active,
+  :root:not([data-theme]) body.mobile-home-page-active { background: #402a12; }
+  [data-theme='chibi'] body.mobile-home-page-active { background: #ffd9dc; }
 
   /* Nền "hero" nhiều màu mờ ảo phía trên Trang chủ — tái hiện hiệu ứng nền của ảnh chụp màn
      hình tham khảo (YouTube Music): 3 quầng màu mềm (trái/giữa/phải) TRỘN VÀO NHAU bằng
@@ -2583,10 +2658,13 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
   [data-theme='chibi'] .mobile-home-greet-line { color: #c2447a; }
 
   /* --- Thanh trên cùng Trang chủ điện thoại: logo+tên "Ytube" góc trái, avatar hồ sơ (chỉ
-     icon, ẩn tên) góc phải — theo đúng bố cục app tham khảo (YouTube Music). --- */
+     icon, ẩn tên) góc phải — theo đúng bố cục app tham khảo (YouTube Music). Khoảng cách
+     PHÍA DƯỚI (đến hàng tag danh mục) tăng lên 18px (trước 10px) cho thoáng hơn — tách bạch
+     rõ 2 khối "thanh trên cùng" và "hàng tag", đỡ dính sát nhau; khoảng cách PHÍA TRÊN (đến
+     mép màn hình) giữ nguyên 4px vì đã rút ngắn qua padding-top của .mobile-home ở trên. --- */
   .mobile-home-topbar {
     display: flex; align-items: center; justify-content: space-between;
-    margin: 4px 0 10px;
+    margin: 4px 0 18px;
   }
   .mobile-home-logo { display: flex; align-items: center; gap: 8px; }
   /* Logo tô ĐỎ-TRẮNG cố định (không đổi theo theme sáng/tối/chibi nữa) theo đúng yêu cầu —
@@ -2611,6 +2689,21 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
   .mobile-home-topbar-avatar .profile-menu { left: auto; right: 0; }
 
   .mobile-home-categories { margin-bottom: 22px; }
+  /* Riêng hàng tag ở Trang chủ (không đụng .mobile-discover-chip "trần" — trang Khám phá vẫn
+     giữ nguyên khối bo màu đặc như cũ): bỏ hẳn nền đặc phía sau mỗi tag, chỉ còn viền mảnh
+     trong suốt — đứng trên nền hero nhiều màu nên không cần khối nền riêng vẫn đọc rõ, giống
+     kiểu tag "trong suốt viền mỏng" của app tham khảo. Tag đang chọn (.active) vẫn giữ màu
+     nổi bật như cũ để bé còn phân biệt được đang xem mục nào. */
+  .mobile-home-categories .mobile-discover-chip {
+    background: transparent !important;
+    border: 1.5px solid rgba(255, 255, 255, 0.4);
+  }
+  [data-theme='chibi'] .mobile-home-categories .mobile-discover-chip {
+    border-color: rgba(194, 68, 122, 0.35);
+  }
+  .mobile-home-categories .mobile-discover-chip.active {
+    border-color: transparent;
+  }
 
   /* --- Tiêu đề khối kèm link "Xem tất cả" (Trang chủ) — thay cho .mobile-shelf-title đơn
      lẻ khi khối đó cần link, 2 lớp cùng tồn tại: .mobile-shelf-header bọc ngoài, chỉnh lại

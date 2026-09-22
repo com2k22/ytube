@@ -393,7 +393,18 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
           ? {
               transform: `translateX(${miniSwipeX}px)`,
               opacity: 1 - Math.min(0.7, Math.abs(miniSwipeX) / 220),
-              transition: miniSwiping ? 'none' : 'transform 0.2s ease, opacity 0.2s ease',
+              // "transition" khai TRỰC TIẾP ở style (inline) này sẽ ĐÈ MẤT HẲN transition khai
+              // trong theme.css cho ".mobile-player-host" (inline luôn thắng cả thuộc tính,
+              // không cộng dồn) — nên phải LIỆT KÊ ĐỦ CẢ 2 NHÓM ngay tại đây: nhóm
+              // transform/opacity (phục vụ cử chỉ vuốt-để-tắt, xử lý riêng ở đây vì cần đọc
+              // miniSwipeX) VÀ nhóm top/height/left/right/border-radius/background-color
+              // (phục vụ hiệu ứng phóng to/thu nhỏ, xem chú thích đầy đủ tại rule
+              // ".mobile-player-host" trong theme.css) — thiếu nhóm sau thì lúc thu nhỏ lại
+              // (full → mini) sẽ mất mượt, chỉ còn lúc phóng to (mini → full, không dùng style
+              // inline nên vẫn ăn transition của theme.css bình thường) là mượt thôi.
+              transition: miniSwiping
+                ? 'none'
+                : 'transform 0.2s ease, opacity 0.2s ease, top 0.32s cubic-bezier(0.4,0,0.2,1), height 0.32s cubic-bezier(0.4,0,0.2,1), left 0.32s cubic-bezier(0.4,0,0.2,1), right 0.32s cubic-bezier(0.4,0,0.2,1), border-radius 0.32s cubic-bezier(0.4,0,0.2,1), background-color 0.32s ease',
             }
           : undefined
       }
