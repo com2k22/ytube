@@ -255,12 +255,23 @@ export function usePlayerEngine({
   }, []);
   useWatchStretchTicker(windowVisible);
 
+  /** LỖI ĐÃ SỬA: trước đây chỉ lưu tiến độ xem khi có `ytVideoId` — nội dung 'direct' (link
+      Google Drive/Dropbox tải trực tiếp, xem khối if/else if ngay trên) LUÔN có `ytVideoId =
+      null` (giá trị của nó nằm ở `directUrl` thay vì `ytVideoId`, xem quy ước "currentKey"
+      bên trên), nên `saveProgress` KHÔNG BAO GIỜ được gọi cho loại nội dung này — tiến độ xem
+      không hề được lưu vào Supabase, nên mọi nơi hiển thị thanh "đã xem bao nhiêu %"
+      (progressFor/summarizeSource — xem MobileStoryDetailShell.tsx, MobileHomePage.tsx...)
+      tự nhiên không có gì để hiện cho các danh sách nguồn Google Drive/Dropbox, dù giao diện
+      những nơi đó vốn đã KHÔNG hề phân biệt riêng theo loại nguồn (đọc lại thì thấy hoàn toàn
+      trung lập, chỉ là chưa từng nhận được dữ liệu). Dùng `currentKey` (đã tính đúng theo
+      loại nội dung, xem chú thích ở khai báo "currentKey" phía trên) thay cho `ytVideoId`
+      cứng — sửa xong thì cả 2 loại nội dung đều lưu/hiện tiến độ xem y hệt nhau. */
   const handleProgress = useCallback(
     (percent: number, seconds: number) => {
       heartbeat(Math.round(percent * 6)); // ước lượng thô — xem README mục "Giới hạn đã biết"
-      if (sourceId && ytVideoId) saveProgress(sourceId, ytVideoId, percent, seconds);
+      if (sourceId && currentKey) saveProgress(sourceId, currentKey, percent, seconds);
     },
-    [heartbeat, saveProgress, sourceId, ytVideoId]
+    [heartbeat, saveProgress, sourceId, currentKey]
   );
 
   /**
