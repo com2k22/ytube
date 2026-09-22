@@ -2589,15 +2589,6 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
      "trôi" xuống thấp hơn hẳn như trước. */
   .mobile-home { position: relative; padding-top: 6px; }
 
-  /* Vuốt xuống-giữ ở đầu Trang chủ (overscroll/rubber-band iOS, kéo-làm-mới Android) lộ ra
-     màu nền THẬT của <body> phía sau — xem class "mobile-home-page-active" gắn/gỡ trong
-     MobileHomePage.tsx (chú thích đầy đủ tại đó) — CHỈ đổi được sang 1 màu THẬT (không phải
-     gradient, khoảng này không phải 1 phần tử để vẽ nền nhiều lớp lên được), chọn màu ấm gần
-     đúng tông ở góc trên của hero cho đỡ chỏi, thay vì màu xám-đen #0e0f13 mặc định. */
-  [data-theme='dark'] body.mobile-home-page-active,
-  :root:not([data-theme]) body.mobile-home-page-active { background: #402a12; }
-  [data-theme='chibi'] body.mobile-home-page-active { background: #ffd9dc; }
-
   /* Nền "hero" nhiều màu mờ ảo phía trên Trang chủ — tái hiện hiệu ứng nền của ảnh chụp màn
      hình tham khảo (YouTube Music): 3 quầng màu mềm (trái/giữa/phải) TRỘN VÀO NHAU bằng
      background-blend-mode: screen (không phải xếp chồng cứng nhắc — screen giúp vùng giao
@@ -2690,19 +2681,33 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
 
   .mobile-home-categories { margin-bottom: 22px; }
   /* Riêng hàng tag ở Trang chủ (không đụng .mobile-discover-chip "trần" — trang Khám phá vẫn
-     giữ nguyên khối bo màu đặc như cũ): bỏ hẳn nền đặc phía sau mỗi tag, chỉ còn viền mảnh
-     trong suốt — đứng trên nền hero nhiều màu nên không cần khối nền riêng vẫn đọc rõ, giống
-     kiểu tag "trong suốt viền mỏng" của app tham khảo. Tag đang chọn (.active) vẫn giữ màu
-     nổi bật như cũ để bé còn phân biệt được đang xem mục nào. */
+     giữ nguyên khối bo màu đặc như cũ): bỏ hẳn nền đặc màu (xanh/hồng accent) phía sau mỗi
+     tag — đứng trên nền hero nhiều màu nên nền đặc 1 màu nhìn lệch tông. THEO ĐÚNG YÊU CẦU:
+     tag đang chọn KHÔNG đổi sang màu nổi bật riêng nữa mà phân biệt bằng ĐỘ TRONG SUỐT — tất
+     cả tag cùng 1 tông màu trắng (dark)/hồng-đậm (chibi), tag CHƯA chọn mờ/trong hơn (nền lẫn
+     viền alpha thấp), tag ĐANG chọn đặc/rõ hơn hẳn (alpha cao hơn nhiều) — không đổi hue,
+     đúng nghĩa "trong suốt khác nhau" thay vì "màu khác nhau". Ép luôn màu chữ về 1 màu CỐ
+     ĐỊNH cho cả 2 trạng thái (đè luật `.active { color: ... }` gốc vốn đặt màu chữ tối, sinh
+     ra để nằm trên nền đặc màu — không hợp nữa khi nền chỉ còn là lớp kính mờ trắng/hồng). */
   .mobile-home-categories .mobile-discover-chip {
-    background: transparent !important;
-    border: 1.5px solid rgba(255, 255, 255, 0.4);
-  }
-  [data-theme='chibi'] .mobile-home-categories .mobile-discover-chip {
-    border-color: rgba(194, 68, 122, 0.35);
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1.5px solid rgba(255, 255, 255, 0.3);
+    color: #f2f3f5 !important;
   }
   .mobile-home-categories .mobile-discover-chip.active {
-    border-color: transparent;
+    background: rgba(255, 255, 255, 0.32) !important;
+    border-color: rgba(255, 255, 255, 0.75);
+    color: #fff !important;
+  }
+  [data-theme='chibi'] .mobile-home-categories .mobile-discover-chip {
+    background: rgba(255, 255, 255, 0.4) !important;
+    border-color: rgba(194, 68, 122, 0.3);
+    color: #c2447a !important;
+  }
+  [data-theme='chibi'] .mobile-home-categories .mobile-discover-chip.active {
+    background: rgba(255, 255, 255, 0.85) !important;
+    border-color: rgba(194, 68, 122, 0.6);
+    color: #c2447a !important;
   }
 
   /* --- Tiêu đề khối kèm link "Xem tất cả" (Trang chủ) — thay cho .mobile-shelf-title đơn

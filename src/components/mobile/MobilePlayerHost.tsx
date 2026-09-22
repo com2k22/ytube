@@ -110,6 +110,24 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
       chính của khu Truyện trên điện thoại là NGHE, không phải xem màn hình. */
   const [audioMode, setAudioMode] = useState(true);
   const [sleepMenuOpen, setSleepMenuOpen] = useState(false);
+  /** Bảng chọn hẹn giờ ngủ (.mobile-player-sleep-menu) — LỖI đã báo: mở lên mà CHƯA chọn giờ
+      nào, bấm ra vùng khác trên màn hình thì bảng không tự đóng (trước đây chỉ đóng được bằng
+      1 trong 2 cách: chọn 1 mục trong bảng, hoặc bấm lại đúng nút hẹn giờ — chưa hề có xử lý
+      "bấm ra ngoài" nào cả). Gắn ref vào khối bọc ngoài (.mobile-player-sleep-wrap, chứa cả
+      nút hẹn giờ LẪN bảng chọn) rồi lắng nghe "pointerdown" trên TOÀN TRANG khi bảng đang mở —
+      bấm trúng bên trong khối này (nút hẹn giờ, hoặc 1 mục trong bảng) thì bỏ qua (đã có
+      onClick riêng xử lý), bấm ra NGOÀI khối này thì tự đóng bảng lại. */
+  const sleepWrapRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!sleepMenuOpen) return;
+    const handlePointerDownOutside = (e: PointerEvent) => {
+      if (sleepWrapRef.current && !sleepWrapRef.current.contains(e.target as Node)) {
+        setSleepMenuOpen(false);
+      }
+    };
+    document.addEventListener('pointerdown', handlePointerDownOutside);
+    return () => document.removeEventListener('pointerdown', handlePointerDownOutside);
+  }, [sleepMenuOpen]);
   const cycleRepeat = () => setRepeatMode((m) => (m === 'off' ? 'all' : m === 'all' ? 'one' : 'off'));
   /** true = bài đang phát THẬT SỰ có hình để xem — dùng để disable nút "Video" khi nội dung
       chỉ có tiếng (audio thuần, vd 1 file mp3/Drive không có khung hình), tránh bé bấm vào
@@ -637,7 +655,7 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
             <button className="mobile-player-utility-btn" onClick={cycleSpeed} aria-label="Tốc độ phát">
               <Gauge size={16} /> {SPEEDS[speedIndex]}x
             </button>
-            <div className="mobile-player-sleep-wrap">
+            <div className="mobile-player-sleep-wrap" ref={sleepWrapRef}>
               {/* Chỉ giữ icon — bỏ chữ "Hẹn giờ ngủ" theo yêu cầu. Đổi từ icon Moon (dễ lẫn
                   với icon MoonStar của nút Chế độ tối ngay bên cạnh) sang AlarmClock cho rõ
                   đây là hẹn giờ, không phải ban đêm. Khi đang đặt hẹn giờ (khác "off"), viền
