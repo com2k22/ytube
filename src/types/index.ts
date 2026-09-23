@@ -154,6 +154,20 @@ export interface BlockedItem {
   created_at: string;
 }
 
+/**
+ * 1 lượt bé BẤM TIM để tự đánh dấu "yêu thích" 1 nguồn (playlist/video/kênh) — xem
+ * supabase/021_favorites.sql + src/hooks/useFavorites.ts. Khác hẳn nhãn (ContentLabel):
+ * nhãn do PHỤ HUYNH tự đặt trong Khu vực Bố mẹ để phân loại nội dung; favorite do CHÍNH BÉ
+ * tự chọn ngay trên giao diện, không cần vào Khu vực Bố mẹ, theo TỪNG HỒ SƠ (Mina bấm tim 1
+ * playlist thì Cốm không thấy playlist đó trong "Bé thích" của Cốm).
+ */
+export interface Favorite {
+  id: string;
+  profile_id: string;
+  source_id: string;
+  created_at: string;
+}
+
 /** Trạng thái 1 lời xin thêm giờ (xem supabase/007_time_requests.sql). */
 export type TimeRequestStatus = 'pending' | 'approved' | 'denied' | 'cancelled';
 

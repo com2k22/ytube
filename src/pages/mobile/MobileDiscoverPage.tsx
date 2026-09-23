@@ -4,6 +4,8 @@ import { Search, Compass, ChevronLeft, Sparkles, BookOpen, Music2, GraduationCap
 import type { LucideIcon } from 'lucide-react';
 import { useHomeContent } from '@/hooks/useHomeContent';
 import { useMobilePlayback } from '@/context/MobilePlaybackContext';
+import { useFavorites } from '@/hooks/useFavorites';
+import { FavoriteButton } from '@/components/common/FavoriteButton';
 import type { AllowedSource } from '@/types';
 
 type TypeFilter = 'all' | 'youtube_playlist' | 'youtube_video' | 'youtube_channel';
@@ -61,6 +63,10 @@ export function MobileDiscoverPage() {
   const [query, setQuery] = useState('');
   const [labelId, setLabelId] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
+  /** "Yêu thích" bé tự bấm tim — xem chú thích đầy đủ ở MobileHomePage.tsx + useFavorites.ts.
+      CHỈ hiện tim cho nguồn phát thẳng được (không hiện ở "Kênh" — xem điều kiện ngay tại nơi
+      render bên dưới), khớp đúng cách "Bé thích" ở Trang chủ đang lọc. */
+  const { isFavorite, toggle: toggleFavorite } = useFavorites(activeProfile?.id ?? null);
 
   // Mở từ 1 danh mục ở Trang chủ (link "/discover?label=<id>") → vào thẳng kết quả đúng danh
   // mục đó luôn, không bắt bé/bố mẹ bấm lại từ đầu. Chỉ đọc 1 LẦN lúc vào trang.
@@ -170,15 +176,30 @@ export function MobileDiscoverPage() {
               </div>
               <div className="mobile-discover-grid">
                 {recommended.map((s) => (
-                  <button key={s.id} className="mobile-discover-item" onClick={() => openItem(s)}>
+                  <div
+                    key={s.id}
+                    className="mobile-discover-item"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => openItem(s)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        openItem(s);
+                      }
+                    }}
+                  >
                     <div
                       className="mobile-discover-item-thumb"
                       style={s.thumbnail ? { backgroundImage: `url(${s.thumbnail})` } : undefined}
                     >
                       {!s.thumbnail && <span className="mobile-content-thumb-fallback">🎵</span>}
+                      {s.type !== 'youtube_channel' && (
+                        <FavoriteButton active={isFavorite(s.id)} onToggle={() => toggleFavorite(s.id)} label={s.title} />
+                      )}
                     </div>
                     <div className="mobile-discover-item-title">{s.title}</div>
-                  </button>
+                  </div>
                 ))}
               </div>
             </div>
@@ -228,15 +249,30 @@ export function MobileDiscoverPage() {
           {results.length > 0 && (
             <div className="mobile-discover-grid">
               {results.map((s) => (
-                <button key={s.id} className="mobile-discover-item" onClick={() => openItem(s)}>
+                <div
+                  key={s.id}
+                  className="mobile-discover-item"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => openItem(s)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      openItem(s);
+                    }
+                  }}
+                >
                   <div
                     className="mobile-discover-item-thumb"
                     style={s.thumbnail ? { backgroundImage: `url(${s.thumbnail})` } : undefined}
                   >
                     {!s.thumbnail && <span className="mobile-content-thumb-fallback">🎵</span>}
+                    {s.type !== 'youtube_channel' && (
+                      <FavoriteButton active={isFavorite(s.id)} onToggle={() => toggleFavorite(s.id)} label={s.title} />
+                    )}
                   </div>
                   <div className="mobile-discover-item-title">{s.title}</div>
-                </button>
+                </div>
               ))}
             </div>
           )}

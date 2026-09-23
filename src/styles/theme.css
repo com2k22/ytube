@@ -2421,6 +2421,21 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
   }
   .mobile-content-progress-fill { height: 100%; background: #7c9cff; }
   [data-theme='chibi'] .mobile-content-progress-fill { background: #ff5c9e; }
+
+  /* Nút tim "yêu thích" (FavoriteButton.tsx) — dùng CHUNG 2 chỗ: (1) đè lên góc ảnh bìa
+     trong MobileContentCard (.mobile-content-thumb đã có sẵn position:relative ở trên, làm
+     khung neo), (2) đứng thường trong hàng ngang của .mobile-story-item ("Gần đây") — kiểu
+     dáng nút giống hệt nhau, chỉ khác cách ĐẶT VỊ TRÍ nên tách riêng 1 luật con cho trường
+     hợp (1). Nền tối mờ CỐ ĐỊNH (không đổi theo theme) cho trường hợp (1) — ảnh bìa có thể
+     bất kỳ màu gì, cần 1 nền tối để icon trắng luôn nổi rõ bất kể ảnh sáng/tối. */
+  .favorite-heart-btn {
+    flex-shrink: 0; width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%; border: none; cursor: pointer;
+    background: rgba(0, 0, 0, 0.4); color: #fff;
+  }
+  .favorite-heart-btn--active { color: #ff4d6d; }
+  .mobile-content-thumb .favorite-heart-btn { position: absolute; top: 6px; right: 6px; z-index: 1; }
   .mobile-content-title {
     font-size: 12.5px; font-weight: 700; line-height: 1.3;
     display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
@@ -2462,13 +2477,16 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
     background: none; border: none; padding: 0; text-align: left; cursor: pointer;
   }
   .mobile-discover-item-thumb {
-    width: 100%; aspect-ratio: 1 / 1; border-radius: 16px;
+    position: relative; width: 100%; aspect-ratio: 1 / 1; border-radius: 16px;
     background-size: cover; background-position: center;
     display: flex; align-items: center; justify-content: center;
   }
   [data-theme='dark'] .mobile-discover-item-thumb,
   :root:not([data-theme]) .mobile-discover-item-thumb { background-color: #23242c; }
   [data-theme='chibi'] .mobile-discover-item-thumb { background-color: #ffe0ee; }
+  /* Cùng kiểu overlay góc ảnh với .mobile-content-thumb .favorite-heart-btn ở trên (xem chú
+     thích tại đó) — tách riêng vì đây là 1 class thẻ khác (MobileDiscoverPage.tsx). */
+  .mobile-discover-item-thumb .favorite-heart-btn { position: absolute; top: 6px; right: 6px; z-index: 1; }
   .mobile-discover-item-title {
     font-size: 12.5px; font-weight: 700; line-height: 1.3;
     display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;

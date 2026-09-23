@@ -1,9 +1,11 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, Clock, Tv, ChevronRight, Moon, Play } from 'lucide-react';
+import { Sparkles, Clock, Tv, ChevronRight, Moon, Play, Heart } from 'lucide-react';
 import { useHomeContent } from '@/hooks/useHomeContent';
 import { useMobilePlayback } from '@/context/MobilePlaybackContext';
+import { useFavorites } from '@/hooks/useFavorites';
 import { ProfileSwitcher } from '@/components/navigation/ProfileSwitcher';
+import { FavoriteButton } from '@/components/common/FavoriteButton';
 import type { AllowedSource, ContentLabel } from '@/types';
 
 /** Tên nhãn dùng làm nguồn cho khu Truyện trên điện thoại — so khớp không phân biệt hoa/
@@ -53,6 +55,11 @@ export function MobileHomePage() {
     buildSourcePlayerParams,
   } = home;
 
+  /** "Bé thích" — bé tự bấm tim đánh dấu, KHÁC HẲN mọi nhãn/khối còn lại của trang này (đều
+      do BỐ MẸ curate sẵn) — xem useFavorites.ts + supabase/021_favorites.sql. Theo TỪNG HỒ
+      SƠ (activeProfile.id), không dùng chung giữa Mina/Cốm. */
+  const { isFavorite, toggle: toggleFavorite } = useFavorites(activeProfile?.id ?? null);
+
   /** Nhãn "Mobile" (is_phone_only) — xem supabase/019_device_visibility_labels.sql. Dùng để
       lọc riêng cho "Danh sách truyện" + "Gần đây" bên dưới (chỉ hiện nội dung bố mẹ đã CHỦ
       ĐỘNG gắn nhãn này, không phải "mọi thứ không bị ẩn trên điện thoại" như useHomeContent
@@ -79,6 +86,12 @@ export function MobileHomePage() {
   const recentItems = phoneOnlyLabelId
     ? playable.filter((s) => s.label_ids.includes(phoneOnlyLabelId)).slice(0, RECENT_LIMIT)
     : [];
+
+  /** "Bé thích" — CHỈ lấy trong `playable` (video/playlist phát thẳng được), KHÔNG tính
+      kênh (channels đã có sẵn kệ "Kênh yêu thích" riêng do BỐ MẸ curate — để lẫn 2 khái
+      niệm "yêu thích" khác nhau vào 1 chỗ dễ gây hiểu lầm). Không lọc theo nhãn "Mobile" như
+      2 khối trên — bé thích cái gì trong TOÀN BỘ whitelist của mình cũng đánh dấu được. */
+  const favoriteItems = playable.filter((s) => isFavorite(s.id));
 
   /** Dải danh mục ngay dưới banner — TOÀN BỘ nhãn thường (không tính 2 nhãn hành vi đặc
       biệt "Ưu tiên"/"Ẩn" và 2 nhãn giới hạn thiết bị "Mobile"/"TV", xem useContentLabels.ts),
@@ -187,7 +200,14 @@ export function MobileHomePage() {
         {storyItems.length > 0 ? (
           <div className="mobile-shelf">
             {storyItems.map((s) => (
-              <MobileContentCard key={s.id} title={s.title} thumbnail={s.thumbnail} onClick={() => openAny(s)} />
+              <MobileContentCard
+                key={s.id}
+                title={s.title}
+                thumbnail={s.thumbnail}
+                onClick={() => openAny(s)}
+                favoriteActive={isFavorite(s.id)}
+                onToggleFavorite={() => toggleFavorite(s.id)}
+              />
             ))}
           </div>
         ) : (
@@ -198,6 +218,31 @@ export function MobileHomePage() {
           </div>
         )}
       </div>
+
+      {/* --- Bé thích — mục BÉ TỰ bấm tim đánh dấu (xem favoriteItems + useFavorites phía
+          trên), KHÔNG do bố mẹ curate như mọi khối khác trên trang này. Chỉ hiện khi có ít
+          nhất 1 mục — chưa thích gì thì ẩn hẳn khối này, không hiện trạng thái rỗng (bấm tim
+          là 1 hành động TUỲ CHỌN của bé, không phải thứ bố mẹ cần thấy "chưa có" để đi thêm
+          như "Danh sách truyện"). --- */}
+      {favoriteItems.length > 0 && (
+        <div className="mobile-shelf-block">
+          <div className="mobile-shelf-title">
+            <Heart size={18} aria-hidden="true" /> Bé thích
+          </div>
+          <div className="mobile-shelf">
+            {favoriteItems.map((s) => (
+              <MobileContentCard
+                key={s.id}
+                title={s.title}
+                thumbnail={s.thumbnail}
+                onClick={() => openAny(s)}
+                favoriteActive
+                onToggleFavorite={() => toggleFavorite(s.id)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       {recentItems.length > 0 && (
         <div className="mobile-shelf-block">
@@ -210,8 +255,23 @@ export function MobileHomePage() {
             </button>
           </div>
           <div className="mobile-story-list">
+            {/* <div role="button"> thay vì <button> — cùng lý do đã giải thích ở
+                MobileContentCard: FavoriteButton bên trong cũng là 1 <button>, không được
+                lồng button-trong-button. */}
             {recentItems.slice(0, RECENT_PREVIEW).map((s) => (
-              <button key={s.id} className="mobile-story-item" onClick={() => openAny(s)}>
+              <div
+                key={s.id}
+                className="mobile-story-item"
+                role="button"
+                tabIndex={0}
+                onClick={() => openAny(s)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    openAny(s);
+                  }
+                }}
+              >
                 <div
                   className="mobile-story-item-thumb"
                   style={s.thumbnail ? { backgroundImage: `url(${s.thumbnail})` } : undefined}
@@ -222,8 +282,9 @@ export function MobileHomePage() {
                   <div className="mobile-story-item-title">{s.title}</div>
                   {labelsOf(s)[0] && <span className="mobile-recent-tag">{labelsOf(s)[0].name}</span>}
                 </div>
+                <FavoriteButton active={isFavorite(s.id)} onToggle={() => toggleFavorite(s.id)} label={s.title} />
                 <Play size={16} className="mobile-story-item-play" aria-hidden="true" />
-              </button>
+              </div>
             ))}
           </div>
         </div>
@@ -248,22 +309,44 @@ export function MobileHomePage() {
 /** 1 thẻ nội dung trong hàng ngang cuộn được — dùng chung cho mọi khối ở Trang chủ/Khám phá
     điện thoại (KHÔNG dùng lại PlaylistCard.tsx của TV/desktop: card đó có sẵn nhiều chi tiết
     tối ưu cho D-pad/chuột — vd label chip, khung viền — không hợp với hàng cuộn ngón tay
-    hẹp trên điện thoại; tạo card riêng nhẹ hơn cho đúng UI_SPEC mục 10). */
+    hẹp trên điện thoại; tạo card riêng nhẹ hơn cho đúng UI_SPEC mục 10).
+    `onToggleFavorite` KHÔNG BẮT BUỘC — chỉ truyền ở những nơi cho phép bé bấm tim (xem
+    FavoriteButton.tsx); bỏ trống thì không hiện tim (VD "Kênh yêu thích" — khối đó do BỐ MẸ
+    curate sẵn, không lẫn với "yêu thích" do BÉ tự chọn). Đổi thẻ ngoài từ <button> sang
+    <div role="button"> — BẮT BUỘC vì FavoriteButton bên trong CŨNG là 1 <button>, mà HTML
+    không cho phép <button> lồng trong <button> (trình duyệt sẽ tự tách ra, bấm sai hành vi
+    hẳn); <div role="button" tabIndex={0}> + onKeyDown Enter/Space giữ nguyên khả năng bấm
+    bằng bàn phím/hỗ trợ tiếp cận như <button> thật. */
 function MobileContentCard({
   title,
   thumbnail,
   progressPercent,
   round,
   onClick,
+  favoriteActive,
+  onToggleFavorite,
 }: {
   title: string;
   thumbnail: string | null;
   progressPercent?: number;
   round?: boolean;
   onClick: () => void;
+  favoriteActive?: boolean;
+  onToggleFavorite?: () => void;
 }) {
   return (
-    <button className={`mobile-content-card ${round ? 'mobile-content-card--round' : ''}`} onClick={onClick}>
+    <div
+      className={`mobile-content-card ${round ? 'mobile-content-card--round' : ''}`}
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+    >
       <div className="mobile-content-thumb" style={thumbnail ? { backgroundImage: `url(${thumbnail})` } : undefined}>
         {!thumbnail && <span className="mobile-content-thumb-fallback">🎵</span>}
         {typeof progressPercent === 'number' && (
@@ -271,8 +354,11 @@ function MobileContentCard({
             <div className="mobile-content-progress-fill" style={{ width: `${Math.min(100, Math.max(0, progressPercent))}%` }} />
           </div>
         )}
+        {onToggleFavorite && (
+          <FavoriteButton active={!!favoriteActive} onToggle={onToggleFavorite} label={title} />
+        )}
       </div>
       <div className="mobile-content-title">{title}</div>
-    </button>
+    </div>
   );
 }
