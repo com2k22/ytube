@@ -17,10 +17,13 @@ import {
   Music,
   Video as VideoIcon,
   ListMusic,
+  Heart,
 } from 'lucide-react';
 import { useMobilePlayback } from '@/context/MobilePlaybackContext';
+import { useProfileContext } from '@/context/ProfileContext';
 import { usePlayerEngine, type PlayerEngineParams } from '@/hooks/usePlayerEngine';
 import { useSleepTimer, type SleepTimerOption } from '@/hooks/useSleepTimer';
+import { useFavorites } from '@/hooks/useFavorites';
 import type { MobilePlayerAdapter } from '@/hooks/useTvPlayerControls';
 import { SafeYouTubePlayer } from '@/components/player/SafeYouTubePlayer';
 import { DirectVideoPlayer } from '@/components/player/DirectVideoPlayer';
@@ -63,6 +66,20 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
   const navigate = useNavigate();
   const location = useLocation();
   const isFull = location.pathname === '/player';
+
+  /** "Yêu thích" — bé tự bấm tim, xem useFavorites.ts + supabase/021_favorites.sql. Theo yêu
+      cầu mới: CHỈ bấm thích được NGAY TRONG trình phát video/audio này (hàng tiện ích toàn
+      màn hình bên dưới) — không còn nút tim trên thẻ playlist/video ở Trang chủ/Khám phá nữa
+      (bỏ hẳn, xem MobileHomePage.tsx/MobileDiscoverPage.tsx). `nowPlaying.sourceId` là đúng
+      dòng whitelist của nội dung ĐANG PHÁT — CÙNG giá trị `sourceId` mà usePlayerEngine dùng
+      để lưu tiến độ xem (xem handleProgress trong usePlayerEngine.ts), nên khi đang phát 1
+      tập nằm TRONG playlist thì tim này đánh dấu cho CẢ playlist đó (không có id riêng cho
+      từng tập bên trong 1 playlist) — đúng ý "không cho bấm thích ở [từng mục của] playlist"
+      khi duyệt danh sách, còn ở đây là bấm thích cho đúng NỘI DUNG đang mở ra nghe/xem. */
+  const { activeProfile } = useProfileContext();
+  const { isFavorite, toggle: toggleFavorite } = useFavorites(activeProfile?.id ?? null);
+  const favSourceId = nowPlaying.sourceId;
+  const isCurrentFavorite = favSourceId ? isFavorite(favSourceId) : false;
 
   /** 'off' → 'all' (lặp lại cả danh sách, hết bài cuối quay lại bài đầu) → 'one' (lặp lại
       ĐÚNG 1 bài đang phát, không tự chuyển bài) → về lại 'off', bấm nút Lặp lại (icon
@@ -652,6 +669,21 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
           </div>
 
           <div className="mobile-player-utility-row">
+            {/* Nút "Yêu thích" — đặt ĐẦU TIÊN trong hàng (góc ngoài cùng bên trái), cùng hàng
+                với nút hẹn giờ ngủ, dùng chung style icon-tròn với các nút còn lại trong hàng
+                này (mobile-player-utility-btn/--active) cho đồng bộ, không cần thêm CSS riêng.
+                Chỉ ẩn đi khi vì lý do nào đó chưa có sourceId (vd mở thẳng 1 link không qua
+                whitelist) — bình thường luôn có, không hiện thiếu tim. */}
+            {favSourceId && (
+              <button
+                className={`mobile-player-utility-btn ${isCurrentFavorite ? 'mobile-player-utility-btn--active' : ''}`}
+                onClick={() => toggleFavorite(favSourceId)}
+                aria-pressed={isCurrentFavorite}
+                aria-label={isCurrentFavorite ? 'Bỏ yêu thích' : 'Yêu thích'}
+              >
+                <Heart size={18} fill={isCurrentFavorite ? 'currentColor' : 'none'} />
+              </button>
+            )}
             <button className="mobile-player-utility-btn" onClick={cycleSpeed} aria-label="Tốc độ phát">
               <Gauge size={16} /> {SPEEDS[speedIndex]}x
             </button>
