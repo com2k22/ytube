@@ -3,18 +3,66 @@
 Đây là code thật của ứng dụng đã được bạn duyệt qua các bản demo. Tài liệu này viết cho
 người **không phải lập trình viên**, làm theo từng bước là chạy được.
 
+**Phiên bản hiện tại: v1.1.0** — xem mục "Có gì mới ở v1.1.0" ngay dưới đây, và mục
+**9. Lịch sử phiên bản** ở cuối tài liệu cho các bản trước.
+
+## Có gì mới ở v1.1.0
+
+- **"Bé thích" phân biệt ĐÚNG TỪNG TẬP trong playlist.** Trước đây bấm tim 1 tập trong
+  playlist sẽ đánh dấu "thích" luôn cho CẢ playlist (mọi tập dùng chung 1 trạng thái).
+  Giờ mỗi tập có trạng thái thích riêng, bấm tim ngay trong trình phát (không còn nút tim
+  trên thẻ playlist/video ở Trang chủ/Khám phá nữa) — khối "Bé thích" ở Trang chủ hiện
+  đúng từng video/audio đã bấm tim, kể cả khi chúng nằm trong cùng 1 playlist.
+  ⚠️ Cần chạy thêm `supabase/022_favorites_video_ref.sql` trong SQL Editor (chạy sau file
+  `021_favorites.sql`) — xem mục 3, Bước A.
+- **Tải xuống nghe offline (Google Drive/Dropbox/link trực tiếp).** Nút "Tải xuống" mới
+  nằm ngay trong trình phát điện thoại (cạnh nút tim) — tải xong thì phát lại được cả khi
+  không có mạng. Tab "Tải xuống" đổi vai trò: từ 1 trang rỗng thành nơi quản lý/xem lại
+  các mục đã tải, xoá từng mục, xem ước lượng dung lượng đang dùng. Tải được ở **bất kỳ
+  mạng nào** (không giới hạn chỉ Wi-Fi). Không áp dụng cho video YouTube (không có hạ tầng
+  tải hợp lệ) — chỉ áp dụng cho nội dung Google Drive/Dropbox/link trực tiếp.
+  - Thay đổi kỹ thuật đi kèm: mọi link phát trực tiếp (không riêng Google Drive như trước)
+    giờ đi qua 1 "trạm trung chuyển" riêng của app (`/api/proxy-download`, cùng nguyên lý
+    với trạm Google Drive đã có) — cần thiết để đọc trọn vẹn bytes lưu offline, không đổi
+    trải nghiệm xem bình thường.
+- **Sửa lỗi "kẹt ở Đang tải" khi mở 1 tập Google Drive/Dropbox nằm trong playlist tự tạo**
+  (từ khối "Bé thích", "Tiếp tục xem", nút "video tiếp theo", hoặc danh sách trong trình
+  phát) — trước đây app nhầm những tập đó thành video YouTube (đọc sai loại link) nên trình
+  phát đứng mãi ở "Đang tải", không bao giờ phát được. Phát bình thường (mở lần đầu từ
+  trang chi tiết playlist) không bị ảnh hưởng, chỉ các đường vào "gián tiếp" kể trên bị lỗi.
+- **Tối ưu hiệu năng đáng kể khi phát nội dung Google Drive/Dropbox**: trước đây MỖI GIÂY
+  phát 1 video/audio loại này gửi tới hàng chục yêu cầu mạng lên Supabase một cách vô ích
+  (báo tiến độ xem không được giới hạn nhịp độ) — giờ chỉ báo mỗi 5 giây thật, giống hệt
+  video YouTube, giảm mạnh dữ liệu di động tiêu tốn và tải cho Supabase. Bỏ luôn 1 lượt tải
+  lại thừa (đọc lại toàn bộ tiến độ xem) sau mỗi lần lưu.
+
 ## 1. Những gì đã có trong code này
 
-- Giao diện 2 theme: Dark TV và Chibi Cute (đổi được ngay trên app).
-- Trang chủ: Tiếp tục xem / Playlist đề xuất / Kênh yêu thích, điều hướng bằng phím
-  mũi tên kiểu Remote TV (`useTvNavigation`).
+- **Giao diện riêng cho điện thoại** (Trang chủ / Khám phá / Tải xuống / Khu Bố mẹ), và
+  giao diện TV/iPad/máy tính điều hướng bằng phím mũi tên kiểu Remote TV
+  (`useTvNavigation`) — cùng 1 app, tự nhận diện thiết bị để hiện đúng giao diện.
+- 2 theme: Dark TV và Chibi Cute (đổi được ngay trên app, lưu riêng theo từng bé).
+- Trang chủ: Tiếp tục xem / Bé thích / Playlist đề xuất / Kênh yêu thích.
 - Trình phát video an toàn (`SafeYouTubePlayer`) — không hiện gợi ý video ngoài whitelist.
-- Phát cả link YouTube (playlist / video đơn lẻ / kênh) và link trực tiếp (mp4/m3u8).
+- Phát cả link YouTube (playlist / video đơn lẻ / kênh) và link trực tiếp (mp4/m3u8,
+  Google Drive, Dropbox) — kể cả playlist tự tạo TRỘN LẪN video YouTube và tập Drive.
+- **"Bé thích"**: bé tự bấm tim ngay trong trình phát, phân biệt đúng từng tập trong
+  playlist (xem "Có gì mới ở v1.1.0").
+- **Tải xuống nghe offline** cho nội dung Google Drive/Dropbox/link trực tiếp (xem "Có gì
+  mới ở v1.1.0").
+- Thông báo đẩy (push notification) khi có sự kiện cần bố mẹ chú ý.
+- Ghép nhiều thiết bị vào cùng 1 gia đình (mã ghép cặp), quản lý thiết bị đã ghép.
 - Khu vực "Bố mẹ" khoá bằng PIN (mặc định `1234`, đổi được), gồm:
-  - Thêm/xoá nội dung whitelist, chọn "dành cho bé" nào.
+  - Thêm/xoá nội dung whitelist, chọn "dành cho bé" nào, gán nhãn (Ưu tiên/Ẩn/Chỉ điện
+    thoại/Chỉ TV-máy tính).
+  - Chặn riêng lẻ 1 video/playlist "lạc nguồn" trong 1 kênh đã whitelist mà không cần
+    chặn hẳn cả kênh.
   - Quản lý thời gian xem theo từng **nhóm ngày** riêng (khung giờ, tổng giờ/ngày, giờ/lượt).
   - Xem & điều khiển **phiên xem hiện tại của TV ngay từ thiết bị khác** (vd: iPad) —
     "kết thúc phiên ngay" hoặc "xem xong phiên rồi tắt" — nhờ Supabase Realtime.
+  - Duyệt/từ chối lời xin thêm giờ của bé.
+  - Báo cáo tuần (thời lượng xem theo ngày/nội dung).
+  - Sao lưu/xuất dữ liệu whitelist.
   - Màn hình nhắc nhẹ nhàng (chữ + hình + âm thanh) khi bé mở app ngoài giờ được xem.
 
 ## 2. Cần chuẩn bị gì
@@ -25,6 +73,9 @@ người **không phải lập trình viên**, làm theo từng bước là ch�
   để app đọc được danh sách video thật trong playlist/kênh — không có key này, phần
   hiển thị playlist/kênh sẽ không tải được video, nhưng phần link trực tiếp (mp4/m3u8)
   và video đơn lẻ vẫn hoạt động bình thường qua trình phát an toàn.
+- (Cho tính năng phát Google Drive/Dropbox) Xem biến `GDRIVE_SERVICE_ACCOUNT_JSON` trong
+  file `.env.example` — cần 1 "tài khoản dịch vụ" (service account) của Google Cloud để
+  app phát nội dung Google Drive ổn định, không bị Google tạm chặn.
 
 ## 3. Cài đặt lần đầu (làm theo thứ tự)
 
@@ -33,7 +84,11 @@ người **không phải lập trình viên**, làm theo từng bước là ch�
 1. Vào https://supabase.com, tạo project mới (chọn khu vực gần Việt Nam, ví dụ Singapore).
 2. Vào **SQL Editor > New query**, dán toàn bộ nội dung file `supabase/001_schema.sql`,
    bấm **Run**.
-3. Làm tương tự với file `supabase/002_time_management.sql` (chạy SAU file 001).
+3. Làm tương tự, LẦN LƯỢT theo đúng số thứ tự, với TẤT CẢ các file còn lại trong thư mục
+   `supabase/` (002, 003, ... cho tới file có số lớn nhất hiện có, ví dụ
+   `022_favorites_video_ref.sql`) — mỗi file dán vào 1 ô **New query** riêng rồi **Run**.
+   Chạy ĐÚNG THỨ TỰ SỐ, không chạy tắt/bỏ file nào, kể cả khi cài đặt lần đầu (không phải
+   nâng cấp) — nhiều file sau chỉnh sửa/mở rộng bảng do file trước tạo ra.
 4. Vào **Project Settings > API**, copy 2 giá trị: **Project URL** và **anon public key**.
 
 ### Bước B — (Khuyến khích) Lấy YouTube Data API key
@@ -70,8 +125,9 @@ Mở trình duyệt vào địa chỉ hiện ra (thường là `http://localhost
 2. Commit lần đầu, bấm **Publish repository** để đưa lên GitHub.
 3. Vào https://vercel.com, đăng nhập bằng GitHub, bấm **Add New > Project**, chọn repo
    vừa tạo.
-4. Ở bước cấu hình, vào **Environment Variables**, thêm 3 biến giống hệt trong file
-   `.env` của bạn (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_YOUTUBE_API_KEY`).
+4. Ở bước cấu hình, vào **Environment Variables**, thêm các biến giống hệt trong file
+   `.env`/`.env.example` của bạn — tối thiểu `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`,
+   `VITE_YOUTUBE_API_KEY`, và (nếu dùng Google Drive) `GDRIVE_SERVICE_ACCOUNT_JSON`.
 5. Bấm **Deploy**. Sau vài phút, Vercel cho bạn 1 link `https://ten-app.vercel.app` —
    đây là link chính thức, mở được trên iPad, PC, và TV LG (Bước E bên dưới đóng gói
    thành app cài thẳng lên TV, không cần mở trình duyệt).
@@ -333,9 +389,10 @@ dùng ĐÚNG file signing key cũ để cài đè được lên bản đang có)
 
 - **PIN mặc định**: `1234` — vào tab "🔑 Đổi PIN" trong khu Bố mẹ để đổi ngay sau khi
   triển khai thật.
-- **% đã xem của video YouTube**: được tính qua YouTube IFrame Player API (chính thức,
-  chính xác theo thời gian thực đang phát), lưu định kỳ mỗi ~5 giây — đủ tốt cho tính
-  năng "Tiếp tục xem", không phải để chấm điểm học tập chính xác tuyệt đối.
+- **% đã xem** (YouTube lẫn Google Drive/Dropbox/link trực tiếp): lưu định kỳ mỗi
+  **~5 giây thật** trong lúc đang phát (từ v1.1.0, cả 2 loại nội dung cùng nhịp báo, xem
+  "Có gì mới ở v1.1.0") — đủ tốt cho tính năng "Tiếp tục xem", không phải để chấm điểm
+  học tập chính xác tuyệt đối.
 - **Playlist "mượn" từ 1 kênh đã whitelist**: không có "Tiếp tục xem" riêng (vì không
   nằm trong whitelist chính thức) — muốn có Tiếp tục xem, thêm hẳn playlist đó vào
   whitelist qua tab "Thêm nội dung".
@@ -367,14 +424,41 @@ dùng ĐÚNG file signing key cũ để cài đè được lên bản đang có)
   tối: chạy file `supabase/005_default_theme_dark.sql` trong SQL Editor của Supabase —
   hoặc đơn giản hơn, trên TV bấm nút 🎨 Giao diện ở cuối menu trái (app tự lưu lại), nhớ
   làm cho cả Mina lẫn Cốm.
+- **Tải xuống nghe offline là dữ liệu RIÊNG CỦA TỪNG THIẾT BỊ** (lưu trong bộ nhớ trình
+  duyệt của máy đó — không đồng bộ qua Supabase, không chia theo từng bé): tải ở điện
+  thoại nào thì chỉ xem offline được ở đúng điện thoại đó, giống cách Spotify/YouTube
+  offline hoạt động. Xoá dữ liệu trình duyệt (hoặc gỡ cài app) sẽ mất luôn các mục đã tải,
+  phải tải lại.
+- **Trạm trung chuyển phát/tải link trực tiếp** (`/api/gdrive-file`, `/api/proxy-download`)
+  về bản chất là 1 "proxy mở" — nhận link do bố mẹ tự thêm rồi gọi hộ, có chặn sẵn các dải
+  địa chỉ mạng nội bộ (localhost/192.168.x...) làm lớp phòng vệ cơ bản, nhưng không loại
+  bỏ hoàn toàn rủi ro proxy mở — chấp nhận đánh đổi này vì đây là app dùng riêng trong 1
+  gia đình, không phải dịch vụ công khai.
 
 ## 5. Cấu trúc thư mục
 
 Xem chi tiết trong tài liệu bạn đã duyệt ở Bước 2 của quá trình trao đổi — cấu trúc
 thực tế trong code này bám sát 100% theo đó (`src/components`, `src/hooks`,
-`src/context`, `src/pages`, `src/lib`, `src/utils`, `supabase/`).
+`src/context`, `src/pages`, `src/lib`, `src/utils`, `supabase/`, `api/`).
 
 ## 6. Đóng gói lên TV LG (webOS)
 
 Xem **Bước E** ở mục 3 phía trên — đóng gói ứng dụng thành file `.ipk` và cài thẳng
 lên TV LG (webOS), mở lên là chạy full màn hình luôn, không cần trình duyệt.
+
+## 7. Lịch sử phiên bản
+
+Đánh số phiên bản trong `package.json` (trường `"version"`) — không liên quan tới số
+`"version"` riêng của `webos-meta/appinfo.json` (số đó chỉ TV LG dùng để biết có bản
+`.ipk` mới, xem Bước E.2.3).
+
+- **v1.1.0** (bản hiện tại) — "Bé thích" phân biệt từng tập trong playlist; Tải xuống
+  nghe offline (Google Drive/Dropbox/link trực tiếp); sửa lỗi kẹt "Đang tải" khi mở 1 tập
+  Drive/Dropbox trong playlist tự tạo qua Bé thích/Tiếp tục xem/danh sách trong trình
+  phát; tối ưu hiệu năng phát Google Drive/Dropbox (giảm mạnh số yêu cầu mạng lên
+  Supabase). Xem đầy đủ ở mục "Có gì mới ở v1.1.0" phía trên.
+- **v1.0.x** — Bản nền: giao diện TV/iPad/máy tính + giao diện điện thoại riêng, trình
+  phát an toàn (YouTube/link trực tiếp/Google Drive), khu vực Bố mẹ (PIN, quản lý thời
+  gian xem theo nhóm ngày, điều khiển phiên xem từ xa, chặn nội dung riêng lẻ, nhãn nội
+  dung, báo cáo tuần, sao lưu/xuất dữ liệu, thông báo đẩy, ghép nhiều thiết bị), đóng gói
+  cài lên TV LG (webOS) và Android/Android TV, cài như PWA trên iPad/iPhone.
