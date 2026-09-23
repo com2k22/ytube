@@ -155,16 +155,26 @@ export interface BlockedItem {
 }
 
 /**
- * 1 lượt bé BẤM TIM để tự đánh dấu "yêu thích" 1 nguồn (playlist/video/kênh) — xem
- * supabase/021_favorites.sql + src/hooks/useFavorites.ts. Khác hẳn nhãn (ContentLabel):
- * nhãn do PHỤ HUYNH tự đặt trong Khu vực Bố mẹ để phân loại nội dung; favorite do CHÍNH BÉ
- * tự chọn ngay trên giao diện, không cần vào Khu vực Bố mẹ, theo TỪNG HỒ SƠ (Mina bấm tim 1
- * playlist thì Cốm không thấy playlist đó trong "Bé thích" của Cốm).
+ * 1 lượt bé BẤM TIM để tự đánh dấu "yêu thích" ĐÚNG 1 VIDEO/AUDIO (xem
+ * supabase/021_favorites.sql + supabase/022_favorites_video_ref.sql + src/hooks/useFavorites.ts).
+ * Khác hẳn nhãn (ContentLabel): nhãn do PHỤ HUYNH tự đặt trong Khu vực Bố mẹ để phân loại nội
+ * dung; favorite do CHÍNH BÉ tự chọn ngay trên giao diện, không cần vào Khu vực Bố mẹ, theo
+ * TỪNG HỒ SƠ (Mina bấm tim 1 video thì Cốm không thấy video đó trong "Bé thích" của Cốm).
+ *
+ * `video_ref` — GIỐNG HỆT quy ước của WatchProgress.video_ref (xem struct bên trên): với
+ * video/audio đứng RIÊNG LẺ (không nằm trong playlist nào) thì đây là videoId YouTube/url
+ * trực tiếp của CHÍNH nó — cũng là dòng whitelist duy nhất luôn nên `source_id` một mình đã
+ * đủ xác định; với 1 TẬP nằm TRONG 1 playlist (youtube_playlist/custom_playlist) thì
+ * `source_id` là dòng whitelist của CẢ playlist (chia sẻ chung giữa mọi tập), nên PHẢI có
+ * thêm `video_ref` (videoId của đúng tập đó) mới phân biệt được tập nào trong playlist đang
+ * được thích — bấm tim tập 3 sẽ KHÔNG khiến tập 5 cùng playlist tự hiện "đã thích" theo.
+ * (profile_id, source_id, video_ref) là bộ khoá duy nhất — xem migration 022.
  */
 export interface Favorite {
   id: string;
   profile_id: string;
   source_id: string;
+  video_ref: string;
   created_at: string;
 }
 

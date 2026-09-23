@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useProfileContext } from '@/context/ProfileContext';
 import { useAllowedSources } from '@/hooks/useAllowedSources';
 import { useWatchProgress } from '@/hooks/useWatchProgress';
+import { useFavorites } from '@/hooks/useFavorites';
 import { useContentLabels } from '@/hooks/useContentLabels';
 import { useIsPhoneScreen } from '@/lib/screenSize';
 import { loadYouTubeApi } from '@/components/player/SafeYouTubePlayer';
@@ -31,6 +32,10 @@ export function useHomeContent() {
   const { activeProfile } = useProfileContext();
   const { sources, loading } = useAllowedSources(activeProfile?.id ?? null);
   const { rows: progressRows } = useWatchProgress(activeProfile?.id ?? null);
+  /** "Bé thích" (kệ ở Trang chủ điện thoại) — xem favoriteVideos bên dưới. Bấm tim để đánh
+      dấu/bỏ đánh dấu CHỈ làm được trong trình phát (MobilePlayerHost.tsx tự gọi useFavorites
+      riêng để toggle) — ở đây chỉ ĐỌC lại `rows` để dựng danh sách hiển thị. */
+  const { rows: favoriteRows } = useFavorites(activeProfile?.id ?? null);
   const { labels: allLabels } = useContentLabels();
   const navigate = useNavigate();
   // Điện thoại thật hay không — dùng để lọc theo 2 nhãn "Chỉ điện thoại"/"Chỉ TV/iPad/máy
@@ -97,8 +102,25 @@ export function useHomeContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [progressRows, sources, hiddenLabelId, phoneOnlyLabelId, desktopOnlyLabelId, isPhone]);
 
+  /** Cùng cách lọc như continuingRows (bỏ nguồn đã ẩn/không hợp thiết bị), nhưng KHÔNG lọc
+      theo % xem dở (favorite không liên quan gì tới tiến độ xem) và KHÔNG giới hạn số lượng —
+      bé thích bao nhiêu thì hiện hết bấy nhiêu. Mới nhất (bấm tim gần đây nhất) lên đầu. */
+  const favoriteRowsVisible = useMemo(() => {
+    return favoriteRows
+      .filter((r) => {
+        const src = sources.find((s) => s.id === r.source_id);
+        return !!src && !(hiddenLabelId && src.label_ids.includes(hiddenLabelId)) && !isHiddenOnThisDevice(src);
+      })
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [favoriteRows, sources, hiddenLabelId, phoneOnlyLabelId, desktopOnlyLabelId, isPhone]);
+
   useEffect(() => {
-    const missingIds = continuingRows
+    // Gộp chung 2 nguồn cần dò tên/ảnh thật qua YouTube Data API (Tiếp tục xem + Bé thích) —
+    // cùng 1 cache (videoInfoCache), cùng 1 điều kiện "chỉ playlist/kênh YouTube thật mới cần
+    // dò" (custom_playlist đã có sẵn title/thumbnail trong items, direct_url/gdrive_folder/
+    // video lẻ dùng thẳng title/thumbnail của chính dòng whitelist, không cần gọi API).
+    const missingIds = [...continuingRows, ...favoriteRowsVisible]
       .map((r) => ({ r, src: sources.find((s) => s.id === r.source_id) }))
       .filter(
         ({ src, r }) =>
@@ -118,43 +140,58 @@ export function useHomeContent() {
     return () => {
       cancelled = true;
     };
-  }, [continuingRows, sources, videoInfoCache]);
+  }, [continuingRows, favoriteRowsVisible, sources, videoInfoCache]);
+
+  /** Dò tên/ảnh THẬT + tham số phát cho ĐÚNG 1 video, từ 1 dòng chỉ có (source_id, video_ref)
+      — dùng CHUNG cho cả "Tiếp tục xem" (continuingRows, từ watch_progress) LẪN "Bé thích"
+      (favoriteRowsVisible, từ favorites): 2 bảng khác nhau nhưng cùng chung đúng 1 quy ước
+      (source_id, video_ref) nên dò ra video y hệt nhau — tách hàm này ra để khỏi viết lặp lại
+      2 lần cùng 1 khối if/else if. null = không tìm thấy dòng whitelist gốc (VD nguồn đã bị
+      phụ huynh xoá sau khi bé từng xem/thích). */
+  const resolveRowVideo = <R extends { source_id: string; video_ref: string }>(r: R) => {
+    const source = sources.find((s) => s.id === r.source_id);
+    if (!source) return null;
+    let title = source.title;
+    let thumbnail = source.thumbnail;
+    const videoParam = r.video_ref;
+    let directUrlParam: string | null = null;
+    let playlistId: string | null = null;
+
+    if (source.type === 'custom_playlist') {
+      const item = source.items.find((it) => it.videoId === r.video_ref);
+      if (item) {
+        title = item.title;
+        thumbnail = item.thumbnail;
+      }
+    } else if (source.type === 'youtube_playlist') {
+      playlistId = extractPlaylistId(source.url);
+      const info = videoInfoCache[r.video_ref];
+      if (info) {
+        title = info.title;
+        thumbnail = info.thumbnail;
+      }
+    } else if (source.type === 'youtube_channel') {
+      const info = videoInfoCache[r.video_ref];
+      if (info) {
+        title = info.title;
+        thumbnail = info.thumbnail;
+      }
+    } else if (source.type === 'direct_url' || source.type === 'gdrive_folder') {
+      directUrlParam = source.url;
+    }
+
+    return { row: r, source, title, thumbnail, videoParam, directUrlParam, playlistId };
+  };
 
   const continuingVideos = continuingRows
-    .map((r) => {
-      const source = sources.find((s) => s.id === r.source_id);
-      if (!source) return null;
-      let title = source.title;
-      let thumbnail = source.thumbnail;
-      const videoParam = r.video_ref;
-      let directUrlParam: string | null = null;
-      let playlistId: string | null = null;
+    .map(resolveRowVideo)
+    .filter((x): x is NonNullable<typeof x> => x !== null);
 
-      if (source.type === 'custom_playlist') {
-        const item = source.items.find((it) => it.videoId === r.video_ref);
-        if (item) {
-          title = item.title;
-          thumbnail = item.thumbnail;
-        }
-      } else if (source.type === 'youtube_playlist') {
-        playlistId = extractPlaylistId(source.url);
-        const info = videoInfoCache[r.video_ref];
-        if (info) {
-          title = info.title;
-          thumbnail = info.thumbnail;
-        }
-      } else if (source.type === 'youtube_channel') {
-        const info = videoInfoCache[r.video_ref];
-        if (info) {
-          title = info.title;
-          thumbnail = info.thumbnail;
-        }
-      } else if (source.type === 'direct_url' || source.type === 'gdrive_folder') {
-        directUrlParam = source.url;
-      }
-
-      return { row: r, source, title, thumbnail, videoParam, directUrlParam, playlistId };
-    })
+  /** "Bé thích" — mỗi mục là ĐÚNG 1 video/audio (dù đứng riêng lẻ hay là 1 tập trong
+      playlist/kênh), hiện đúng tên/ảnh của CHÍNH tập đó (không phải tên/ảnh chung của cả
+      playlist) — xem resolveRowVideo ở trên + supabase/022_favorites_video_ref.sql. */
+  const favoriteVideos = favoriteRowsVisible
+    .map(resolveRowVideo)
     .filter((x): x is NonNullable<typeof x> => x !== null);
 
   const videoIdsInCustomPlaylists = new Set(
@@ -208,6 +245,18 @@ export function useHomeContent() {
     thumbnail: entry.thumbnail,
   });
 
+  /** Dựng tham số phát cho 1 mục trong "Bé thích" — CÙNG hình dạng dữ liệu với "Tiếp tục
+      xem" ở trên (cả 2 đều đi qua resolveRowVideo) nên thân hàm y hệt, chỉ tách riêng tên hàm
+      cho rõ ngữ cảnh gọi (MobileHomePage.tsx). */
+  const buildFavoritePlayerParams = (entry: (typeof favoriteVideos)[number]): PlayerEngineParams => ({
+    sourceId: entry.source.id,
+    title: entry.title,
+    videoId: entry.directUrlParam ? null : entry.videoParam,
+    directUrl: entry.directUrlParam,
+    playlistId: entry.playlistId,
+    thumbnail: entry.thumbnail,
+  });
+
   /** Mở 1 playlist/kênh/video từ khối "Danh sách"/"Video đề xuất" bằng ĐIỀU HƯỚNG URL — dùng
       cho TV/iPad/máy tính (giữ nguyên hành vi cũ). Trang điện thoại nên dùng
       buildSourcePlayerParams + MobilePlaybackContext.playVideo() thay vì hàm này, để có sẵn
@@ -238,11 +287,13 @@ export function useHomeContent() {
     playable,
     channels,
     continuingVideos,
+    favoriteVideos,
     recommendedPlaylists,
     recommendedVideos,
     isListSource,
     buildSourcePlayerParams,
     buildContinuingPlayerParams,
+    buildFavoritePlayerParams,
     openSource,
     openContinuingVideo,
   };

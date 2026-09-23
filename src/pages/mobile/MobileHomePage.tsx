@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Sparkles, Clock, Tv, ChevronRight, Moon, Play, Heart } from 'lucide-react';
 import { useHomeContent } from '@/hooks/useHomeContent';
 import { useMobilePlayback } from '@/context/MobilePlaybackContext';
-import { useFavorites } from '@/hooks/useFavorites';
 import { ProfileSwitcher } from '@/components/navigation/ProfileSwitcher';
 import type { AllowedSource, ContentLabel } from '@/types';
 
@@ -50,17 +49,11 @@ export function MobileHomePage() {
     labelsOf,
     channels,
     playable,
+    favoriteVideos,
+    buildFavoritePlayerParams,
     isListSource,
     buildSourcePlayerParams,
   } = home;
-
-  /** "Bé thích" — bé tự bấm tim đánh dấu, KHÁC HẲN mọi nhãn/khối còn lại của trang này (đều
-      do BỐ MẸ curate sẵn) — xem useFavorites.ts + supabase/021_favorites.sql. Theo TỪNG HỒ
-      SƠ (activeProfile.id), không dùng chung giữa Mina/Cốm. Bấm tim để ĐÁNH DẤU/BỎ ĐÁNH DẤU
-      CHỈ làm được ngay trong trình phát video/audio (xem nút trái tim ở hàng tiện ích của
-      MobilePlayerHost.tsx) — ở Trang chủ chỉ ĐỌC lại (isFavorite) để biết mục nào đưa vào kệ
-      "Bé thích" bên dưới, không có tim để bấm trực tiếp trên từng thẻ/playlist nữa. */
-  const { isFavorite } = useFavorites(activeProfile?.id ?? null);
 
   /** Nhãn "Mobile" (is_phone_only) — xem supabase/019_device_visibility_labels.sql. Dùng để
       lọc riêng cho "Danh sách truyện" + "Gần đây" bên dưới (chỉ hiện nội dung bố mẹ đã CHỦ
@@ -88,17 +81,6 @@ export function MobileHomePage() {
   const recentItems = phoneOnlyLabelId
     ? playable.filter((s) => s.label_ids.includes(phoneOnlyLabelId)).slice(0, RECENT_LIMIT)
     : [];
-
-  /** "Bé thích" — CHỈ lấy VIDEO/AUDIO RIÊNG LẺ (không phải playlist — dùng lại `isListSource`
-      đã có sẵn để loại `youtube_playlist`/`custom_playlist`), và KHÔNG tính kênh (channels đã
-      có sẵn kệ "Kênh yêu thích" riêng do BỐ MẸ curate — để lẫn 2 khái niệm "yêu thích" khác
-      nhau vào 1 chỗ dễ gây hiểu lầm). Đúng theo yêu cầu: bấm thích chỉ áp dụng cho TỪNG video/
-      audio lẻ, không áp dụng cho cả playlist — nên khối "Bé thích" cũng chỉ hiện đúng loại đó,
-      dù trước đây (lúc còn cho bấm thích ở thẻ playlist) có thể đã lỡ lưu vài dòng playlist
-      vào bảng favorites, những dòng đó giờ tự động không hiện ra nữa. Không lọc theo nhãn
-      "Mobile" như 2 khối trên — bé thích cái gì trong TOÀN BỘ whitelist của mình cũng đánh dấu
-      được. */
-  const favoriteItems = playable.filter((s) => !isListSource(s) && isFavorite(s.id));
 
   /** Dải danh mục ngay dưới banner — TOÀN BỘ nhãn thường (không tính 2 nhãn hành vi đặc
       biệt "Ưu tiên"/"Ẩn" và 2 nhãn giới hạn thiết bị "Mobile"/"TV", xem useContentLabels.ts),
@@ -128,6 +110,15 @@ export function MobileHomePage() {
       return;
     }
     openVideoSource(source);
+  };
+  /** Mở ĐÚNG 1 mục trong kệ "Bé thích" — LUÔN phát thẳng ĐÚNG tập đã thích (kể cả khi tập đó
+      nằm trong 1 playlist: buildFavoritePlayerParams đã có sẵn playlistId nên vào lại vẫn còn
+      "Bài tiếp/Bài trước" trong đúng playlist đó), không mở trang danh sách playlist như
+      openAny ở trên (favoriteVideos không còn khái niệm "mở playlist", mỗi mục đã LÀ 1 video/
+      audio cụ thể rồi). */
+  const openFavorite = (entry: (typeof favoriteVideos)[number]) => {
+    playVideo(buildFavoritePlayerParams(entry));
+    navigate('/player');
   };
 
   if (!activeProfile) return null;
@@ -219,21 +210,30 @@ export function MobileHomePage() {
         )}
       </div>
 
-      {/* --- Bé thích — mục BÉ TỰ bấm tim đánh dấu (xem favoriteItems + useFavorites phía
-          trên), KHÔNG do bố mẹ curate như mọi khối khác trên trang này. Chỉ hiện khi có ít
-          nhất 1 mục — chưa thích gì thì ẩn hẳn khối này, không hiện trạng thái rỗng (bấm tim
-          là 1 hành động TUỲ CHỌN của bé, không phải thứ bố mẹ cần thấy "chưa có" để đi thêm
-          như "Danh sách truyện"). Khối này chỉ để XEM LẠI — bấm vào 1 thẻ là MỞ nội dung đó
-          ra (giống mọi thẻ khác), muốn bỏ thích thì vào trình phát bấm lại tim ở đó, không có
-          tim riêng ngay trên thẻ ở đây nữa. --- */}
-      {favoriteItems.length > 0 && (
+      {/* --- Bé thích — mục BÉ TỰ bấm tim đánh dấu, NGAY TRONG trình phát (xem
+          MobilePlayerHost.tsx + favoriteVideos/useHomeContent.ts), KHÔNG do bố mẹ curate như
+          mọi khối khác trên trang này. Mỗi thẻ ở đây là ĐÚNG 1 video/audio (tự dò đúng tên/
+          ảnh của TỪNG TẬP nếu tập đó nằm trong playlist, không phải tên/ảnh chung của cả
+          playlist — xem resolveRowVideo trong useHomeContent.ts). Chỉ hiện khi có ít nhất 1
+          mục — chưa thích gì thì ẩn hẳn khối này, không hiện trạng thái rỗng (bấm tim là 1
+          hành động TUỲ CHỌN của bé, không phải thứ bố mẹ cần thấy "chưa có" để đi thêm như
+          "Danh sách truyện"). Khối này chỉ để XEM LẠI — bấm vào 1 thẻ là MỞ đúng video/audio đó
+          ra phát thẳng (openFavorite, KHÁC openAny — favoriteVideos không có khái niệm "mở
+          playlist"), muốn bỏ thích thì vào trình phát bấm lại tim ở đó, không có tim riêng
+          ngay trên thẻ ở đây nữa. --- */}
+      {favoriteVideos.length > 0 && (
         <div className="mobile-shelf-block">
           <div className="mobile-shelf-title">
             <Heart size={18} aria-hidden="true" /> Bé thích
           </div>
           <div className="mobile-shelf">
-            {favoriteItems.map((s) => (
-              <MobileContentCard key={s.id} title={s.title} thumbnail={s.thumbnail} onClick={() => openAny(s)} />
+            {favoriteVideos.map((entry) => (
+              <MobileContentCard
+                key={`${entry.row.source_id}:${entry.row.video_ref}`}
+                title={entry.title}
+                thumbnail={entry.thumbnail}
+                onClick={() => openFavorite(entry)}
+              />
             ))}
           </div>
         </div>

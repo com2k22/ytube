@@ -67,12 +67,13 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
   const location = useLocation();
   const isFull = location.pathname === '/player';
 
-  /** "Yêu thích" — bé tự bấm tim, xem useFavorites.ts + supabase/021_favorites.sql. Theo yêu
-      cầu: CHỈ bấm thích được cho TỪNG VIDEO/AUDIO RIÊNG LẺ, NGAY TRONG trình phát này (hàng
-      tiện ích toàn màn hình bên dưới) — không còn nút tim trên thẻ playlist/video ở Trang chủ/
-      Khám phá nữa (bỏ hẳn, xem MobileHomePage.tsx/MobileDiscoverPage.tsx), và KHÔNG được thích
-      cả 1 playlist (dù đang mở playlist đó ra nghe/xem). Xem điều kiện `canFavorite` bên dưới
-      (sau khi có `listTitle` từ engine) để biết cách phân biệt 2 trường hợp. */
+  /** "Yêu thích" — bé tự bấm tim, xem useFavorites.ts + supabase/021_favorites.sql +
+      supabase/022_favorites_video_ref.sql. Bấm thích CHỈ làm được NGAY TRONG trình phát này
+      (hàng tiện ích toàn màn hình bên dưới) — không còn nút tim trên thẻ playlist/video ở
+      Trang chủ/Khám phá nữa (bỏ hẳn, xem MobileHomePage.tsx/MobileDiscoverPage.tsx). Áp dụng
+      cho MỌI video/audio đang phát, KỂ CẢ đang nằm trong 1 playlist, và phân biệt ĐÚNG TỪNG
+      TẬP trong playlist đó (không dính chùm cả playlist) — xem chú thích đầy đủ ở khai báo
+      favSourceId/favVideoRef bên dưới (sau khi có `nowPlaying`/engine). */
   const { activeProfile } = useProfileContext();
   const { isFavorite, toggle: toggleFavorite } = useFavorites(activeProfile?.id ?? null);
 
@@ -112,18 +113,19 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
     setAutoNextIn,
   } = engine;
 
-  /** `listTitle` (từ usePlayerEngine) CHỈ khác null khi nội dung đang phát nằm TRONG 1
-      playlist thật sự (có từ 2 video trở lên — xem cách tính listTitle trong
-      usePlayerEngine.ts: playlistVideos.length > 0). Dùng ngay điều kiện có sẵn này để phân
-      biệt "đang phát 1 video/audio RIÊNG LẺ" (listTitle null — sourceId lúc này CHÍNH LÀ dòng
-      whitelist của đúng 1 video/audio đó, không chia sẻ với ai khác) với "đang phát 1 TẬP bên
-      trong playlist" (listTitle có giá trị — sourceId lúc này là dòng whitelist của CẢ
-      playlist, không phải riêng tập đang xem, nên không hợp lệ để "thích" theo đúng yêu cầu:
-      chỉ thích được video/audio lẻ, không thích được playlist). Nhờ vậy nút tim TỰ ẨN khi bé
-      đang xem 1 tập trong playlist, chỉ hiện khi đang phát video/audio độc lập. */
-  const canFavorite = !listTitle;
-  const favSourceId = canFavorite ? nowPlaying.sourceId : null;
-  const isCurrentFavorite = favSourceId ? isFavorite(favSourceId) : false;
+  /** Bấm thích được cho MỌI video/audio đang phát — kể cả khi đang xem 1 tập nằm TRONG 1
+      playlist, và PHÂN BIỆT ĐÚNG TỪNG TẬP (không còn dính chùm cả playlist như bản trước).
+      `favSourceId` là dòng whitelist của nội dung ĐANG PHÁT (playlist thì đây là dòng của CẢ
+      playlist, dùng chung cho mọi tập); `favVideoRef` mới là thứ phân biệt ĐÚNG tập nào — lấy
+      lại CHÍNH XÁC công thức `currentKey` mà usePlayerEngine dùng để lưu tiến độ xem (xem
+      handleProgress trong usePlayerEngine.ts: kind 'direct' → theo url, ngược lại → theo
+      videoId YouTube) nên bấm tim 1 tập không còn ảnh hưởng gì tới các tập khác cùng
+      playlist. Với video/audio đứng RIÊNG LẺ, favVideoRef vẫn có giá trị (chính videoId/url
+      của nó) dù chỉ có đúng 1 mình source_id cũng đã đủ xác định — không sai gì, chỉ dư ra 1
+      lớp chính xác. */
+  const favSourceId = nowPlaying.sourceId;
+  const favVideoRef = kind === 'direct' ? directUrl : ytVideoId;
+  const isCurrentFavorite = favSourceId && favVideoRef ? isFavorite(favSourceId, favVideoRef) : false;
 
   const [adapter, setAdapter] = useState<MobilePlayerAdapter | null>(null);
   const [paused, setPaused] = useState(false);
@@ -680,13 +682,14 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
             {/* Nút "Yêu thích" — đặt ĐẦU TIÊN trong hàng (góc ngoài cùng bên trái), cùng hàng
                 với nút hẹn giờ ngủ, dùng chung style icon-tròn với các nút còn lại trong hàng
                 này (mobile-player-utility-btn/--active) cho đồng bộ, không cần thêm CSS riêng.
-                CHỈ hiện khi `canFavorite` (đang phát 1 video/audio RIÊNG LẺ, xem chú thích ở
-                khai báo canFavorite/favSourceId phía trên) — tự ẩn hẳn khi đang phát 1 tập bên
-                trong playlist, vì không được phép "thích" cả playlist. */}
-            {favSourceId && (
+                Hiện với MỌI nội dung đang phát (kể cả đang là 1 tập trong playlist, phân biệt
+                đúng từng tập nhờ favVideoRef — xem chú thích ở khai báo phía trên) — chỉ ẩn
+                trong khoảnh khắc chưa xác định được kind/videoId (vừa đổi bài, trước khi engine
+                tính xong), bình thường luôn thấy nút này ngay khi có nội dung phát. */}
+            {favSourceId && favVideoRef && (
               <button
                 className={`mobile-player-utility-btn ${isCurrentFavorite ? 'mobile-player-utility-btn--active' : ''}`}
-                onClick={() => toggleFavorite(favSourceId)}
+                onClick={() => toggleFavorite(favSourceId, favVideoRef)}
                 aria-pressed={isCurrentFavorite}
                 aria-label={isCurrentFavorite ? 'Bỏ yêu thích' : 'Yêu thích'}
               >
