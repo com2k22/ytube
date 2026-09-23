@@ -89,11 +89,16 @@ export function MobileHomePage() {
     ? playable.filter((s) => s.label_ids.includes(phoneOnlyLabelId)).slice(0, RECENT_LIMIT)
     : [];
 
-  /** "Bé thích" — CHỈ lấy trong `playable` (video/playlist phát thẳng được), KHÔNG tính
-      kênh (channels đã có sẵn kệ "Kênh yêu thích" riêng do BỐ MẸ curate — để lẫn 2 khái
-      niệm "yêu thích" khác nhau vào 1 chỗ dễ gây hiểu lầm). Không lọc theo nhãn "Mobile" như
-      2 khối trên — bé thích cái gì trong TOÀN BỘ whitelist của mình cũng đánh dấu được. */
-  const favoriteItems = playable.filter((s) => isFavorite(s.id));
+  /** "Bé thích" — CHỈ lấy VIDEO/AUDIO RIÊNG LẺ (không phải playlist — dùng lại `isListSource`
+      đã có sẵn để loại `youtube_playlist`/`custom_playlist`), và KHÔNG tính kênh (channels đã
+      có sẵn kệ "Kênh yêu thích" riêng do BỐ MẸ curate — để lẫn 2 khái niệm "yêu thích" khác
+      nhau vào 1 chỗ dễ gây hiểu lầm). Đúng theo yêu cầu: bấm thích chỉ áp dụng cho TỪNG video/
+      audio lẻ, không áp dụng cho cả playlist — nên khối "Bé thích" cũng chỉ hiện đúng loại đó,
+      dù trước đây (lúc còn cho bấm thích ở thẻ playlist) có thể đã lỡ lưu vài dòng playlist
+      vào bảng favorites, những dòng đó giờ tự động không hiện ra nữa. Không lọc theo nhãn
+      "Mobile" như 2 khối trên — bé thích cái gì trong TOÀN BỘ whitelist của mình cũng đánh dấu
+      được. */
+  const favoriteItems = playable.filter((s) => !isListSource(s) && isFavorite(s.id));
 
   /** Dải danh mục ngay dưới banner — TOÀN BỘ nhãn thường (không tính 2 nhãn hành vi đặc
       biệt "Ưu tiên"/"Ẩn" và 2 nhãn giới hạn thiết bị "Mobile"/"TV", xem useContentLabels.ts),

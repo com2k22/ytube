@@ -68,18 +68,13 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
   const isFull = location.pathname === '/player';
 
   /** "Yêu thích" — bé tự bấm tim, xem useFavorites.ts + supabase/021_favorites.sql. Theo yêu
-      cầu mới: CHỈ bấm thích được NGAY TRONG trình phát video/audio này (hàng tiện ích toàn
-      màn hình bên dưới) — không còn nút tim trên thẻ playlist/video ở Trang chủ/Khám phá nữa
-      (bỏ hẳn, xem MobileHomePage.tsx/MobileDiscoverPage.tsx). `nowPlaying.sourceId` là đúng
-      dòng whitelist của nội dung ĐANG PHÁT — CÙNG giá trị `sourceId` mà usePlayerEngine dùng
-      để lưu tiến độ xem (xem handleProgress trong usePlayerEngine.ts), nên khi đang phát 1
-      tập nằm TRONG playlist thì tim này đánh dấu cho CẢ playlist đó (không có id riêng cho
-      từng tập bên trong 1 playlist) — đúng ý "không cho bấm thích ở [từng mục của] playlist"
-      khi duyệt danh sách, còn ở đây là bấm thích cho đúng NỘI DUNG đang mở ra nghe/xem. */
+      cầu: CHỈ bấm thích được cho TỪNG VIDEO/AUDIO RIÊNG LẺ, NGAY TRONG trình phát này (hàng
+      tiện ích toàn màn hình bên dưới) — không còn nút tim trên thẻ playlist/video ở Trang chủ/
+      Khám phá nữa (bỏ hẳn, xem MobileHomePage.tsx/MobileDiscoverPage.tsx), và KHÔNG được thích
+      cả 1 playlist (dù đang mở playlist đó ra nghe/xem). Xem điều kiện `canFavorite` bên dưới
+      (sau khi có `listTitle` từ engine) để biết cách phân biệt 2 trường hợp. */
   const { activeProfile } = useProfileContext();
   const { isFavorite, toggle: toggleFavorite } = useFavorites(activeProfile?.id ?? null);
-  const favSourceId = nowPlaying.sourceId;
-  const isCurrentFavorite = favSourceId ? isFavorite(favSourceId) : false;
 
   /** 'off' → 'all' (lặp lại cả danh sách, hết bài cuối quay lại bài đầu) → 'one' (lặp lại
       ĐÚNG 1 bài đang phát, không tự chuyển bài) → về lại 'off', bấm nút Lặp lại (icon
@@ -116,6 +111,19 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
     autoNextIn,
     setAutoNextIn,
   } = engine;
+
+  /** `listTitle` (từ usePlayerEngine) CHỈ khác null khi nội dung đang phát nằm TRONG 1
+      playlist thật sự (có từ 2 video trở lên — xem cách tính listTitle trong
+      usePlayerEngine.ts: playlistVideos.length > 0). Dùng ngay điều kiện có sẵn này để phân
+      biệt "đang phát 1 video/audio RIÊNG LẺ" (listTitle null — sourceId lúc này CHÍNH LÀ dòng
+      whitelist của đúng 1 video/audio đó, không chia sẻ với ai khác) với "đang phát 1 TẬP bên
+      trong playlist" (listTitle có giá trị — sourceId lúc này là dòng whitelist của CẢ
+      playlist, không phải riêng tập đang xem, nên không hợp lệ để "thích" theo đúng yêu cầu:
+      chỉ thích được video/audio lẻ, không thích được playlist). Nhờ vậy nút tim TỰ ẨN khi bé
+      đang xem 1 tập trong playlist, chỉ hiện khi đang phát video/audio độc lập. */
+  const canFavorite = !listTitle;
+  const favSourceId = canFavorite ? nowPlaying.sourceId : null;
+  const isCurrentFavorite = favSourceId ? isFavorite(favSourceId) : false;
 
   const [adapter, setAdapter] = useState<MobilePlayerAdapter | null>(null);
   const [paused, setPaused] = useState(false);
@@ -672,8 +680,9 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
             {/* Nút "Yêu thích" — đặt ĐẦU TIÊN trong hàng (góc ngoài cùng bên trái), cùng hàng
                 với nút hẹn giờ ngủ, dùng chung style icon-tròn với các nút còn lại trong hàng
                 này (mobile-player-utility-btn/--active) cho đồng bộ, không cần thêm CSS riêng.
-                Chỉ ẩn đi khi vì lý do nào đó chưa có sourceId (vd mở thẳng 1 link không qua
-                whitelist) — bình thường luôn có, không hiện thiếu tim. */}
+                CHỈ hiện khi `canFavorite` (đang phát 1 video/audio RIÊNG LẺ, xem chú thích ở
+                khai báo canFavorite/favSourceId phía trên) — tự ẩn hẳn khi đang phát 1 tập bên
+                trong playlist, vì không được phép "thích" cả playlist. */}
             {favSourceId && (
               <button
                 className={`mobile-player-utility-btn ${isCurrentFavorite ? 'mobile-player-utility-btn--active' : ''}`}
