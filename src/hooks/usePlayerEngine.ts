@@ -149,7 +149,21 @@ export function usePlayerEngine({
           videoId: it.videoId,
           title: it.title,
           thumbnail: it.thumbnail,
-          sourceType: 'custom_playlist' as const,
+          // LỖI ĐÃ SỬA: playlist tự tạo có thể ghép TỪ "Nhập cả thư mục tổng" Google Drive, nên
+          // 1 tập bên trong có thể là link trực tiếp (it.kind === 'direct', videoId của nó
+          // CHÍNH LÀ url — xem CustomPlaylistItem trong types/index.ts), không phải videoId
+          // YouTube thật. Trước đây LUÔN gắn cứng sourceType 'custom_playlist' cho mọi tập —
+          // goToVideo() bên dưới đọc sourceType để quyết định gửi tập tiếp theo qua `videoId`
+          // hay `directUrl`, mà chỉ nhận diện đúng kiểu 'direct_url', nên 1 tập 'direct' bị
+          // gửi NHẦM qua `videoId` (giá trị thật ra là 1 url) — bé bấm "video tiếp theo"/chọn
+          // trong danh sách "bấm Xuống để xem" hoặc trong khay danh sách của trình phát điện
+          // thoại (mobile-player-queue-sheet) trúng đúng tập đó thì trình phát cố mở url ấy
+          // bằng YouTube IFrame Player (SafeYouTubePlayer), đứng mãi ở "Đang tải", không bao
+          // giờ phát được lẫn không báo lỗi gì. Sửa ĐÚNG như usePlaylistVideos.ts đã làm (dùng
+          // CHUNG quy ước it.kind === 'direct' — xem chú thích ở đó), để "video kế
+          // tiếp"/"trước" và khay danh sách trong trình phát luôn phát đúng, y hệt cách phát
+          // trực tiếp từ trang chi tiết playlist (PlaylistVideosView.tsx).
+          sourceType: it.kind === 'direct' ? ('direct_url' as const) : ('custom_playlist' as const),
         }))
       );
       return;
@@ -213,8 +227,18 @@ export function usePlayerEngine({
 
   /**
    * "Video lẻ khác" — dùng khi đang xem 1 video KHÔNG nằm trong playlist nào (playlistVideos
-   * rỗng). Lọc & khử trùng THEO ĐÚNG logic "Video đề xuất" ở HomePage.tsx: 1 video YouTube lẻ
-   * đã được ghép sẵn vào 1 playlist tự tạo nào đó thì không tính là "lẻ" nữa.
+   * rỗng). Lọc & khử trùng THEO ĐÚNG logic "Video đề xuất" ở useHomeContent.ts (recommendedVideos):
+   * 1 video YouTube lẻ đã được ghép sẵn vào 1 playlist tự tạo nào đó thì không tính là "lẻ"
+   * nữa.
+   *
+   * LỖI ĐÃ SỬA: trước đây chỉ nhận `s.type === 'direct_url'`, THIẾU `'gdrive_folder'` — 2 loại
+   * này đều là "1 video/audio phát thẳng" (khác `custom_playlist`/`youtube_playlist` là danh
+   * sách nhiều tập), chỉ khác nguồn gốc URL lấy từ đâu, và `recommendedVideos` ở
+   * useHomeContent.ts vốn đã tính GỘP CẢ 2 loại (`s.type === 'direct_url' || s.type ===
+   * 'gdrive_folder'`). Thiếu `gdrive_folder` ở đây khiến bé đang xem 1 video Drive lẻ, bấm mở
+   * danh sách "video lẻ khác" (khay danh sách trong trình phát điện thoại/bảng "bấm Xuống để
+   * xem" trên TV) thì MỌI video Drive lẻ khác trong whitelist đều biến mất khỏi danh sách đó —
+   * không phát sai, chỉ là thiếu mục, nhưng vẫn là lệch dữ liệu so với đúng whitelist.
    */
   const looseVideos = useMemo<ResolvedVideo[]>(() => {
     const idsInCustomPlaylists = new Set(
@@ -222,7 +246,7 @@ export function usePlayerEngine({
     );
     return allSources
       .filter((s) => {
-        if (s.type === 'direct_url') return true;
+        if (s.type === 'direct_url' || s.type === 'gdrive_folder') return true;
         if (s.type === 'youtube_video') {
           const vid = extractVideoId(s.url);
           return !vid || !idsInCustomPlaylists.has(vid);
@@ -230,8 +254,13 @@ export function usePlayerEngine({
         return false;
       })
       .map((s): ResolvedVideo | null => {
-        if (s.type === 'direct_url') {
-          return { videoId: s.url, title: s.title, thumbnail: s.thumbnail, sourceType: s.type, sourceId: s.id };
+        if (s.type === 'direct_url' || s.type === 'gdrive_folder') {
+          // sourceType: 'direct_url' (không phải s.type thật, có thể là 'gdrive_folder') — vì
+          // đây là trường DUY NHẤT mà goToVideo()/PlaylistVideosView dùng để biết "video này
+          // phát qua directUrl", xem chú thích ở goToVideo bên dưới. Chuẩn hoá về 1 giá trị cho
+          // MỌI nguồn "1 video/audio phát thẳng bằng link trực tiếp", bất kể lưu trong cột
+          // allowed_sources.type là 'direct_url' hay 'gdrive_folder'.
+          return { videoId: s.url, title: s.title, thumbnail: s.thumbnail, sourceType: 'direct_url', sourceId: s.id };
         }
         const vid = extractVideoId(s.url);
         if (!vid) return null;

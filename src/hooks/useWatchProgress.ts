@@ -40,25 +40,50 @@ export function useWatchProgress(profileId: string | null) {
     refresh();
   }, [refresh]);
 
-  /** positionSeconds — vị trí xem dở tính bằng giây, để lần sau tua trình phát tới đúng
-      chỗ (xem supabase/016_watch_progress_position.sql). */
+  /**
+   * positionSeconds — vị trí xem dở tính bằng giây, để lần sau tua trình phát tới đúng chỗ
+   * (xem supabase/016_watch_progress_position.sql). Hàm này được gọi RẤT THƯỜNG XUYÊN trong
+   * lúc đang phát (xem handleProgress trong usePlayerEngine.ts, và nhịp báo tiến độ đã throttle
+   * còn 1 lần/5 giây ở DirectVideoPlayer.tsx/SafeYouTubePlayer.tsx) — QUAN TRỌNG cho hiệu năng.
+   *
+   * LỖI HIỆU NĂNG ĐÃ SỬA: trước đây upsert xong lại gọi `refresh()` — tải lại TOÀN BỘ bảng
+   * watch_progress của hồ sơ này qua mạng — nghĩa là MỖI lần lưu tiến độ tốn tới 2 yêu cầu mạng
+   * (ghi + đọc lại tất cả) thay vì đúng 1. Dữ liệu vừa upsert thành công CHÍNH LÀ dữ liệu mới
+   * nhất rồi, không cần hỏi lại Supabase thêm 1 lượt nữa — cập nhật thẳng vào `rows` (lạc quan)
+   * là đủ, y hệt cách useFavorites.ts đang làm.
+   */
   const saveProgress = async (sourceId: string, videoRef: string, percent: number, positionSeconds: number) => {
     if (!profileId) return;
-    const { error } = await supabase
-      .from('watch_progress')
-      .upsert(
-        {
-          profile_id: profileId,
-          source_id: sourceId,
-          video_ref: videoRef,
-          progress_percent: Math.max(0, Math.min(100, Math.round(percent))),
-          position_seconds: Math.max(0, Math.round(positionSeconds)),
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'profile_id,source_id,video_ref' }
-      );
-    if (error) console.error('[Ytube] Không lưu được tiến độ xem:', error.message);
-    else refresh();
+    const progress_percent = Math.max(0, Math.min(100, Math.round(percent)));
+    const position_seconds = Math.max(0, Math.round(positionSeconds));
+    const updated_at = new Date().toISOString();
+    const { error } = await supabase.from('watch_progress').upsert(
+      {
+        profile_id: profileId,
+        source_id: sourceId,
+        video_ref: videoRef,
+        progress_percent,
+        position_seconds,
+        updated_at,
+      },
+      { onConflict: 'profile_id,source_id,video_ref' }
+    );
+    if (error) {
+      console.error('[Ytube] Không lưu được tiến độ xem:', error.message);
+      return;
+    }
+    setRows((prev) => {
+      const idx = prev.findIndex((r) => r.source_id === sourceId && r.video_ref === videoRef);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = { ...next[idx], progress_percent, position_seconds, updated_at };
+        return next;
+      }
+      return [
+        ...prev,
+        { id: `temp-${sourceId}-${videoRef}`, profile_id: profileId, source_id: sourceId, video_ref: videoRef, progress_percent, position_seconds, updated_at },
+      ];
+    });
   };
 
   /** Tóm tắt tiến độ của cả 1 playlist: có đang xem dở không, % và số giây của video xem dở

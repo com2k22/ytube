@@ -162,6 +162,18 @@ export function useHomeContent() {
       if (item) {
         title = item.title;
         thumbnail = item.thumbnail;
+        // LỖI ĐÃ SỬA: playlist tự tạo (custom_playlist) có thể ghép TỪ "Nhập cả thư mục tổng"
+        // Google Drive, nên 1 tập bên trong có thể là link trực tiếp (item.kind === 'direct',
+        // videoId của nó CHÍNH LÀ url — xem CustomPlaylistItem trong types/index.ts), không
+        // phải videoId YouTube thật. Thiếu dòng này thì directUrlParam luôn ở lại null cho MỌI
+        // tập trong custom_playlist, kể cả tập 'direct' — buildFavoritePlayerParams/
+        // buildContinuingPlayerParams bên dưới khi đó gán nhầm `videoId: entry.videoParam`
+        // (thật ra là 1 url) thay vì `directUrl`, khiến trình phát cố mở url đó bằng YouTube
+        // IFrame Player (SafeYouTubePlayer) — videoId không hợp lệ nên đứng mãi ở "Đang tải",
+        // không bao giờ phát được lẫn không báo lỗi. ĐÚNG như cách usePlaylistVideos.ts đã làm
+        // (dùng CHUNG quy ước it.kind === 'direct' — xem chú thích ở đó) để "Bé thích"/"Tiếp
+        // tục xem" phát đúng y hệt cách phát trực tiếp từ trang chi tiết playlist.
+        if (item.kind === 'direct') directUrlParam = item.videoId;
       }
     } else if (source.type === 'youtube_playlist') {
       playlistId = extractPlaylistId(source.url);

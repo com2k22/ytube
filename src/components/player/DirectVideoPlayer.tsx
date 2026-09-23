@@ -125,6 +125,11 @@ export function DirectVideoPlayer({
     // true = ĐÃ thử quay lại gọi thẳng nguồn gốc (bỏ qua trạm trung chuyển) cho đúng url hiện
     // tại — chỉ thử lại ĐÚNG 1 LẦN, tránh lặp mãi nếu cả 2 cách đều lỗi thật (link hỏng...).
     let usedFallback = false;
+    // Lần gần nhất ĐÃ BÁO tiến độ ra ngoài (mốc thời gian thật, mili-giây) — xem onTimeUpdate
+    // bên dưới. Khai NGAY TRONG closure của effect này (không phải 1 ref riêng) nên tự đặt lại
+    // về 0 mỗi khi effect chạy lại (đổi sang url khác) — đúng ý muốn: video MỚI được báo ngay
+    // lần đầu, không bị "nhớ nhầm" mốc giờ của video TRƯỚC.
+    let lastProgressReportedAt = 0;
 
     /** Gán nguồn phát cho thẻ <video> — tách riêng thành hàm vì cần gọi lại LẦN 2 nếu trạm
         trung chuyển lỗi (xem onVideoError bên dưới): lỡ trạm trung chuyển CHƯA cấu hình xong
@@ -202,8 +207,23 @@ export function DirectVideoPlayer({
       setLoadError(msg);
     };
 
+    // LỖI HIỆU NĂNG ĐÃ SỬA: sự kiện 'timeupdate' của thẻ <video> nổ ra RẤT DỒN DẬP (trình duyệt
+    // tự bắn khoảng 4 lần/giây theo chuẩn HTML, không phải do app tự hẹn giờ) — trước đây gọi
+    // thẳng `onProgress` ở MỌI lần, mà `onProgress` (handleProgress trong usePlayerEngine.ts)
+    // lại gọi tới 2 yêu cầu mạng lên Supabase mỗi lần (heartbeat phiên xem + lưu tiến độ xem),
+    // nên MỌI giây phát 1 video/audio Google Drive/Dropbox tốn hàng chục yêu cầu mạng/phút một
+    // cách vô ích — tốn dữ liệu di động của gia đình (nghịch với chính mục đích tính năng "Tải
+    // xuống nghe offline"), tốn pin, tốn hạn mức Supabase. Chỉ THẬT SỰ báo ra ngoài MỖI 5 GIÂY
+    // THẬT — GIỐNG HỆT nhịp của SafeYouTubePlayer.tsx (setInterval 5000ms ở đó) — để 2 loại nội
+    // dung tốn chi phí mạng NGANG NHAU. Sự kiện "kết thúc video" (onEndedHandler bên dưới) vẫn
+    // LUÔN báo ngay lập tức, không bị chặn bởi mốc 5 giây này — đó là 1 lần bắn duy nhất, không
+    // phải nhịp lặp lại cần throttle.
     const onTimeUpdate = () => {
-      if (video.duration > 0) onProgress?.((video.currentTime / video.duration) * 100, video.currentTime);
+      if (video.duration <= 0) return;
+      const now = Date.now();
+      if (now - lastProgressReportedAt < 5000) return;
+      lastProgressReportedAt = now;
+      onProgress?.((video.currentTime / video.duration) * 100, video.currentTime);
     };
     const onEndedHandler = () => {
       onProgress?.(100, 0);
