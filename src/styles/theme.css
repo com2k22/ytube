@@ -2239,6 +2239,20 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
   :root:not([data-theme]) .mobile-player-utility-btn--active { background: #7c9cff; color: #0e0f13; }
   [data-theme='chibi'] .mobile-player-utility-btn--active { background: #ff5c9e; color: #fff; }
 
+  /* Icon xoay tròn của nút "Tải xuống nghe offline" lúc đang tải (MobilePlayerHost.tsx) — dùng
+     lại ĐÚNG @keyframes player-loading-spin đã có sẵn cho vòng tròn "Đang tải..." của trình
+     phát (xem phía trên file này), không tạo thêm 1 @keyframes trùng ý nghĩa. */
+  .mobile-player-download-spin { animation: player-loading-spin 0.85s linear infinite; }
+
+  /* Thông báo lỗi tải offline (MobilePlayerHost.tsx) — CÙNG BỐ CỤC căn giữa/cỡ chữ nhỏ với
+     .mobile-player-sleep-note ngay dưới đây, nhưng đổi màu sang tông CẢNH BÁO (khác với chữ
+     mờ trung tính của sleep-note) vì đây là LỖI THẬT (link hỏng/mất mạng...), không phải 1
+     thông tin trung lập như "sẽ tạm dừng sau X phút". */
+  .mobile-player-download-error {
+    text-align: center; font-size: 11.5px; margin-top: 10px; line-height: 1.4;
+    color: #ff8a65;
+  }
+
   .mobile-player-sleep-wrap { position: relative; }
   .mobile-player-sleep-menu {
     position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
@@ -2559,6 +2573,18 @@ input[data-region='pblock'] { padding: 10px 12px; border-radius: 10px; font-size
   .mobile-story-item-progress-fill { height: 100%; background: #7c9cff; }
   [data-theme='chibi'] .mobile-story-item-progress-fill { background: #ff5c9e; }
   .mobile-story-item-play { flex: 0 0 auto; opacity: 0.5; }
+
+  /* --- Tab "Tải xuống" (MobileDownloadsPage.tsx) — DÙNG LẠI .mobile-story-item* ở trên cho
+     từng hàng (đồng bộ bố cục với "Gần đây"), chỉ thêm phần dung lượng file (dưới tên) và nút
+     xoá riêng cho tab này. --- */
+  .mobile-story-item-size { font-size: 11.5px; opacity: 0.55; margin-top: 2px; }
+  .mobile-downloads-summary { font-size: 12.5px; opacity: 0.6; margin: 0 0 14px; }
+  /* Nút xoá — DÙNG LẠI đúng kiểu icon-tròn của .favorite-heart-btn (xem chú thích ở luật đó
+     phía trên) nhưng KHÔNG đè absolute lên góc ảnh (chỉ 2 luật con .mobile-content-thumb/
+     .mobile-discover-item-thumb mới bật absolute, tab này không dùng), nên đứng THƯỜNG cuối
+     hàng flex của .mobile-story-item — chỉ cần flex-shrink: 0 (đã có sẵn trong .favorite-
+     heart-btn) là đủ, không cần luật riêng gì thêm ngoài đặt tên lớp cho rõ ngữ cảnh. */
+  .mobile-downloads-delete { background: rgba(255, 77, 109, 0.14); color: #ff4d6d; }
 
   /* --- Khu vực Bố mẹ trên điện thoại — trang "mục lục" (MobileParentDashboard.tsx) liệt
      kê 4 mục dạng danh sách, bấm vào mục nào mở TRANG RIÊNG của mục đó (MobileParentTimePage/

@@ -6,11 +6,19 @@ import { PlayerControlBar } from './PlayerControlBar';
 import { PlayerPlaylistDrawer } from './PlayerPlaylistDrawer';
 import { WatchCountdownBadge } from './WatchCountdownBadge';
 import type { ResolvedVideo } from '@/types';
-// toPlayableUrl (bí danh của toGdriveProxyUrl) — link Google Drive thì đổi sang gọi qua
-// "/api/gdrive-file" (trạm trung chuyển máy chủ, xem googleDrive.ts + api/gdrive-file.js)
-// NGAY LÚC PHÁT, không phải link Google Drive thì giữ nguyên. Dùng CHUNG đúng 1 hàm này với
-// useAllowedSources.ts/useSourceById.ts (áp cho ảnh bìa) — tránh viết trùng 2 nơi rồi lệch.
-import { toGdriveProxyUrl as toPlayableUrl } from '@/lib/googleDrive';
+// toPlayableUrl (bí danh của resolvePlayableUrl) — quyết định ĐÚNG 1 NƠI DUY NHẤT link nào sẽ
+// thật sự được gọi để phát: Google Drive → trạm trung chuyển Drive (/api/gdrive-file, xem
+// googleDrive.ts); mọi link trực tiếp KHÁC (Dropbox, mp4/m3u8 tự host...) → trạm trung chuyển
+// chung (/api/proxy-download, xem directProxy.ts + api/proxy-download.js) — NÂNG CẤP so với bản
+// trước đây (chỉ đổi mỗi link Drive): giờ đây MỌI link trực tiếp đều đi qua chính máy chủ app,
+// không gọi thẳng ra ngoài nữa. Lý do bắt buộc: tính năng "Tải xuống nghe offline" phải fetch()
+// trọn vẹn bytes để lưu cache — nhiều máy chủ ngoài (VD Dropbox) không cho phép trang khác gốc
+// đọc kiểu đó (luật CORS), đi qua gốc của chính app thì không còn vướng luật này nữa. QUAN
+// TRỌNG: hàm resolvePlayableUrl() này PHẢI dùng CHUNG với lúc TẢI OFFLINE (useOfflineDownloads.
+// ts) — 2 nơi tính khác nhau thì link tải và link phát thật sẽ lệch nhau, Service Worker
+// (public/sw.js) sẽ không tìm thấy đúng bản đã tải trong cache lúc mất mạng, xem chú thích đầy
+// đủ trong directProxy.ts.
+import { resolvePlayableUrl as toPlayableUrl } from '@/lib/directProxy';
 
 interface Props {
   url: string;
@@ -114,15 +122,15 @@ export function DirectVideoPlayer({
 
     setLoading(true);
     setLoadError(null);
-    // true = ĐÃ thử quay lại gọi thẳng Google (bỏ qua trạm trung chuyển) cho đúng url hiện
+    // true = ĐÃ thử quay lại gọi thẳng nguồn gốc (bỏ qua trạm trung chuyển) cho đúng url hiện
     // tại — chỉ thử lại ĐÚNG 1 LẦN, tránh lặp mãi nếu cả 2 cách đều lỗi thật (link hỏng...).
     let usedFallback = false;
 
     /** Gán nguồn phát cho thẻ <video> — tách riêng thành hàm vì cần gọi lại LẦN 2 nếu trạm
-        trung chuyển Google Drive lỗi (xem onVideoError bên dưới): lỡ trạm trung chuyển CHƯA
-        cấu hình xong (thiếu GDRIVE_SERVICE_ACCOUNT_JSON trên Vercel) hoặc đang lỗi tạm thời,
-        thì tự động quay về gọi thẳng bằng API key như cách cũ — không để nội dung Google
-        Drive đứng hẳn chỉ vì bước nâng cấp trạm trung chuyển chưa hoàn tất phía anh. */
+        trung chuyển lỗi (xem onVideoError bên dưới): lỡ trạm trung chuyển CHƯA cấu hình xong
+        (thiếu GDRIVE_SERVICE_ACCOUNT_JSON trên Vercel, hoặc /api/proxy-download đang lỗi tạm
+        thời) thì tự động quay về gọi thẳng như cách cũ — không để nội dung đứng hẳn chỉ vì
+        bước nâng cấp trạm trung chuyển chưa hoàn tất phía anh. */
     const applySrc = (src: string) => {
       const isHls = src.toLowerCase().includes('.m3u8');
       if (isHls && !video.canPlayType('application/vnd.apple.mpegurl') && Hls.isSupported()) {

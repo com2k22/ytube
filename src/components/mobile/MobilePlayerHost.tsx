@@ -18,12 +18,16 @@ import {
   Video as VideoIcon,
   ListMusic,
   Heart,
+  Download,
+  Check,
+  Loader2,
 } from 'lucide-react';
 import { useMobilePlayback } from '@/context/MobilePlaybackContext';
 import { useProfileContext } from '@/context/ProfileContext';
 import { usePlayerEngine, type PlayerEngineParams } from '@/hooks/usePlayerEngine';
 import { useSleepTimer, type SleepTimerOption } from '@/hooks/useSleepTimer';
 import { useFavorites } from '@/hooks/useFavorites';
+import { useOfflineDownloads } from '@/hooks/useOfflineDownloads';
 import type { MobilePlayerAdapter } from '@/hooks/useTvPlayerControls';
 import { SafeYouTubePlayer } from '@/components/player/SafeYouTubePlayer';
 import { DirectVideoPlayer } from '@/components/player/DirectVideoPlayer';
@@ -126,6 +130,45 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
   const favSourceId = nowPlaying.sourceId;
   const favVideoRef = kind === 'direct' ? directUrl : ytVideoId;
   const isCurrentFavorite = favSourceId && favVideoRef ? isFavorite(favSourceId, favVideoRef) : false;
+
+  /** "Tải xuống nghe offline" — CHỈ áp dụng cho nội dung 'direct' (link trực tiếp/Google
+      Drive) — KHÔNG BAO GIỜ cho video YouTube (không có hạ tầng tải YouTube hợp lệ, giữ đúng
+      nguyên tắc "không giả vờ hỗ trợ offline" đã áp dụng từ trước cho MobileDownloadsPage.tsx).
+      Đặt NGAY CẠNH nút tim trong hàng tiện ích (theo đúng yêu cầu: "Đặt trong trình phát,
+      tương tự như nút tim"), dùng lại CHÍNH `favSourceId`/`directUrl` (không phải favVideoRef
+      chung — với 'direct' 2 giá trị này giống hệt nhau, nhưng viết rõ theo đúng field mà
+      useOfflineDownloads.ts cần, xem khai báo OfflineDownloadEntry) để phân biệt đúng từng
+      tập trong playlist y hệt cơ chế yêu thích, không tải trùng/xoá nhầm tập khác. Cho phép
+      tải trên BẤT KỲ MẠNG NÀO (không giới hạn chỉ Wi-Fi) — theo đúng lựa chọn của anh. */
+  const {
+    supported: downloadSupported,
+    isDownloaded,
+    progressFor,
+    errorFor,
+    startDownload,
+    removeDownload,
+    clearError,
+  } = useOfflineDownloads();
+  const canDownloadCurrent = kind === 'direct' && !!favSourceId && !!directUrl;
+  const isCurrentDownloaded = canDownloadCurrent ? isDownloaded(favSourceId!, directUrl!) : false;
+  const currentDownloadProgress = canDownloadCurrent ? progressFor(favSourceId!, directUrl!) : null;
+  const currentDownloadError = canDownloadCurrent ? errorFor(favSourceId!, directUrl!) : null;
+  const handleDownloadPress = () => {
+    if (!canDownloadCurrent || !favSourceId || !directUrl) return;
+    if (isCurrentDownloaded) {
+      removeDownload(favSourceId, directUrl);
+      return;
+    }
+    if (currentDownloadProgress !== null) return; // đang tải dở — bấm thêm không có tác dụng
+    if (currentDownloadError) clearError(favSourceId, directUrl);
+    startDownload({
+      sourceId: favSourceId,
+      url: directUrl,
+      title,
+      thumbnail: artUrl ?? null,
+      playlistId: nowPlaying.playlistId,
+    });
+  };
 
   const [adapter, setAdapter] = useState<MobilePlayerAdapter | null>(null);
   const [paused, setPaused] = useState(false);
@@ -696,6 +739,41 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
                 <Heart size={18} fill={isCurrentFavorite ? 'currentColor' : 'none'} />
               </button>
             )}
+            {/* Nút "Tải xuống nghe offline" — đứng NGAY CẠNH nút tim (yêu cầu: "tương tự như
+                nút tim"), CHỈ hiện cho nội dung 'direct' (Google Drive/Dropbox/link trực tiếp)
+                khi trình duyệt/hoàn cảnh hiện tại THẬT SỰ hỗ trợ (downloadSupported — false thì
+                ẩn hẳn, không hiện ra rồi bấm mới báo lỗi, xem isOfflineDownloadSupported() ở
+                offlineCache.ts). 3 trạng thái: chưa tải (icon Download, bấm để tải) → đang tải
+                (icon xoay tròn + % thật nếu máy chủ có báo kích thước file, xem downloadAndCache
+                ở offlineCache.ts) → đã tải (icon Check, sáng như nút tim đang bật, bấm để XOÁ). */}
+            {canDownloadCurrent && downloadSupported && (
+              <button
+                className={`mobile-player-utility-btn ${isCurrentDownloaded ? 'mobile-player-utility-btn--active' : ''}`}
+                onClick={handleDownloadPress}
+                disabled={currentDownloadProgress !== null}
+                aria-pressed={isCurrentDownloaded}
+                aria-label={
+                  isCurrentDownloaded
+                    ? 'Đã tải xuống — bấm để xoá'
+                    : currentDownloadProgress !== null
+                      ? 'Đang tải xuống'
+                      : 'Tải xuống nghe offline'
+                }
+              >
+                {currentDownloadProgress !== null ? (
+                  <>
+                    <Loader2 size={18} className="mobile-player-download-spin" />
+                    {currentDownloadProgress !== null && Math.round(currentDownloadProgress) > 0 && (
+                      <span>{Math.round(currentDownloadProgress)}%</span>
+                    )}
+                  </>
+                ) : isCurrentDownloaded ? (
+                  <Check size={18} />
+                ) : (
+                  <Download size={18} />
+                )}
+              </button>
+            )}
             <button className="mobile-player-utility-btn" onClick={cycleSpeed} aria-label="Tốc độ phát">
               <Gauge size={16} /> {SPEEDS[speedIndex]}x
             </button>
@@ -752,6 +830,11 @@ function MobilePlayerHostActive({ nowPlaying }: { nowPlaying: PlayerEngineParams
           {sleepExpiresAt && sleepOption !== 'off' && sleepOption !== 'end_of_video' && (
             <div className="mobile-player-sleep-note">Sẽ tạm dừng sau {sleepLabel[sleepOption]}</div>
           )}
+
+          {/* Lỗi tải offline THẬT (không giả vờ thành công) — xem downloadAndCache() ở
+              offlineCache.ts: mọi lỗi mạng/máy chủ đều hiện đúng lý do ở đây, tự mất khi bấm
+              tải lại (clearError trong handleDownloadPress) hoặc đổi sang bài khác. */}
+          {currentDownloadError && <div className="mobile-player-download-error">⚠️ {currentDownloadError}</div>}
 
           {autoNextIn !== null && nextVideo && (
             <div className="mobile-player-autonext">
