@@ -105,6 +105,27 @@ export function DirectVideoPlayer({
       này đều hiện y hệt "đang tải" mãi mãi, không biết là đang tải chậm hay đã lỗi hẳn. */
   const [loadError, setLoadError] = useState<string | null>(null);
 
+  // LỖI ĐÃ SỬA (video/audio không tự chuyển bài kế tiếp khi playlist còn nhiều bài): effect
+  // bên dưới (phụ thuộc mỗi `[url]`) chỉ chạy lại khi ĐỔI SANG url khác — nó "chụp" (đóng gói
+  // trong closure) đúng giá trị của onProgress/onEnded/onHasVideoChange TẠI THỜI ĐIỂM effect
+  // đó chạy, rồi giữ nguyên y vậy cho đến khi url đổi. Trước đây các hàm này đọc THẲNG từ tham
+  // số component (không qua ref) — với video ĐẦU TIÊN của 1 playlist, lúc effect chạy thì
+  // playlistVideos trong usePlayerEngine.ts thường CHƯA tải xong (source.items/fetchPlaylistItems
+  // chạy sau 1 nhịp render), nên "video kế tiếp" lúc đó vẫn là null → hàm handleEnded được
+  // "chụp" vào closure lúc đó CŨNG mang theo nextVideo = null mãi mãi cho tới khi url đổi —
+  // dù ngay sau đó (1 nhịp render nữa) playlistVideos tải xong và nextVideo đã có giá trị
+  // đúng, callback cũ vẫn không hề biết, nên khi video phát hết thì không tự chuyển bài dù
+  // playlist còn video khác. Cách sửa — dùng "ref" (SafeYouTubePlayer.tsx đã làm y hệt cho
+  // onProgress/onEnded): gán lại `.current` ở MỖI LẦN RENDER (không phải trong effect), rồi
+  // bên trong effect gọi qua `.current` — nhờ vậy dù effect không chạy lại, lúc sự kiện thật
+  // sự xảy ra (video kết thúc) vẫn luôn gọi đúng hàm handleEnded MỚI NHẤT, biết đúng nextVideo.
+  const onProgressRef = useRef(onProgress);
+  const onEndedRef = useRef(onEnded);
+  const onHasVideoChangeRef = useRef(onHasVideoChange);
+  onProgressRef.current = onProgress;
+  onEndedRef.current = onEnded;
+  onHasVideoChangeRef.current = onHasVideoChange;
+
   // Bấm vào 1 video trong playlist → vào toàn màn hình ngay (càng gần cử chỉ bấm của
   // người dùng càng ít khả năng bị trình duyệt chặn quyền toàn màn hình).
   useEffect(() => {
@@ -149,17 +170,26 @@ export function DirectVideoPlayer({
       }
     };
 
-    applySrc(toPlayableUrl(url));
-
     // Trình duyệt luôn cho phép tự phát nếu video đang TẮT TIẾNG — nên chủ động tắt tiếng
     // rồi tự gọi play() (đáng tin cậy hơn nhiều so với chỉ dựa vào thuộc tính autoPlay, vốn
     // hay bị chặn khi phát có tiếng). Tự bật lại tiếng ngay khi video thật sự bắt đầu chạy.
-    if (autoplay) {
+    // Tách thành hàm riêng vì phải gọi LẦN 2 khi rơi vào nhánh dự phòng của onVideoError bên
+    // dưới (xem chú thích ở đó) — trước đây chỉ gọi play() đúng 1 lần duy nhất ngay tại đây,
+    // nên nếu link vừa gán (qua trạm trung chuyển) bị lỗi/timeout — dễ gặp hơn với video/audio
+    // vốn đã tải lâu hơn bình thường (mạng yếu, file nặng) — code tự chuyển sang gọi thẳng link
+    // gốc NHƯNG KHÔNG gọi lại play(), nên video nằm im chờ đủ dữ liệu rồi ĐỨNG YÊN ở khung hình
+    // đầu, không tự chạy — bé/bố mẹ phải tự bấm nút Play mới phát được.
+    const tryAutoplay = () => {
+      if (!autoplay) return;
       video.muted = true;
       video.play().catch(() => {
         /* vẫn có thể bị chặn trên 1 số trình duyệt/TV — bé bấm nút play trên player là được */
       });
-    }
+    };
+
+    applySrc(toPlayableUrl(url));
+    tryAutoplay();
+
     /** Tắt sẵn mọi phụ đề đi kèm video (nếu có) — mặc định app không hiện phụ đề. */
     const hideTextTracks = () => {
       const tracks = video.textTracks;
@@ -185,6 +215,10 @@ export function DirectVideoPlayer({
         usedFallback = true;
         setLoading(true);
         applySrc(url);
+        // LỖI ĐÃ SỬA — xem chú thích đầy đủ ở khai báo tryAutoplay(): thiếu dòng này khiến
+        // video/audio rơi vào nhánh dự phòng (bỏ qua trạm trung chuyển) thì không tự phát nữa,
+        // đứng yên chờ bé/bố mẹ bấm Play bằng tay dù autoplay đang bật.
+        tryAutoplay();
         return;
       }
       setLoading(false);
@@ -223,18 +257,18 @@ export function DirectVideoPlayer({
       const now = Date.now();
       if (now - lastProgressReportedAt < 5000) return;
       lastProgressReportedAt = now;
-      onProgress?.((video.currentTime / video.duration) * 100, video.currentTime);
+      onProgressRef.current?.((video.currentTime / video.duration) * 100, video.currentTime);
     };
     const onEndedHandler = () => {
-      onProgress?.(100, 0);
-      onEnded?.();
+      onProgressRef.current?.(100, 0);
+      onEndedRef.current?.();
     };
     // Biết có hình hay chỉ có tiếng: chờ tới khi trình duyệt đọc xong metadata (kích thước
     // khung hình thật — 0x0 nghĩa là không có track hình nào cả) rồi mới báo ra ngoài, xem
     // chú thích đầy đủ ở khai báo prop onHasVideoChange phía trên. 'loadedmetadata' luôn xảy
     // ra TRƯỚC 'loadeddata' nên kịp báo trước khi màn hình hiện nội dung.
     const onLoadedMetadata = () => {
-      onHasVideoChange?.(video.videoWidth > 0 && video.videoHeight > 0);
+      onHasVideoChangeRef.current?.(video.videoWidth > 0 && video.videoHeight > 0);
     };
     video.addEventListener('playing', onPlaying);
     video.addEventListener('loadeddata', onLoadedData);
